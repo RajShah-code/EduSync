@@ -79,14 +79,14 @@ EduSync solves these problems with a **smart, centralized digital lab environmen
 
 ---
 
-## 👥 Team & Contributions
+## Team & Contributions
 
 - **Raj & Zuheb** – Full Stack Development & System Architecture  
 - **Mrugank & Aneeq** – Frontend Development & UI/UX Design  
 
 ---
 
-## 📈 Business Viability
+## Business Viability
 
 - Target customers: Universities, colleges, and computer labs  
 - Subscription-based pricing (feature & scale based)  
@@ -96,7 +96,7 @@ EduSync solves these problems with a **smart, centralized digital lab environmen
 
 ---
 
-## 🌍 Social Impact
+## Social Impact
 
 - Equal visibility for all students during lab sessions  
 - Supports students from diverse economic backgrounds  
