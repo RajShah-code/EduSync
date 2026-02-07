@@ -105,3 +105,10 @@ EduSync solves these problems with a **smart, centralized digital lab environmen
 - Contributes to better practical education and skilled graduates  
 
 ---
+
+# Current Status
+
+Right now we have sucessfully made the UI and FrontEnd of the student dashboard..
+We are working on and Page for the faculty and then we will start addding backend
+
+---
