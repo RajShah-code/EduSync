@@ -1,0 +1,52 @@
+body {
+    font-family: 'Fredoka', sans-serif;
+}
+
+.main-card {
+    border: 10px solid #6699DD;
+}
+
+/* Start Exam Button Styling */
+.start-exam-btn {
+    background-color: #6699DD;
+    box-shadow: 0 10px 20px rgba(102, 153, 221, 0.3);
+    transition: all 0.3s ease;
+}
+
+.start-exam-btn:hover {
+    transform: translateY(-5px);
+    filter: brightness(110%);
+}
+
+/* Results Section Styling */
+.results-header {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    display: inline-block;
+    padding-bottom: 5px;
+    margin-left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Inset look for the white result rows */
+.result-row {
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.details-btn {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.details-btn:hover {
+    transform: scale(1.05);
+}
+.start-exam-btn:active {
+    transform: scale(0.95);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Modal Overlay Styling */
+#exam-modal {
+    background-color: rgba(62, 65, 81, 0.9); /* Your Dark Mode color */
+}

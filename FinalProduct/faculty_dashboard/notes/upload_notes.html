@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Select Class & Division</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background-color: #fff7ec;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Main Card */
+    .card {
+      width: 520px;
+      padding: 40px 35px 50px;
+      border-radius: 28px;
+      border: 6px solid #5b8fdc;
+      background-color: #fff7ec;
+    }
+
+    /* Labels */
+    .label {
+      font-size: 26px;
+      font-weight: 600;
+      color: #5b8fdc;
+      margin-bottom: 12px;
+    }
+
+    /* Custom Select Wrapper */
+    .select-wrapper {
+      position: relative;
+      margin-bottom: 28px;
+    }
+
+    select {
+      width: 100%;
+      height: 60px;
+      padding: 0 20px;
+      font-size: 18px;
+      color: #5b8fdc;
+      background-color: #fff7ec;
+      border-radius: 30px;
+      border: 4px solid #8bb8f3;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    select option {
+      color: #333;
+    }
+
+    /* Dropdown Arrow */
+    .select-wrapper::after {
+      content: "";
+      position: absolute;
+      right: 22px;
+      top: 50%;
+      width: 14px;
+      height: 14px;
+      border-right: 4px solid #5b8fdc;
+      border-bottom: 4px solid #5b8fdc;
+      transform: translateY(-50%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    /* Upload Button */
+    .upload-btn {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 190px;
+      height: 56px;
+      background-color: #5b8fdc;
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .upload-btn:hover {
+      background-color: #4a7fc8;
+    }
+
+    /* Upload Icon */
+    .upload-icon {
+      width: 20px;
+      height: 20px;
+      border: 2px solid white;
+      border-bottom: none;
+      position: relative;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .upload-icon::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -8px;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 8px solid white;
+      transform: translateX(-50%);
+    }
+
+    .upload-icon::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 6px;
+      width: 2px;
+      height: 10px;
+      background-color: white;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="label">Select Class</div>
+    <div class="select-wrapper">
+      <select id="classSelect">
+        <option value="" disabled selected>Select Class...</option>
+        <option>BCA</option>
+        <option>BTech</option>
+      </select>
+    </div>
+
+    <div class="label">Select Division</div>
+    <div class="select-wrapper">
+      <select id="divisionSelect">
+        <option value="" disabled selected>Select Division...</option>
+        <option>A</option>
+        <option>B</option>
+        <option>C</option>
+        <option>D</option>
+      </select>
+    </div>
+
+    <button class="upload-btn" onclick="handleUpload()">
+      <div class="upload-icon"></div>
+      UPLOAD
+    </button>
+  </div>
+
+  <script>
+    function handleUpload() {
+      const classValue = document.getElementById("classSelect").value;
+      const divisionValue = document.getElementById("divisionSelect").value;
+
+      if (!classValue || !divisionValue) {
+        alert("Please select both Class and Division");
+        return;
+      }
+
+      alert("Class: " + classValue + "\nDivision: " + divisionValue);
+    }
+  </script>
+
+</body>
+</html>

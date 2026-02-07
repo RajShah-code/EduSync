@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSync - Professor Dashboard</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="fd_style.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#3E4151',
+                        darkCardTop: '#8A69B5',
+                        darkCardBottom: '#4D5166',
+                        darkBtn: '#C3B1E1',
+                        lightBg: '#FDF5E6',
+                        lightCardTop: '#6699DD',
+                        lightBtn: '#99CCFF'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-lightBg dark:bg-darkBg transition-colors duration-500 min-h-screen flex flex-row-reverse">
+
+    <div id="ripple"></div>
+
+    <aside class="fixed top-4 right-4 h-[calc(100vh-32px)] w-20 bg-white dark:bg-[#4D5166] border-4 border-blue-400 dark:border-purple-400 rounded-[30px] flex flex-col items-center py-6 gap-6 shadow-lg z-50">
+        <div class="w-12 h-12 rounded-full border-2 border-blue-400 dark:border-purple-400 overflow-hidden mb-2">
+            <a href="fprofile/fprofile.html"><img src="https://ui-avatars.com/api/?name=Professor&background=6699DD&color=fff" alt="Profile" ></a>
+        </div>
+
+        <button id="theme-toggle" class="bg-blue-100 dark:bg-purple-900 p-3 rounded-full text-xl cursor-pointer hover:scale-110 transition-transform">
+            <span class="dark:hidden">🌙</span>
+            <span class="hidden dark:inline">☀️</span>
+        </button>
+        
+        <div class="text-blue-400 dark:text-purple-300 text-2xl cursor-pointer hover:scale-110 transition-transform">⚙️</div>
+        <div class="text-blue-400 dark:text-purple-300 text-2xl cursor-pointer hover:scale-110 transition-transform">🔔</div>
+        
+        <div class="mt-auto mb-4 vertical-text font-bold text-blue-400 dark:text-purple-300 tracking-widest text-xl uppercase">
+            Gujarat University
+        </div>
+    </aside>
+
+    <main class="flex-1 pr-32 pl-8 pt-8 pb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            
+            <div class="prof-card">
+                <div class="card-top bg-lightCardTop dark:bg-darkCardTop">
+                    <h2>Lecture</h2>
+                    <div class="divider"></div>
+                    <p>Start your Lecture with your Students !!</p>
+                </div>
+                <div class="card-bottom">
+                    <button class="btn">Start</button>
+                </div>
+            </div>
+
+            <div class="prof-card">
+                <div class="card-top bg-lightCardTop dark:bg-darkCardTop">
+                    <h2>Notes</h2>
+                    <div class="divider"></div>
+                    <p>Give appropriate notes to Students !!</p>
+                </div>
+                <div class="card-bottom">
+                    <button class="btn"><a href="notes/upload_notes.html">View</a></button>
+                </div>
+            </div>
+
+            <div class="prof-card">
+                <div class="card-top bg-lightCardTop dark:bg-darkCardTop">
+                    <h2>Attendance</h2>
+                    <div class="divider"></div>
+                    <p>See Attendance and related statistics !!</p>
+                </div>
+                <div class="card-bottom">
+                    <button class="btn">View</button>
+                </div>
+            </div>
+
+            <div class="prof-card">
+                <div class="card-top bg-lightCardTop dark:bg-darkCardTop">
+                    <h2>Reports</h2>
+                    <div class="divider"></div>
+                    <p>See student's performance and progress !!</p>
+                </div>
+                <div class="card-bottom">
+                    <button class="btn"><a href="report/report.html">View</a></button>
+                </div>
+            </div>
+
+            <div class="prof-card">
+                <div class="card-top bg-lightCardTop dark:bg-darkCardTop">
+                    <h2>Feature</h2>
+                    <div class="divider"></div>
+                    <p>Useful tool for extraordinary one !!</p>
+                </div>
+                <div class="card-bottom">
+                    <button class="btn">Wait</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="fd_script.js"></script>
+</body>
+</html>

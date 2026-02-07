@@ -1,0 +1,63 @@
+body {
+    font-family: 'Fredoka', sans-serif;
+}
+
+/* Wrapper to hold the main row and the 3D shadow base beneath it */
+.attendance-wrapper {
+    position: relative;
+    padding-bottom: 8px; /* Room for the bottom shadow layer */
+}
+
+/* The actual white/grey row */
+.attendance-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 50px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1.25rem;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.1s ease;
+}
+
+/* THE 3D BLUE BASE UNDERNEATH */
+.attendance-wrapper::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 25px;
+    z-index: 1;
+}
+
+/* --- PRESENT STATE --- */
+.attendance-row.present {
+    background-color: #FFFFFF;
+    color: #99CCFF; /* Pic's exact text color */
+}
+
+.attendance-wrapper:has(.present)::after {
+    background-color: #6699DD; /* The dark blue shadow base */
+    transform: translateY(10px);
+}
+
+/* --- ABSENT STATE --- */
+.attendance-row.absent {
+    background-color: #E2E4E9; /* Dull grey from pic */
+    color: #A0B2C9; /* Muted text color */
+}
+
+.attendance-wrapper:has(.absent)::after {
+    background-color: #A0B2C9; /* Greyish shadow base */
+    transform: translateY(10px);
+}
+
+/* Text Alignment Logic */
+.name { flex: 1.5; text-align: left; }
+.date { flex: 1; text-align: center; }
+.subject { flex: 1; text-align: center; }
+.class-info { flex: 1; text-align: right; }

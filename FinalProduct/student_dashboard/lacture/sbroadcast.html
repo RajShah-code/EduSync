@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Lab Screen Sharing</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body {
+    font-family: 'Fredoka', sans-serif;
+    background: #EAE5DC;
+}
+
+/* Main Blue Screen Area */
+.screen-container {
+    background-color: #5E87C9;
+    border-radius: 40px;
+    padding: 20px;
+}
+
+/* Task Cards */
+.task-card {
+    background-color: #5E87C9;
+    border-radius: 25px;
+    padding: 20px;
+    color: white;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+/* Buttons */
+.control-btn {
+    background: white;
+    color: #4477BB;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.control-btn:hover {
+    background: #dbeafe;
+}
+
+.stop-btn {
+    background: #ef4444;
+    color: white;
+}
+</style>
+</head>
+
+<body class="p-6">
+
+<!-- Screen Sharing Section -->
+<div class="screen-container relative w-full max-w-6xl mx-auto">
+
+    <video id="screenVideo"
+        class="w-full h-[420px] bg-black rounded-3xl"
+        autoplay
+        playsinline>
+    </video>
+
+    <!-- Left Aligned Controls -->
+<div class="absolute bottom-6 left-6 flex gap-5">
+
+  <!-- Camera Button -->
+  <button id="cameraBtn"
+    onclick="toggleCamera()"
+    class="control-btn">
+    
+    <svg id="cameraIcon" xmlns="http://www.w3.org/2000/svg"
+      class="w-6 h-6 transition-all duration-300"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M4 6h7a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z"/>
+    </svg>
+  </button>
+
+  <!-- Mic Button -->
+  <button id="micBtn"
+    onclick="toggleMic()"
+    class="control-btn">
+    
+    <svg id="micIcon" xmlns="http://www.w3.org/2000/svg"
+      class="w-6 h-6 transition-all duration-300"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M12 1v11m0 0a4 4 0 004-4V5a4 4 0 00-8 0v3a4 4 0 004 4zm0 0v4m-4 0h8"/>
+    </svg>
+  </button>
+
+</div>
+
+</div>
+
+<!-- Task Section -->
+<div class="max-w-6xl mx-auto mt-6 grid md:grid-cols-2 gap-6">
+
+    <!-- Current Task -->
+    <div class="task-card shadow-lg">
+        <h2 class="text-lg font-bold border-b border-white pb-2 mb-4">
+            Current Task
+        </h2>
+
+        <div class="space-y-3">
+            <label class="flex items-center gap-3">
+                <input type="checkbox">
+                Make a E-Commerce Website.
+            </label>
+
+            <label class="flex items-center gap-3">
+                <input type="checkbox">
+                Build Admin Dashboard.
+            </label>
+
+            <label class="flex items-center gap-3">
+                <input type="checkbox">
+                Implement Payment Gateway.
+            </label>
+        </div>
+    </div>
+
+    <!-- Completed Task -->
+    <div class="task-card shadow-lg">
+        <h2 class="text-lg font-bold border-b border-white pb-2 mb-4">
+            Completed Tasks
+        </h2>
+
+        <div class="space-y-3">
+            <label class="flex items-center gap-3">
+                <input type="checkbox" checked>
+                Make a Calculator.
+            </label>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let screenStream = null;
+
+async function startScreenShare() {
+    try {
+        screenStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true
+        });
+
+        document.getElementById("screenVideo").srcObject = screenStream;
+
+    } catch (err) {
+        alert("Screen Share Failed: " + err.message);
+    }
+}
+
+function stopScreenShare() {
+    if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+        document.getElementById("screenVideo").srcObject = null;
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,40 @@
+/* Custom Palette based on Screenshots */
+:root {
+    --l-bg: #FDF5E6; --l-card: #6699DD; --l-accent: #99CCFF;
+    --d-bg: #3E4151; --d-card: #8A69B5; --d-accent: #C3B1E1;
+}
+
+body { font-family: 'Fredoka', sans-serif; overflow-x: hidden; }
+
+/* Light Theme (Default) */
+.bg-body-custom { background-color: var(--l-bg); }
+.main-card-bg { background-color: var(--l-card); }
+.profile-pic-container { border-color: var(--l-accent); }
+.theme-toggle-btn { background-color: var(--l-accent); color: #4477BB; }
+.menu-icon-btn { background-color: var(--l-card); }
+
+.type-1 .label-tab, .type-1.label-tab { background-color: var(--l-bg); color: var(--l-card); }
+.type-1 .field-box, .type-1.field-box { background-color: var(--l-bg); color: var(--l-card); }
+
+.type-2 .label-tab, .type-2.label-tab { background-color: var(--l-accent); color: white; }
+.type-2 .field-box, .type-2.field-box { background-color: var(--l-accent); color: white; }
+
+/* Dark Theme Overrides */
+html.dark .bg-body-custom { background-color: var(--d-bg); }
+html.dark .main-card-bg { background-color: var(--d-card); }
+html.dark .profile-pic-container { border-color: var(--d-accent); }
+html.dark .theme-toggle-btn { background-color: var(--d-accent); color: #5A4181; }
+html.dark .menu-icon-btn { background-color: var(--d-card); }
+
+html.dark .type-1 .label-tab, html.dark .type-1.label-tab { background-color: var(--d-accent); color: var(--d-bg); }
+html.dark .type-1 .field-box, html.dark .type-1.field-box { background-color: var(--d-accent); color: var(--d-bg); }
+
+html.dark .type-2 .label-tab, html.dark .type-2.label-tab { background-color: rgba(255,255,255,0.25); color: white; }
+html.dark .type-2 .field-box, html.dark .type-2.field-box { background-color: rgba(255,255,255,0.25); color: white; }
+
+/* Shared Component Styles */
+.input-wrap { display: flex; flex-direction: column; position: relative; }
+.label-tab { font-weight: 700; font-size: 0.72rem; padding: 2px 14px; border-radius: 10px 10px 0 0; width: fit-content; margin-left: 15px; z-index: 2; }
+.field-box { font-weight: 700; padding: 12px 20px; border-radius: 18px; font-size: 1.1rem; margin-top: -5px; box-shadow: inset 0 4px 8px rgba(0,0,0,0.18); z-index: 1; }
+
+#ripple { position: fixed; top: 50%; left: 50%; width: 2px; height: 2px; border-radius: 50%; pointer-events: none; z-index: 100; transform: translate(-50%, -50%); }

@@ -1,0 +1,173 @@
+/* Faculty Profile - exact match to provided UI */
+
+:root {
+    --bg-cream: #f8f5ed;
+    --border-purple: #4a3d5c;
+    --card-blue: #5a87e5;
+    --light-blue: #87b0ff;
+    --value-bg: #fbfafa;
+    --name-dark: #2c3e50;
+    --label-text: #ffffff;
+    --value-text: #87b0ff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-cream);
+    min-height: 100vh;
+    color: var(--name-dark);
+}
+
+.page-wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding: 28px 24px;
+    border: 4px solid var(--border-purple);
+    border-radius: 20px;
+    background: var(--bg-cream);
+}
+
+/* ----- Header ----- */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.hamburger {
+    width: 52px;
+    height: 52px;
+    background: var(--light-blue);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.hamburger span {
+    display: block;
+    width: 24px;
+    height: 3px;
+    background: #fff;
+    border-radius: 2px;
+}
+
+.faculty-name {
+    flex: 1;
+    text-align: center;
+    font-size: clamp(1.05rem, 3vw, 1.4rem);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--name-dark);
+}
+
+.profile-photo-wrap {
+    flex-shrink: 0;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 4px solid var(--light-blue);
+    overflow: hidden;
+    background: var(--light-blue);
+}
+
+.profile-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ----- Main card ----- */
+.main {
+    margin-top: 4px;
+}
+
+.profile-card {
+    background: var(--card-blue);
+    border-radius: 24px;
+    padding: 32px 28px;
+    box-shadow: 0 2px 12px rgba(90, 135, 229, 0.2);
+}
+
+.fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 28px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+/* Tab-like label: light blue bg, white text */
+.field-label {
+    display: inline-block;
+    align-self: flex-start;
+    background: var(--light-blue);
+    color: var(--label-text);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 16px 10px;
+    border-radius: 12px 12px 0 0;
+    position: relative;
+    z-index: 1;
+    margin-bottom: -1px;
+}
+
+/* Value: cream bg, light blue text, embossed (shadow bottom/right) */
+.field-value {
+    background: var(--value-bg);
+    color: var(--value-text);
+    font-size: 1.02rem;
+    font-weight: 700;
+    padding: 16px 18px 18px;
+    border-radius: 0 0 16px 16px;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    /* Embossed: subtle shadow on bottom and right */
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.06), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    border: 1px solid rgba(135, 176, 255, 0.25);
+}
+
+.field-value--italic {
+    font-style: italic;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 560px) {
+    .fields-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .header {
+        justify-content: flex-start;
+    }
+
+    .faculty-name {
+        text-align: left;
+        order: 3;
+        width: 100%;
+    }
+}

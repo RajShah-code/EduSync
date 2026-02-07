@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSync - Verified Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="sprofile_style.css">
+</head>
+<body class="bg-body-custom transition-colors duration-500 min-h-screen flex items-center justify-center p-6">
+
+    <div id="ripple"></div>
+
+    <div class="fixed top-6 right-6 flex gap-3 z-50">
+        <button id="theme-btn" class="theme-toggle-btn p-2 rounded-xl shadow-md">
+            <span class="dark-icon">🌙</span>
+            <span class="light-icon hidden">☀️</span>
+        </button>
+        <div class="menu-icon-btn p-2 rounded-xl text-white text-2xl flex items-center justify-center shadow-md cursor-pointer">
+            <span class="mb-1 leading-none">☰</span>
+        </div>
+    </div>
+
+    <div class="relative w-full max-w-4xl mt-12">
+        
+        <div class="profile-pic-container absolute -top-16 left-0 w-44 h-44 md:w-56 md:h-56 rounded-full border-[10px] overflow-hidden z-20 shadow-xl bg-white">
+            <img src="https://i.imgur.com/8K6N9p3.png" alt="Profile" class="w-full h-full object-cover">
+        </div>
+
+        <div class="main-card-bg rounded-[45px] pt-28 pb-12 px-8 md:pl-64 md:pt-14 relative z-10 shadow-2xl">
+            
+            <h1 class="text-white text-2xl md:text-4xl font-bold uppercase mb-12 tracking-wider leading-tight">
+                DARJI MRUGANK JAYESHKUMAR
+            </h1>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                
+                <div class="input-wrap">
+                    <div class="label-tab type-1">ENROLLMENT NUMBER</div>
+                    <div class="field-box type-1">0789654123 MNOPQ</div>
+                </div>
+
+                <div class="input-wrap">
+                    <div class="label-tab type-2">SEMESTER</div>
+                    <div class="field-box type-2 italic">0789654123 MNOPQ</div>
+                </div>
+
+                <div class="input-wrap">
+                    <div class="label-tab type-1">PHONE NUMBER</div>
+                    <div class="field-box type-1">78744 03198</div>
+                </div>
+
+                <div class="flex gap-5">
+                    <div class="input-wrap flex-[1.2]">
+                        <div class="label-tab type-2">CLAS</div>
+                        <div class="field-box type-2 text-center">A</div>
+                    </div>
+                    <div class="input-wrap flex-1">
+                        <div class="label-tab type-2">CGPA</div>
+                        <div class="field-box type-2 text-center">10</div>
+                    </div>
+                </div>
+
+                <div class="input-wrap">
+                    <div class="label-tab type-1">E-MAIL</div>
+                    <div class="field-box type-1 lowercase text-sm">mrugjd9@gmail.com</div>
+                </div>
+
+                <div class="input-wrap">
+                    <div class="label-tab type-2">PASSWORD</div>
+                    <div class="field-box type-2 italic font-semibold">Muga@09merss</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="sprofile_script.js"></script>
+</body>
+</html>
