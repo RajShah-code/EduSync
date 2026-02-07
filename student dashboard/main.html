@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSync - Professional Dashboard</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#3E4151',
+                        darkCardTop: '#8A69B5',
+                        darkCardBottom: '#4D5166',
+                        darkBtn: '#C3B1E1',
+                        lightBg: '#FDF5E6',
+                        lightCardTop: '#6699DD',
+                        lightBtn: '#99CCFF'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-lightBg dark:bg-darkBg transition-colors duration-500 min-h-screen">
+
+    <div id="ripple"></div>
+
+    <aside class="fixed top-4 left-4 h-[calc(100vh-32px)] w-20 bg-white dark:bg-[#4D5166] border-4 border-blue-400 dark:border-purple-400 rounded-[30px] flex flex-col items-center py-8 gap-8 shadow-lg z-50">
+        <button id="theme-toggle" class="bg-blue-100 dark:bg-purple-900 p-3 rounded-full text-2xl cursor-pointer hover:scale-110 transition-transform">
+            <span class="dark:hidden">🌙</span>
+            <span class="hidden dark:inline">☀️</span>
+        </button>
+        
+        <div class="text-blue-400 text-2xl cursor-pointer hover:scale-110 transition-transform">⚙️</div>
+        <div class="text-blue-400 dark:text-purple-300 text-2xl cursor-pointer hover:scale-110 transition-transform">🏠</div>
+        <div class="text-blue-400 dark:text-purple-300 text-2xl cursor-pointer hover:scale-110 transition-transform">🔔</div>
+        
+        <div class="mt-auto mb-4 vertical-text font-bold text-blue-400 dark:text-purple-300 tracking-widest text-xl uppercase">
+            Gujarat University
+        </div>
+    </aside>
+
+    <main class="pl-32 pr-8 pt-8 pb-8 min-h-screen">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+            
+            <div class="max-w-sm bg-white dark:bg-darkCardBottom border-4 border-blue-400 dark:border-purple-400 rounded-[40px] overflow-hidden shadow-md transition-all duration-300 hover:scale-[1.05] hover:shadow-2xl">
+                <div class="bg-lightCardTop dark:bg-darkCardTop p-8 text-center text-white border-b-4 border-blue-400 dark:border-purple-400">
+                    <h2 class="text-3xl font-bold tracking-widest uppercase mb-4">Lecture</h2>
+                    <div class="w-full h-[2px] bg-white opacity-50 mb-4"></div>
+                    <p class="text-sm font-medium leading-relaxed">Ready to see it in action?<br>Dive in your latest topic without any hurdle!!</p>
+                </div>
+                <div class="p-6 flex justify-center bg-white dark:bg-transparent">
+                    <button class="bg-lightBtn dark:bg-darkBtn text-[#4477BB] dark:text-[#5A4181] font-bold py-3 px-12 rounded-full text-xl shadow-inner hover:brightness-110 transition-all uppercase tracking-wider">Join</button>
+                </div>
+            </div>
+
+            <div class="max-w-sm bg-white dark:bg-darkCardBottom border-4 border-blue-400 dark:border-purple-400 rounded-[40px] overflow-hidden shadow-md transition-all duration-300 hover:scale-[1.05] hover:shadow-2xl">
+                <div class="bg-lightCardTop dark:bg-darkCardTop p-8 text-center text-white border-b-4 border-blue-400 dark:border-purple-400">
+                    <h2 class="text-3xl font-bold tracking-widest uppercase mb-4">Exam</h2>
+                    <div class="w-full h-[2px] bg-white opacity-50 mb-4"></div>
+                    <p class="text-sm font-medium leading-relaxed">Ready to prove your power?<br>Clear the deck and ace it without a doubt!!</p>
+                </div>
+                <div class="p-6 flex justify-center bg-white dark:bg-transparent">
+                    <button class="bg-lightBtn dark:bg-darkBtn text-[#4477BB] dark:text-[#5A4181] font-bold py-3 px-12 rounded-full text-xl shadow-inner hover:brightness-110 transition-all uppercase tracking-wider">Attempt</button>
+                </div>
+            </div>
+
+            <div class="max-w-sm bg-white dark:bg-darkCardBottom border-4 border-blue-400 dark:border-purple-400 rounded-[40px] overflow-hidden shadow-md transition-all duration-300 hover:scale-[1.05] hover:shadow-2xl">
+                <div class="bg-lightCardTop dark:bg-darkCardTop p-8 text-center text-white border-b-4 border-blue-400 dark:border-purple-400">
+                    <h2 class="text-3xl font-bold tracking-widest uppercase mb-4">Notes</h2>
+                    <div class="w-full h-[2px] bg-white opacity-50 mb-4"></div>
+                    <p class="text-sm font-medium leading-relaxed">Ready to lock in the logic?<br>Map it out and master it without a hitch!!</p>
+                </div>
+                <div class="p-6 flex justify-center bg-white dark:bg-transparent">
+                    <button class="bg-lightBtn dark:bg-darkBtn text-[#4477BB] dark:text-[#5A4181] font-bold py-3 px-12 rounded-full text-xl shadow-inner hover:brightness-110 transition-all uppercase tracking-wider">View</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
