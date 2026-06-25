@@ -1,0 +1,341 @@
+# Lab Control — UI Polish & Landing Page Prompt
+# Reference: Apple HIG × Notion × Linear × Vercel/Render
+# Target: World-class dark product UI with a landing page
+
+# ============================================================
+# SECTION 1 — DESIGN DIRECTION
+# ============================================================
+
+# Aesthetic goal:
+#   Apple-grade refinement meets developer-tool elegance.
+#   Calm confidence. Not flashy. Not trying too hard.
+#   Every surface designed twice — once for function, once for delight.
+#
+# Reference products:
+#   - Apple (precision, restraint, micro-detail)
+#   - Linear (dark UI done right, motion mastery)
+#   - Notion (calm clarity, whitespace discipline)
+#   - Vercel / Render (dark landing pages, scroll storytelling)
+
+# ============================================================
+# SECTION 2 — COLOR PALETTE
+# ============================================================
+
+colors:
+  background_base:    "#0A0A0F"   # Near-black with cool blue undertone
+  surface_1:          "#111118"   # Cards, sidebar
+  surface_2:          "#1A1A24"   # Elevated panels, modals
+  surface_3:          "#22222F"   # Hover states, input fields
+  border:             "#2A2A3A"   # At 60% opacity — always subtle
+  accent_primary:     "#4F8EF7"   # Calm trustworthy blue
+  accent_live:        "#22C55E"   # Active / LIVE states
+  accent_warning:     "#F59E0B"   # Idle / warning — amber, never orange
+  accent_danger:      "#EF4444"   # Error / destructive
+  text_primary:       "#F0F0F5"   # Slightly warm white, easier on eyes
+  text_secondary:     "#8B8BA7"   # Muted purple-grey
+  text_tertiary:      "#4A4A6A"   # Disabled, placeholders
+
+# ============================================================
+# SECTION 3 — TYPOGRAPHY
+# ============================================================
+
+typography:
+  display:
+    font:    "Inter"
+    weight:  "600–700"
+    tracking: "-0.02em to -0.04em on large sizes"
+
+  body:
+    font:    "Inter"
+    weight:  "400–500"
+    line_height: "1.6"
+
+  mono:
+    font:    "JetBrains Mono"
+    use_for: "code areas, timestamps, IDs, stat numbers, chart axes"
+
+  labels_and_badges:
+    size:    "11px"
+    weight:  "600"
+    tracking: "0.08em"
+    transform: "uppercase"
+
+# ============================================================
+# SECTION 4 — SPACING & LAYOUT
+# ============================================================
+
+layout:
+  grid:            "8pt base"
+  sidebar_width:   "240px"
+  content_max_w:   "1200px centered"
+  card_padding:    "24px"
+  section_gap:     "32px"
+  component_gap:   "16px"
+
+border_radius:
+  cards:    "12px"
+  inputs:   "8px"
+  buttons:  "8px"
+  badges:   "6px"
+  pills:    "999px"
+
+shadows:
+  card:    "0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3)"
+  modal:   "0 4px 6px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.6)"
+  focus:   "0 0 0 2px rgba(79,142,247,0.4)"
+  glow_live: "0 0 12px rgba(34,197,94,0.4)"
+
+# ============================================================
+# SECTION 5 — COMPONENT POLISH
+# ============================================================
+
+# --- SIDEBAR ---
+sidebar:
+  border_right: "1px solid rgba(255,255,255,0.06)"
+  nav_active:
+    background: "rgba(79,142,247,0.12)"
+    left_border: "3px solid #4F8EF7"
+    text_color:  "#4F8EF7"
+  nav_hover:
+    background: "rgba(255,255,255,0.04)"
+    transition: "background 150ms ease"
+
+# --- TOP BAR ---
+top_bar:
+  background:       "rgba(10,10,15,0.85)"
+  backdrop_filter:  "blur(12px)"
+  live_badge_dot:   "CSS keyframe pulse — box-shadow ripple from rgba(239,68,68,0.7) to transparent"
+  timer_font:       "JetBrains Mono"
+
+# --- CARDS ---
+cards:
+  border:           "1px solid rgba(255,255,255,0.06)"
+  stat_number_font: "JetBrains Mono, 48px"
+  hover:
+    transform:   "translateY(-2px)"
+    transition:  "all 200ms cubic-bezier(0.4,0,0.2,1)"
+
+# --- BUTTONS ---
+buttons:
+  primary:
+    background:    "linear-gradient(135deg, #4F8EF7, #3B78E7)"
+    inner_shadow:  "inset 0 1px 0 rgba(255,255,255,0.15)"
+    hover:         "lighten 8%, scale(1.01)"
+
+  destructive:
+    style:         "ghost"
+    border:        "1.5px solid #EF4444"
+    background:    "rgba(239,68,68,0.08)"
+
+  all_buttons:
+    transition:    "all 160ms ease"
+    font_weight:   "600"
+    letter_spacing: "0.01em"
+
+# --- INPUTS ---
+inputs:
+  background:  "#111118"
+  border:      "1px solid #2A2A3A"
+  focus_border: "#4F8EF7"
+  focus_glow:  "0 0 0 3px rgba(79,142,247,0.2)"
+  placeholder: "#4A4A6A"
+  padding:     "10px 14px"
+
+# --- STATUS BADGES ---
+badges:
+  ACTIVE:
+    bg:     "rgba(34,197,94,0.12)"
+    color:  "#22C55E"
+    border: "1px solid rgba(34,197,94,0.25)"
+  IDLE:
+    bg:     "rgba(245,158,11,0.12)"
+    color:  "#F59E0B"
+    border: "1px solid rgba(245,158,11,0.25)"
+  OFFLINE:
+    bg:     "rgba(255,255,255,0.05)"
+    color:  "#8B8BA7"
+    border: "1px solid rgba(255,255,255,0.08)"
+  SUBMITTED:
+    bg:     "rgba(79,142,247,0.12)"
+    color:  "#4F8EF7"
+
+# --- MONITOR GRID (Student Cards) ---
+monitor_grid:
+  idle_card_border:  "1.5px solid rgba(245,158,11,0.35)"
+  idle_card_bg:      "subtle amber tint"
+  hover:
+    transform:   "scale(1.02)"
+    shadow:      "elevates on hover"
+  empty_avatar:      "gradient shimmer skeleton, no blank space"
+
+# --- TABLES ---
+tables:
+  row_divider:    "border-bottom: 1px solid rgba(255,255,255,0.04)"
+  row_hover_bg:   "rgba(255,255,255,0.025)"
+  header:
+    size:       "11px"
+    tracking:   "0.1em"
+    color:      "#4A4A6A"
+    transform:  "uppercase"
+
+# --- CHARTS ---
+charts:
+  line_stroke:       "#4F8EF7, stroke-width 2.5, smooth bezier"
+  bar_fill:          "linear-gradient(180deg, #4F8EF7 0%, rgba(79,142,247,0.6) 100%)"
+  grid_lines:        "rgba(255,255,255,0.04)"
+  axes_font:         "JetBrains Mono, 11px, #4A4A6A"
+
+# --- EXAM STEPPER ---
+exam_stepper:
+  active:     "filled accent circle (#4F8EF7)"
+  completed:  "checkmark icon"
+  future:     "muted grey circle"
+  connector:  "1px solid #2A2A3A line between steps"
+
+# --- EMPTY STATE (Recordings page) ---
+empty_state:
+  icon:     "relevant icon, muted color"
+  headline: "No recordings yet"
+  subtext:  "Start a session and hit Record to save it for students."
+  cta:      "ghost button — Start Recording"
+
+# ============================================================
+# SECTION 6 — MOTION & INTERACTIONS
+# ============================================================
+
+motion:
+  easing_standard:  "cubic-bezier(0.4, 0, 0.2, 1)"
+  duration_micro:   "150ms"   # hover, focus
+  duration_normal:  "220ms"   # page transitions, reveals
+  duration_slow:    "300ms"   # toggles, modals
+
+  page_transition:
+    from: "opacity: 0, translateY(8px)"
+    to:   "opacity: 1, translateY(0)"
+    duration: "220ms ease-out"
+
+  list_stagger:
+    delay_per_item: "20ms"
+    effect: "fade + translateY(8px → 0)"
+
+  button_press:
+    mousedown: "scale(0.97)"
+    release:   "scale(1) — spring back"
+
+  stat_counters:
+    on_load: "count 0 → value over 800ms with easing"
+
+  live_pulse:
+    type:   "CSS keyframe ripple ring"
+    target: "LIVE badge dot"
+
+  prefers_reduced_motion:
+    rule: "wrap ALL animations in @media (prefers-reduced-motion: reduce)"
+
+# ============================================================
+# SECTION 7 — LANDING PAGE
+# ============================================================
+
+landing_page:
+
+  # --- NAVBAR ---
+  navbar:
+    style:            "sticky, frosted glass"
+    background:       "rgba(10,10,15,0.8)"
+    backdrop_filter:  "blur(16px)"
+    border_bottom:    "1px solid rgba(255,255,255,0.06)"
+    scroll_behavior:  "hide on scroll down, reappear on scroll up (300ms ease)"
+    layout:           "logo left | links center | CTA right"
+    link_hover:       "underline animates from center outward"
+
+  # --- HERO ---
+  hero:
+    height:     "100vh"
+    headline:   "The Lab, Reimagined."
+    headline_style:
+      size:     "72px"
+      weight:   "700"
+      tracking: "-0.04em"
+      accent:   "second line in #4F8EF7"
+    subheadline: "Live teaching. Automatic attendance. Secure exams. One platform."
+    subheadline_style:
+      size:   "20px"
+      color:  "#8B8BA7"
+    ctas:
+      primary:   "Get Started"
+      secondary: "See it live →  (ghost style)"
+    background:
+      type:   "animated gradient mesh"
+      orbs:
+        - color: "#4F8EF7 at 5% opacity — slow drift"
+        - color: "#22C55E at 3% opacity — slow drift"
+      note:   "NO particles. NO heavy animation. Restrained."
+    scroll_hint: "thin pulsing line indicator at bottom"
+
+  # --- FEATURE SECTIONS ---
+  # All sections use IntersectionObserver — animate in ONCE on entry only
+  feature_reveal:
+    from: "opacity: 0, translateY(32px)"
+    to:   "opacity: 1, translateY(0)"
+    duration: "600ms ease-out"
+
+  features:
+    layout: "alternating — text left/visual right, then text right/visual left"
+    visuals: "real UI screenshots in floating app windows, border-radius 16px, soft shadow"
+
+    - id: 1
+      headline:  "Every student sees exactly what you see."
+      visual:    "Broadcast screen mockup"
+
+    - id: 2
+      headline:  "Know who's focused. Know who needs help."
+      visual:    "Student monitor grid"
+
+    - id: 3
+      headline:  "Roll call, handled."
+      visual:    "Attendance table"
+
+    - id: 4
+      headline:  "Randomized. Timed. Tamper-proof."
+      visual:    "Exam creation flow"
+
+    - id: 5
+      headline:  "See the gaps before they become problems."
+      visual:    "Analytics dashboard"
+
+  # --- STATS BAND ---
+  stats_band:
+    background: "#111118"
+    layout:     "full-width, 3 stats centered"
+    stats:
+      - "23 Students Live"
+      - "100% Auto Attendance"
+      - "0 Manual Processes"
+    animation:  "counter animates up on scroll entry"
+
+  # --- FINAL CTA ---
+  final_cta:
+    background:  "radial gradient from rgba(79,142,247,0.08) centered"
+    headline:    "Your lab, smarter."
+    cta:         "large primary button, centered"
+    subtext:     "No setup fee. No installation. Just a browser."
+
+  # --- FOOTER ---
+  footer:
+    columns:    "3 — Product | Company | Contact"
+    border_top: "1px solid rgba(255,255,255,0.06)"
+    text_color: "#4A4A6A"
+    style:      "minimal"
+
+# ============================================================
+# SECTION 8 — GLOBAL RULES
+# ============================================================
+
+rules:
+  - "Apply all changes consistently across every screen — no screen should feel different"
+  - "Every interactive element must have hover, active, and focus states"
+  - "Standard easing: cubic-bezier(0.4, 0, 0.2, 1) everywhere"
+  - "All transitions: 150ms–300ms. Nothing slower unless page transition"
+  - "Design and test at 1440px width"
+  - "Wrap all animations in prefers-reduced-motion media query"
+  - "Overall impression: calm confidence — inevitable, not loud"

@@ -1,0 +1,331 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Base Colors — Apple × Linear dark refinement */
+  --bg-base: #0A0A0F;
+  --bg-surface: #111118;
+  --bg-elevated: #1A1A24;
+  --bg-surface-3: #22222F;
+  --border: #2A2A3A;
+
+  /* Text Colors */
+  --text-primary: #F0F0F5;
+  --text-secondary: #8B8BA7;
+  --text-muted: #4A4A6A;
+
+  /* Accent Colors */
+  --accent-live: #22C55E;
+  --accent-success: #22C55E;
+  --accent-warning: #F59E0B;
+  --accent-critical: #EF4444;
+  --accent-info: #4F8EF7;
+  --accent-locked: #A371F7;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+
+  /* Font Sizes */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 32px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
+  --shadow-modal: 0 4px 6px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.6);
+  --shadow-focus: 0 0 0 2px rgba(79,142,247,0.4);
+  --shadow-glow-live: 0 0 12px rgba(34,197,94,0.4);
+
+  /* Shadcn/UI compatibility */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-info);
+  --primary-foreground: var(--text-primary);
+  --secondary: var(--bg-surface);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-surface);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-elevated);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--accent-critical);
+  --destructive-foreground: var(--text-primary);
+  --input: var(--bg-surface);
+  --ring: var(--accent-info);
+  --radius: var(--radius-md);
+  --font-weight-medium: 600;
+  --font-weight-normal: 400;
+
+  /* Chart colors */
+  --chart-1: var(--accent-info);
+  --chart-2: var(--accent-success);
+  --chart-3: var(--accent-warning);
+  --chart-4: var(--accent-locked);
+  --chart-5: var(--accent-critical);
+}
+
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-surface-3: var(--bg-surface-3);
+  --color-border: var(--border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent-live: var(--accent-live);
+  --color-accent-success: var(--accent-success);
+  --color-accent-warning: var(--accent-warning);
+  --color-accent-critical: var(--accent-critical);
+  --color-accent-info: var(--accent-info);
+  --color-accent-locked: var(--accent-locked);
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-pill: var(--radius-pill);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-bg-base text-text-primary;
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.6;
+  }
+
+  h1 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.3;
+  }
+
+  h2 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.4;
+  }
+
+  h3 {
+    font-size: var(--text-md);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.4;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input, textarea {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}
+
+/* Utility classes for monospace text */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Card with hover lift */
+.card-hover {
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+
+/* Standard interactive element transition */
+.transition-std {
+  transition: all 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Frosted glass surface */
+.glass {
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Page enter animation */
+.page-enter {
+  animation: page-enter 220ms ease-out both;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* List item stagger helper — apply via JS delay or CSS nth-child */
+.stagger-enter {
+  animation: page-enter 220ms ease-out both;
+}
+
+/* LIVE badge pulse — ripple box-shadow */
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.live-pulse {
+  animation: live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Pulsing animation for live indicators (opacity fallback) */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.pulse-dot {
+  animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Button press micro-interaction */
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Glow animation for critical timers */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+  }
+}
+
+.glow-critical {
+  animation: glow 1.5s ease-in-out infinite;
+}
+
+/* Sidebar nav active indicator */
+.nav-active {
+  background: rgba(79, 142, 247, 0.12);
+  color: #4F8EF7;
+  border-left: 3px solid #4F8EF7;
+  padding-left: calc(0.75rem - 3px);
+}
+
+.nav-inactive {
+  color: var(--text-secondary);
+  padding-left: 0.75rem;
+  transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-inactive:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+/* Table row hover */
+.table-row-hover:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+/* Input focus glow */
+.input-focus:focus {
+  border-color: var(--accent-info);
+  box-shadow: 0 0 0 3px rgba(79, 142, 247, 0.2);
+  outline: none;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .stagger-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .live-pulse,
+  .pulse-dot,
+  .glow-critical,
+  .card-hover {
+    animation: none;
+    transform: none;
+  }
+}
