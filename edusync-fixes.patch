@@ -1,0 +1,193 @@
+diff --git a/.gitignore b/.gitignore
+index 8ed214d..54234e0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -10,6 +10,8 @@ node_modules/
+ .env.production.local
+ **/.env
+ **/.env.*
++# ...but allow the template file through
++!**/.env.example
+ 
+ # Logs
+ npm-debug.log*
+diff --git a/Backend/.env.example b/Backend/.env.example
+new file mode 100644
+index 0000000..96532c6
+--- /dev/null
++++ b/Backend/.env.example
+@@ -0,0 +1,16 @@
++# Server
++PORT=3000
++
++# Local Postgres example:
++#   DATABASE_URL=postgresql://postgres:password@localhost:5432/EduSync
++# Neon example (SSL is auto-detected from "neon.tech" in the URL — no extra config needed):
++#   DATABASE_URL=postgresql://<user>:<password>@<your-neon-host>.neon.tech/EduSync?sslmode=require
++DATABASE_URL=postgresql://<YOUR_POSTGRES_USER>:<YOUR_POSTGRES_PASSWORD>@localhost:5432/EduSync
++
++# Set to true to force SSL for a non-Neon remote/cloud DB.
++# Not needed for local Postgres or for Neon (auto-detected above).
++DB_SSL=false
++
++# Auth
++JWT_SECRET=any_random_string_here
++JWT_EXPIRES_IN=7d
+diff --git a/Backend/config/db.js b/Backend/config/db.js
+index 36681c2..8498ec9 100644
+--- a/Backend/config/db.js
++++ b/Backend/config/db.js
+@@ -3,8 +3,14 @@ const dotenv = require('dotenv');
+ const path = require('path');
+ dotenv.config({ path: path.join(__dirname, '../.env') });
+ 
++// SSL is required by Neon (and most managed Postgres) but unavailable on a
++// bare local install. Auto-detect Neon via the connection string, and allow
++// an explicit DB_SSL=true override for any other remote/cloud DB.
++const isNeon = /neon\.tech/.test(process.env.DATABASE_URL || '');
++const useSSL = process.env.DB_SSL === 'true' || isNeon;
++
+ const sql = postgres(process.env.DATABASE_URL, {
+-  ssl: false,          // set to true only if using a remote/cloud DB
++  ssl: useSSL ? 'require' : false,
+   max: 10,             // max connections in pool
+   idle_timeout: 30,
+ });
+diff --git a/Backend/package-lock.json b/Backend/package-lock.json
+index f801211..57e8647 100644
+--- a/Backend/package-lock.json
++++ b/Backend/package-lock.json
+@@ -18,82 +18,9 @@
+         "jsonwebtoken": "^9.0.3",
+         "nodemon": "^3.1.14",
+         "postgres": "^3.4.9",
+-        "redis": "^6.0.0",
+         "socket.io": "^4.8.3"
+       }
+     },
+-    "node_modules/@redis/bloom": {
+-      "version": "6.0.0",
+-      "resolved": "https://registry.npmjs.org/@redis/bloom/-/bloom-6.0.0.tgz",
+-      "integrity": "sha512-P0n5NkV9IIdT6nYXOfMHG83sho8pE7Nay7yw27wOGVLv4DthgvzebpGz6m7VuMTizeJmw3LPw2Xek5wFUhGpVw==",
+-      "license": "MIT",
+-      "engines": {
+-        "node": ">= 20.0.0"
+-      },
+-      "peerDependencies": {
+-        "@redis/client": "^6.0.0"
+-      }
+-    },
+-    "node_modules/@redis/client": {
+-      "version": "6.0.0",
+-      "resolved": "https://registry.npmjs.org/@redis/client/-/client-6.0.0.tgz",
+-      "integrity": "sha512-NS4iIT25r24sAjNQ2nSRdCW5jPJoV0rxkBee27oTeR+RXaOu89cjIsrww5rPBaYVGVdL1QCx9uz9141gZiSKdQ==",
+-      "license": "MIT",
+-      "dependencies": {
+-        "cluster-key-slot": "1.1.2"
+-      },
+-      "engines": {
+-        "node": ">= 20.0.0"
+-      },
+-      "peerDependencies": {
+-        "@node-rs/xxhash": "^1.1.0",
+-        "@opentelemetry/api": ">=1 <2"
+-      },
+-      "peerDependenciesMeta": {
+-        "@node-rs/xxhash": {
+-          "optional": true
+-        },
+-        "@opentelemetry/api": {
+-          "optional": true
+-        }
+-      }
+-    },
+-    "node_modules/@redis/json": {
+-      "version": "6.0.0",
+-      "resolved": "https://registry.npmjs.org/@redis/json/-/json-6.0.0.tgz",
+-      "integrity": "sha512-F+eqFfgPcy57Zs1KW7UtLnBtRk6lxAUIoe7dyZerpm6e+ssYXG/dWJrbrHFYs0b7tt6QBtYpVuukBuM9XqhUAg==",
+-      "license": "MIT",
+-      "engines": {
+-        "node": ">= 20.0.0"
+-      },
+-      "peerDependencies": {
+-        "@redis/client": "^6.0.0"
+-      }
+-    },
+-    "node_modules/@redis/search": {
+-      "version": "6.0.0",
+-      "resolved": "https://registry.npmjs.org/@redis/search/-/search-6.0.0.tgz",
+-      "integrity": "sha512-VHuCJ2W0YWFixGZh/l//8JiyOsD4gN+NhjdRAGIoUe0UQ4mtq1NyY2ZJ973XT+vYhaU21XdK8r8oNrd5n7wbzQ==",
+-      "license": "MIT",
+-      "engines": {
+-        "node": ">= 20.0.0"
+-      },
+-      "peerDependencies": {
+-        "@redis/client": "^6.0.0"
+-      }
+-    },
+-    "node_modules/@redis/time-series": {
+-      "version": "6.0.0",
+-      "resolved": "https://registry.npmjs.org/@redis/time-series/-/time-series-6.0.0.tgz",
+-      "integrity": "sha512-QWhkYsg+3lhBrBf+cbzybtV8LQcSrk7iXIgTaGU+pHNFTkql7TpVRE24ROS6M2ybVIV6O/zxTqfxgxxYiqyw0Q==",
+-      "license": "MIT",
+-      "engines": {
+-        "node": ">= 20.0.0"
+-      },
+-      "peerDependencies": {
+-        "@redis/client": "^6.0.0"
+-      }
+-    },
+     "node_modules/@socket.io/component-emitter": {
+       "version": "3.1.2",
+       "resolved": "https://registry.npmjs.org/@socket.io/component-emitter/-/component-emitter-3.1.2.tgz",
+@@ -308,15 +235,6 @@
+         "fsevents": "~2.3.2"
+       }
+     },
+-    "node_modules/cluster-key-slot": {
+-      "version": "1.1.2",
+-      "resolved": "https://registry.npmjs.org/cluster-key-slot/-/cluster-key-slot-1.1.2.tgz",
+-      "integrity": "sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==",
+-      "license": "Apache-2.0",
+-      "engines": {
+-        "node": ">=0.10.0"
+-      }
+-    },
+     "node_modules/content-disposition": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/content-disposition/-/content-disposition-1.1.0.tgz",
+@@ -1259,22 +1177,6 @@
+         "node": ">=8.10.0"
+       }
+     },
+-    "node_modules/redis": {
+-      "version": "6.0.0",
+-      "resolved": "https://registry.npmjs.org/redis/-/redis-6.0.0.tgz",
+-      "integrity": "sha512-n9Thfc39OXleEoPT2k5gwKsqY+HfCww3YS71ofcr9KKbkn89bpjU9dToIlD+JRdM3/GYQkwMtVgTxLyed+LptQ==",
+-      "license": "MIT",
+-      "dependencies": {
+-        "@redis/bloom": "6.0.0",
+-        "@redis/client": "6.0.0",
+-        "@redis/json": "6.0.0",
+-        "@redis/search": "6.0.0",
+-        "@redis/time-series": "6.0.0"
+-      },
+-      "engines": {
+-        "node": ">= 20.0.0"
+-      }
+-    },
+     "node_modules/router": {
+       "version": "2.2.0",
+       "resolved": "https://registry.npmjs.org/router/-/router-2.2.0.tgz",
+diff --git a/Backend/package.json b/Backend/package.json
+index 6e59049..2b7d797 100644
+--- a/Backend/package.json
++++ b/Backend/package.json
+@@ -23,7 +23,6 @@
+     "jsonwebtoken": "^9.0.3",
+     "nodemon": "^3.1.14",
+     "postgres": "^3.4.9",
+-    "redis": "^6.0.0",
+     "socket.io": "^4.8.3"
+   }
+ }
