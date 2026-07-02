@@ -354,7 +354,7 @@ export function AdminUsers() {
               <thead>
                 <tr className="border-b border-border/80 text-[11px] font-semibold text-text-muted tracking-wider uppercase bg-white/[0.01]">
                   <th className="px-6 py-3.5">Name</th>
-                  <th className="px-6 py-3.5">Username / Email</th>
+                  <th className="px-6 py-3.5">Email</th>
                   <th className="px-6 py-3.5">Role</th>
                   <th className="px-6 py-3.5">Class</th>
                   <th className="px-6 py-3.5">Roll No</th>
@@ -450,9 +450,9 @@ export function AdminUsers() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Email / Username</label>
+                <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Email</label>
                 <input
-                  type="text"
+                  type="email"
                   required
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
@@ -571,9 +571,9 @@ export function AdminUsers() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Email / Username</label>
+                <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Email</label>
                 <input
-                  type="text"
+                  type="email"
                   required
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
@@ -764,7 +764,7 @@ export function AdminUsers() {
 
               <div className="p-4 bg-bg-base rounded-lg border border-border space-y-3">
                 <div>
-                  <span className="block text-[10px] text-text-muted uppercase font-semibold">Username / Email</span>
+                  <span className="block text-[10px] text-text-muted uppercase font-semibold">Email</span>
                   <span className="text-sm font-mono text-text-primary">{passwordDisplay.email}</span>
                 </div>
                 <div>

@@ -261,7 +261,7 @@ io.on('connection', (socket) => {
 
         let status = 'absent';
         let teacher_decision = null;
-        if (presence_percentage >= 0.9) {
+        if (presence_percentage >= 0.9 && studentState.fullscreen_exit_count <= 1) {
           status = 'present';
           teacher_decision = 'approved';
         }
@@ -288,7 +288,7 @@ io.on('connection', (socket) => {
             RETURNING id
           `;
 
-          if (presence_percentage < 0.9) {
+          if (presence_percentage < 0.9 || studentState.fullscreen_exit_count > 1) {
             const minutes_late = Math.max(0, Math.round((joined_at_date - session_started) / 60000));
             exceptions.push({
               attendance_id: inserted.id,

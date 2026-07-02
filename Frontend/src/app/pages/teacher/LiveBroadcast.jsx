@@ -491,6 +491,7 @@ export function LiveBroadcast() {
     // component's lifetime. Returns a cleanup function to detach them.
     const registerListeners = (socket) => {
       const handleStudentJoined = async ({ socket_id, student_id, session_id, student_name }) => {
+        console.log(`[STUDENT-COUNT-DEBUG] student:joined received — payload session_id=${session_id} (type ${typeof session_id}), sessionInfoRef.current.id=${sessionInfoRef.current?.id} (type ${typeof sessionInfoRef.current?.id}), match=${sessionInfoRef.current?.id === session_id}`);
         if (!sessionInfoRef.current) return;
         if (sessionInfoRef.current.id !== session_id) return;
 
@@ -509,7 +510,7 @@ export function LiveBroadcast() {
           // Remove any stale LEFT-state entry for this student before re-adding
           const without = prev.filter((s) => !(s.student_id === student_id && s.status === 'left'));
           if (without.find((s) => s.socket_id === socket_id)) return without;
-          return [
+          const next = [
             ...without,
             {
               socket_id,
@@ -520,6 +521,8 @@ export function LiveBroadcast() {
               status: 'live',
             },
           ];
+          console.log(`[STUDENT-COUNT-DEBUG] connectedStudents: prev=${prev.length} next=${next.length}`);
+          return next;
         });
 
         // Attempt WebRTC peer connection (no-op if no screen stream)
@@ -626,6 +629,7 @@ export function LiveBroadcast() {
         });
       };
 
+      console.log(`[STUDENT-COUNT-DEBUG] listeners registered on socket id=${socket.id}, connected=${socket.connected}`);
       socket.on("student:joined", handleStudentJoined);
       socket.on("webrtc:answer", handleWebRTCAnswer);
       socket.on("webrtc:ice-candidate", handleWebRTCIceCandidate);

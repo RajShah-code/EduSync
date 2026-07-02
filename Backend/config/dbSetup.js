@@ -48,6 +48,14 @@ const setup = async () => {
     `;
     console.log("Database Setup: session_classes join table checked.");
 
+    // Add updated_at column to tasks table if it does not exist
+    // (tasksController.js extendTask / moveOnTask write to this column)
+    await sql`
+      ALTER TABLE tasks
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW();
+    `;
+    console.log("Database Setup: tasks.updated_at column checked.");
+
     // 3. Seed default classes if none exist
     const [{ count: classCount }] = await sql`SELECT COUNT(*)::int FROM classes;`;
     if (classCount === 0) {

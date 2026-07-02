@@ -31,7 +31,11 @@ const createUser = async (req, res) => {
   const { name, email, role, class_id, roll_no, password } = req.body;
 
   if (!name || !name.trim()) return res.status(400).json({ message: 'Name is required' });
-  if (!email || !email.trim()) return res.status(400).json({ message: 'Email/Username is required' });
+  if (!email || !email.trim()) return res.status(400).json({ message: 'Email is required' });
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(email.trim())) {
+    return res.status(400).json({ message: 'Please enter a valid email address (e.g. name@domain.com)' });
+  }
   if (!role) return res.status(400).json({ message: 'Role is required' });
 
   const validRoles = ['admin', 'teacher', 'student'];
@@ -102,7 +106,11 @@ const updateUser = async (req, res) => {
   const { name, email, role, class_id, roll_no } = req.body;
 
   if (!name || !name.trim()) return res.status(400).json({ message: 'Name is required' });
-  if (!email || !email.trim()) return res.status(400).json({ message: 'Email/Username is required' });
+  if (!email || !email.trim()) return res.status(400).json({ message: 'Email is required' });
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailPattern.test(email.trim())) {
+    return res.status(400).json({ message: 'Please enter a valid email address (e.g. name@domain.com)' });
+  }
 
   try {
     // Check if target user exists

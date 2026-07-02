@@ -93,15 +93,15 @@ export function Login() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email" className="text-text-secondary">
-                Email / Username
+                Email
               </Label>
               <Input
                 id="email"
-                type="text"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 bg-bg-base border-border text-text-primary"
-                placeholder="Enter email or username"
+                placeholder="Enter your email"
                 required
               />
             </div>

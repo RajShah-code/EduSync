@@ -8,7 +8,7 @@ import { Textarea } from "../../components/ui/textarea";
 import { Label } from "../../components/ui/label";
 import { 
   ClipboardList, Users, Clock, HelpCircle, Code, 
-  AlertTriangle, Check, ArrowRight, Play, Loader2, ChevronRight
+  AlertTriangle, AlertCircle, Check, ArrowRight, Play, Loader2, ChevronRight
 } from "lucide-react";
 import { getSocket } from "../../store/socket";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
@@ -539,69 +539,80 @@ export function TaskProgress() {
           </div>
         )}
 
-        {/* Doubt Queue Panel */}
+        {/* ── Doubt Resolution Queue ─────────────────────────────────── */}
         {activeTask && (
-          <div className="border border-border bg-bg-surface rounded-lg overflow-hidden mt-6 shadow-sm">
-            <div className="p-4 border-b border-border bg-bg-elevated flex items-center justify-between">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-text-primary flex items-center gap-1.5">
-                <HelpCircle className="w-4 h-4 text-accent-info" />
-                Doubt Resolution Queue ({doubts.filter(d => d.status === "pending").length} Pending)
+          <div className="border border-border rounded-lg bg-bg-surface shadow-sm mt-6">
+
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-bg-elevated rounded-t-lg">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-1.5">
+                <HelpCircle className="w-4 h-4 text-accent-info flex-shrink-0" />
+                Doubt Resolution Queue
+                <span className="ml-1 px-1.5 py-0.5 bg-accent-info/15 text-accent-info border border-accent-info/25 rounded text-[10px] font-mono">
+                  {doubts.filter(d => d.status === "pending").length} pending
+                </span>
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border max-h-[550px]">
-              
-              {/* Doubts List */}
-              <div className="lg:col-span-1 overflow-y-auto max-h-[550px] divide-y divide-border">
-                {doubts.map(d => {
-                  const isPending = d.status === "pending";
-                  const isSelected = selectedDoubt?.id === d.id;
-                  
-                  return (
-                    <button
-                      key={d.id}
-                      onClick={() => {
-                        setSelectedDoubt(d);
-                        setResolveForm({
-                          responseText: d.teacher_response_text || "",
-                          lineStart: d.hint_line_start ? String(d.hint_line_start) : "",
-                          lineEnd: d.hint_line_end ? String(d.hint_line_end) : "",
-                        });
-                      }}
-                      className={`w-full text-left p-3 flex flex-col gap-1 transition-all ${
-                        isSelected 
-                          ? "bg-accent-info/10" 
-                          : "hover:bg-bg-elevated"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-text-primary">
-                          {d.student_name}
-                        </span>
-                        <StatusBadge status={isPending ? "idle" : "present"} />
-                      </div>
-                      <div className="text-[10px] text-text-muted truncate">
-                        Task: {d.task_title}
-                      </div>
-                      <div className="text-[10px] text-text-muted font-mono mt-0.5">
-                        Raised: {new Date(d.raised_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </div>
-                    </button>
-                  );
-                })}
+            {/* Two-column body: list | detail */}
+            <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-border">
 
-                {doubts.length === 0 && (
-                  <div className="p-8 text-center text-xs text-text-muted italic">
-                    No doubts raised in this session.
-                  </div>
-                )}
+              {/* ── Left: Doubts list ───────────────────────────────────── */}
+              <div className="lg:w-72 flex-shrink-0 flex flex-col">
+                <div className="overflow-y-auto" style={{ maxHeight: '420px' }}>
+                  {doubts.length === 0 ? (
+                    <div className="py-10 flex flex-col items-center justify-center gap-2 text-text-muted">
+                      <HelpCircle className="w-7 h-7" />
+                      <span className="text-xs italic">No doubts raised in this session.</span>
+                    </div>
+                  ) : (
+                    doubts.map(d => {
+                      const isPending = d.status === "pending";
+                      const isSelected = selectedDoubt?.id === d.id;
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDoubt(d);
+                            setResolveForm({
+                              responseText: d.teacher_response_text || "",
+                              lineStart: d.hint_line_start ? String(d.hint_line_start) : "",
+                              lineEnd: d.hint_line_end ? String(d.hint_line_end) : "",
+                            });
+                          }}
+                          className={`w-full text-left px-4 py-3 border-b border-border/50 last:border-b-0 transition-colors ${
+                            isSelected ? "bg-accent-info/10" : "hover:bg-bg-elevated"
+                          }`}
+                        >
+                          {/* Row line 1: name + status badge */}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold text-text-primary leading-none truncate">
+                              {d.student_name}
+                            </span>
+                            <StatusBadge status={isPending ? "idle" : "present"} />
+                          </div>
+                          {/* Row line 2: task title */}
+                          <div className="mt-1.5 text-[11px] text-text-secondary truncate">
+                            {d.task_title?.trim() || "—"}
+                          </div>
+                          {/* Row line 3: timestamp */}
+                          <div className="mt-0.5 text-[10px] text-text-muted font-mono">
+                            {new Date(d.raised_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
-              {/* Doubt Detail & Monaco Editor code snapshot viewer */}
-              <div className="lg:col-span-2 p-4 flex flex-col gap-4 max-h-[550px] overflow-y-auto">
+              {/* ── Right: Selected doubt detail ────────────────────────── */}
+              <div className="flex-1 min-w-0 p-4 flex flex-col gap-4" style={{ minHeight: '260px' }}>
                 {selectedDoubt ? (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-border pb-3">
+                    {/* Detail header */}
+                    <div className="flex items-start justify-between border-b border-border pb-3">
                       <div>
                         <h4 className="text-sm font-semibold text-text-primary">
                           Doubt raised by {selectedDoubt.student_name}
@@ -613,7 +624,7 @@ export function TaskProgress() {
                       <StatusBadge status={selectedDoubt.status === "pending" ? "idle" : "present"} />
                     </div>
 
-                    {/* Monaco code snapshot view */}
+                    {/* Monaco code snapshot — untouched */}
                     <div className="h-64 border border-border rounded overflow-hidden relative">
                       <div className="absolute top-2 right-2 z-10 px-2 py-0.5 bg-black/60 text-[9px] font-mono text-white rounded">
                         Read-only Snapshot
@@ -635,7 +646,7 @@ export function TaskProgress() {
                       />
                     </div>
 
-                    {/* Resolution Form */}
+                    {/* Resolution Form — untouched */}
                     {selectedDoubt.status === "pending" ? (
                       <form onSubmit={handleResolveDoubt} className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
@@ -653,7 +664,6 @@ export function TaskProgress() {
                               className="mt-1 bg-bg-base border-border text-xs text-text-primary"
                             />
                           </div>
-
                           <div>
                             <Label htmlFor="lineEnd" className="text-[10px] text-text-secondary font-bold uppercase">
                               Hint End Line (Optional)
@@ -669,7 +679,6 @@ export function TaskProgress() {
                             />
                           </div>
                         </div>
-
                         <div>
                           <Label htmlFor="responseText" className="text-[10px] text-text-secondary font-bold uppercase">
                             Teacher Response / Hint Text (Mandatory)
@@ -683,7 +692,6 @@ export function TaskProgress() {
                             required
                           />
                         </div>
-
                         <Button
                           type="submit"
                           disabled={resolving || !resolveForm.responseText.trim()}
@@ -709,9 +717,9 @@ export function TaskProgress() {
                     )}
                   </div>
                 ) : (
-                  <div className="h-64 flex flex-col items-center justify-center text-text-muted text-xs italic gap-1.5">
-                    <HelpCircle className="w-8 h-8 text-text-muted" />
-                    Select a student doubt from the list to resolve
+                  <div className="flex-1 flex flex-col items-center justify-center text-text-muted text-xs italic gap-2">
+                    <HelpCircle className="w-8 h-8" />
+                    Select a student doubt from the list to review
                   </div>
                 )}
               </div>

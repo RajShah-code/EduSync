@@ -240,6 +240,12 @@ export function TeacherLayout() {
     }
   };
 
+  const handleDecideAll = async (decision) => {
+    if (!attendanceExceptions?.exceptions?.length) return;
+    const ids = attendanceExceptions.exceptions.map((e) => e.attendance_id);
+    await Promise.all(ids.map((id) => handleDecideException(id, decision)));
+  };
+
   const formatDuration = (secs) => {
     if (secs < 60) return `${secs}s`;
     const mins = Math.floor(secs / 60);
@@ -401,46 +407,57 @@ export function TeacherLayout() {
                     Attendance Review Required
                   </h3>
                   <p className="text-xs text-text-secondary mt-0.5">
-                    The following students did not meet the 90% attendance threshold. Please review.
+                    {attendanceExceptions.exceptions.length} student{attendanceExceptions.exceptions.length !== 1 ? 's' : ''} need review — hover a row for details.
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setAttendanceExceptions(null)}
-                className="p-1 hover:bg-bg-base rounded-lg text-text-secondary hover:text-text-primary transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Bulk action buttons */}
+                <button
+                  onClick={() => handleDecideAll('approved')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-lg text-xs font-semibold transition-all"
+                  title="Approve all exceptions"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Approve All
+                </button>
+                <button
+                  onClick={() => handleDecideAll('rejected')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-lg text-xs font-semibold transition-all"
+                  title="Reject all exceptions"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Reject All
+                </button>
+                <button
+                  onClick={() => setAttendanceExceptions(null)}
+                  className="p-1 hover:bg-bg-base rounded-lg text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* List */}
-            <div className="flex-1 overflow-y-auto my-4 space-y-4 pr-1">
+            {/* List — collapsed rows with hover-to-reveal detail */}
+            <div className="flex-1 overflow-y-auto my-4 space-y-2 pr-1">
               {attendanceExceptions.exceptions.map((exc) => (
                 <div
                   key={exc.attendance_id}
-                  className="p-4 bg-bg-base border border-border rounded-lg flex flex-col gap-3"
+                  className="group relative"
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold text-text-primary">
+                  {/* Default collapsed row */}
+                  <div className="p-3 bg-bg-base border border-border rounded-lg flex items-center justify-between gap-3">
+                    {/* Left: name + exit count badge */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-semibold text-text-primary truncate">
                         {exc.student_name}
-                      </h4>
-                      <div className="flex flex-wrap gap-2 mt-1.5">
-                        <span className="text-[10px] px-2 py-0.5 bg-accent-info/10 text-accent-info rounded-full border border-accent-info/20 font-mono">
-                          {(exc.presence_percentage * 100).toFixed(0)}% present
-                        </span>
-                        <span className="text-[10px] px-2 py-0.5 bg-accent-warning/10 text-accent-warning rounded-full border border-accent-warning/20 font-mono">
-                          {exc.fullscreen_exit_count} exits
-                        </span>
-                        {exc.minutes_late > 0 && (
-                          <span className="text-[10px] px-2 py-0.5 bg-accent-critical/10 text-accent-critical rounded-full border border-accent-critical/20 font-mono">
-                            {exc.minutes_late} min late
-                          </span>
-                        )}
-                      </div>
+                      </span>
+                      <span className="flex-shrink-0 text-[10px] px-2 py-0.5 bg-accent-warning/10 text-accent-warning rounded-full border border-accent-warning/20 font-mono whitespace-nowrap">
+                        {exc.fullscreen_exit_count} exit{exc.fullscreen_exit_count !== 1 ? 's' : ''}
+                      </span>
                     </div>
-
-                    <div className="flex items-center gap-2">
+                    {/* Right: approve / reject buttons */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => handleDecideException(exc.attendance_id, 'approved')}
                         className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-lg text-xs font-semibold flex items-center justify-center transition-all"
@@ -458,22 +475,37 @@ export function TeacherLayout() {
                     </div>
                   </div>
 
-                  <div className="border-t border-border/60 pt-2.5">
-                    <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider block mb-1">
-                      Focus Log History
-                    </span>
-                    {exc.fullscreen_exit_log && exc.fullscreen_exit_log.length > 0 ? (
-                      <ul className="space-y-1">
-                        {(exc.fullscreen_exit_log || []).map((log, index) => (
-                          <li key={index} className="text-xs text-text-muted font-mono flex items-center gap-2">
-                            <span className="w-1 h-1 rounded-full bg-text-muted animate-pulse" />
-                            Left at {formatTime(log.exited_at)} for {formatDuration(log.duration_seconds || 0)}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="text-xs text-text-muted italic">No fullscreen exits logged.</span>
-                    )}
+                  {/* Hover-reveal detail popover — absolutely positioned, does not shift other rows */}
+                  <div className="hidden group-hover:block absolute z-20 top-full left-0 mt-1 w-full bg-bg-elevated border border-border rounded-lg shadow-xl p-3 space-y-2">
+                    {/* Presence + late badges */}
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-[10px] px-2 py-0.5 bg-accent-info/10 text-accent-info rounded-full border border-accent-info/20 font-mono">
+                        {(exc.presence_percentage * 100).toFixed(0)}% present
+                      </span>
+                      {exc.minutes_late > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 bg-accent-critical/10 text-accent-critical rounded-full border border-accent-critical/20 font-mono">
+                          {exc.minutes_late} min late
+                        </span>
+                      )}
+                    </div>
+                    {/* Focus log */}
+                    <div>
+                      <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider block mb-1">
+                        Focus Log History
+                      </span>
+                      {exc.fullscreen_exit_log && exc.fullscreen_exit_log.length > 0 ? (
+                        <ul className="space-y-1">
+                          {(exc.fullscreen_exit_log || []).map((log, index) => (
+                            <li key={index} className="text-xs text-text-muted font-mono flex items-center gap-2">
+                              <span className="w-1 h-1 rounded-full bg-text-muted animate-pulse" />
+                              Left at {formatTime(log.exited_at)} for {formatDuration(log.duration_seconds || 0)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-xs text-text-muted italic">No fullscreen exits logged.</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
