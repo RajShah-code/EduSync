@@ -168,12 +168,11 @@ export function StudentLayout() {
     socket.on("task:closed", ({ task_id }) => {
       console.log("[StudentLayout] task:closed received for task:", task_id);
       toast.info("Task submissions locked. Returning to broadcast.");
-      // Redirect back to live session broadcast page
+      // Navigate back to the live-session page. The student is already in the session
+      // room (session:${session_id}) from their original join — no re-join is needed.
+      // LiveSession's sessionStateCache useEffect re-runs on mount and restores the
+      // current teacher mode; teacher:mode_changed covers any subsequent mode changes.
       navigate("/student/live-session");
-      // Request fresh session state snapshot to reuse the join-sync logic
-      if (joinedSessionRef.current) {
-        socket.emit("student:join_session", { session_id: joinedSessionRef.current.id });
-      }
     });
 
     return () => {
