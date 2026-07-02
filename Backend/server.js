@@ -482,6 +482,28 @@ io.on('connection', (socket) => {
     emitStudentStatusUpdate(session_id);
   });
 
+  // EVENT: student:request_session_state
+  // A gate-free, side-effect-free way for a student to refresh their session-state
+  // snapshot without going through the student:join_session rejoin-gate.
+  // Used by StudentLayout when returning from a task view (task:closed) so that
+  // LiveSession.jsx's sessionStateCache useEffect fires with current mode/code data.
+  // No room-join, no joinCount increment, no attendance side effects.
+  // Payload: { session_id }
+  socket.on('student:request_session_state', ({ session_id }) => {
+    if (!session_id) return;
+    const state = sessionStates.get(session_id);
+    if (state) {
+      socket.emit('student:session_state', {
+        session_id,
+        mode: state.mode,
+        code: state.code,
+        language: state.language,
+        output: state.output,
+        currentMode: sessionModes.get(session_id) || 'editor',
+      });
+    }
+  });
+
   // EVENT: teacher:approve_rejoin
   // Teacher allows a previously-disconnected student to re-enter the session.
   // Payload: { session_id, student_id }
