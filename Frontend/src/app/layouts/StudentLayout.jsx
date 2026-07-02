@@ -155,18 +155,25 @@ export function StudentLayout() {
       setSessionStateCache(payload);
     });
 
-    socket.on("task:assigned", ({ task }) => {
+     socket.on("task:assigned", ({ task }) => {
       console.log("[StudentLayout] task:assigned received:", task);
       toast.info(`New Task Assigned: ${task.title}`, {
         description: task.description || "A new task has been assigned by the instructor.",
-        action: {
-          label: "Open Task",
-          onClick: () => {
-            navigate(`/student/task/${task.id}`);
-          }
-        },
-        duration: 15000,
+        duration: 5000,
       });
+      // Switch view state / redirect automatically to task page
+      navigate(`/student/task/${task.id}`);
+    });
+
+    socket.on("task:closed", ({ task_id }) => {
+      console.log("[StudentLayout] task:closed received for task:", task_id);
+      toast.info("Task submissions locked. Returning to broadcast.");
+      // Redirect back to live session broadcast page
+      navigate("/student/live-session");
+      // Request fresh session state snapshot to reuse the join-sync logic
+      if (joinedSessionRef.current) {
+        socket.emit("student:join_session", { session_id: joinedSessionRef.current.id });
+      }
     });
 
     return () => {
@@ -177,6 +184,7 @@ export function StudentLayout() {
       socket.off("student:rejoin_denied");
       socket.off("student:session_state");
       socket.off("task:assigned");
+      socket.off("task:closed");
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

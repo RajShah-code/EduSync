@@ -49,6 +49,7 @@ export function TeacherLayout() {
   const [sessionSeconds, setSessionSeconds] = useState(0);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [attendanceExceptions, setAttendanceExceptions] = useState(null);
+  const [expandedAttendanceId, setExpandedAttendanceId] = useState(null);
 
   // Client-side authentication guard & Socket initialization
   useEffect(() => {
@@ -234,6 +235,9 @@ export function TeacherLayout() {
           if (updated.length === 0) return null;
           return { ...prev, exceptions: updated };
         });
+        if (expandedAttendanceId === attendanceId) {
+          setExpandedAttendanceId(null);
+        }
       }
     } catch (err) {
       console.error("[TeacherLayout] Decision submission failed:", err);
@@ -430,7 +434,7 @@ export function TeacherLayout() {
                   Reject All
                 </button>
                 <button
-                  onClick={() => setAttendanceExceptions(null)}
+                  onClick={() => { setAttendanceExceptions(null); setExpandedAttendanceId(null); }}
                   className="p-1 hover:bg-bg-base rounded-lg text-text-secondary hover:text-text-primary transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -440,81 +444,100 @@ export function TeacherLayout() {
 
             {/* List — collapsed rows with hover-to-reveal detail */}
             <div className="flex-1 overflow-y-auto my-4 space-y-2 pr-1">
-              {attendanceExceptions.exceptions.map((exc) => (
-                <div
-                  key={exc.attendance_id}
-                  className="group relative"
-                >
-                  {/* Default collapsed row */}
-                  <div className="p-3 bg-bg-base border border-border rounded-lg flex items-center justify-between gap-3">
-                    {/* Left: name + exit count badge */}
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-sm font-semibold text-text-primary truncate">
-                        {exc.student_name}
-                      </span>
-                      <span className="flex-shrink-0 text-[10px] px-2 py-0.5 bg-accent-warning/10 text-accent-warning rounded-full border border-accent-warning/20 font-mono whitespace-nowrap">
-                        {exc.fullscreen_exit_count} exit{exc.fullscreen_exit_count !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    {/* Right: approve / reject buttons */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() => handleDecideException(exc.attendance_id, 'approved')}
-                        className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-lg text-xs font-semibold flex items-center justify-center transition-all"
-                        title="Approve Attendance"
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDecideException(exc.attendance_id, 'rejected')}
-                        className="p-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-lg text-xs font-semibold flex items-center justify-center transition-all"
-                        title="Reject Attendance"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+              {attendanceExceptions.exceptions.map((exc) => {
+                const isExpanded = expandedAttendanceId === exc.attendance_id;
+                return (
+                  <div
+                    key={exc.attendance_id}
+                    className="group relative"
+                  >
+                    {/* Default collapsed/expandable row */}
+                    <div
+                      onClick={() => setExpandedAttendanceId(isExpanded ? null : exc.attendance_id)}
+                      className="p-3 bg-bg-base border border-border rounded-lg flex flex-col gap-3 cursor-pointer hover:border-border/80 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3 w-full">
+                        {/* Left: name + exit count badge */}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-semibold text-text-primary truncate">
+                            {exc.student_name}
+                          </span>
+                          <span className="flex-shrink-0 text-[10px] px-2 py-0.5 bg-accent-warning/10 text-accent-warning rounded-full border border-accent-warning/20 font-mono whitespace-nowrap">
+                            {exc.fullscreen_exit_count} exit{exc.fullscreen_exit_count !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        {/* Right: approve / reject buttons */}
+                        <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleDecideException(exc.attendance_id, 'approved')}
+                            className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-lg text-xs font-semibold flex items-center justify-center transition-all"
+                            title="Approve Attendance"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDecideException(exc.attendance_id, 'rejected')}
+                            className="p-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-lg text-xs font-semibold flex items-center justify-center transition-all"
+                            title="Reject Attendance"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
 
-                  {/* Hover-reveal detail popover — absolutely positioned, does not shift other rows */}
-                  <div className="hidden group-hover:block absolute z-20 top-full left-0 mt-1 w-full bg-bg-elevated border border-border rounded-lg shadow-xl p-3 space-y-2">
-                    {/* Presence + late badges */}
-                    <div className="flex flex-wrap gap-2">
-                      <span className="text-[10px] px-2 py-0.5 bg-accent-info/10 text-accent-info rounded-full border border-accent-info/20 font-mono">
-                        {(exc.presence_percentage * 100).toFixed(0)}% present
-                      </span>
-                      {exc.minutes_late > 0 && (
-                        <span className="text-[10px] px-2 py-0.5 bg-accent-critical/10 text-accent-critical rounded-full border border-accent-critical/20 font-mono">
-                          {exc.minutes_late} min late
-                        </span>
+                      {/* Inline expanded Focus Log History */}
+                      {isExpanded && (
+                        <div className="border-t border-border/40 pt-3 space-y-2 cursor-default" onClick={(e) => e.stopPropagation()}>
+                          {/* Presence + late badges */}
+                          <div className="flex flex-wrap gap-2">
+                            <span className="text-[10px] px-2 py-0.5 bg-accent-info/10 text-accent-info rounded-full border border-accent-info/20 font-mono">
+                              {(exc.presence_percentage * 100).toFixed(0)}% present
+                            </span>
+                            {exc.minutes_late > 0 && (
+                              <span className="text-[10px] px-2 py-0.5 bg-accent-critical/10 text-accent-critical rounded-full border border-accent-critical/20 font-mono">
+                                {exc.minutes_late} min late
+                              </span>
+                            )}
+                          </div>
+
+                          <div>
+                            <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider block mb-1">
+                              Focus Log History
+                            </span>
+                            {exc.fullscreen_exit_log && exc.fullscreen_exit_log.length > 0 ? (
+                              <ul className="space-y-1 max-h-40 overflow-y-auto pr-1">
+                                {(exc.fullscreen_exit_log || []).map((log, index) => (
+                                  <li key={index} className="text-xs text-text-muted font-mono flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-text-muted/65 flex-shrink-0" />
+                                    Left at {formatTime(log.exited_at)} for {formatDuration(log.duration_seconds || 0)}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="text-xs text-text-muted italic">No fullscreen exits logged.</span>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {/* Focus log */}
-                    <div>
-                      <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider block mb-1">
-                        Focus Log History
-                      </span>
-                      {exc.fullscreen_exit_log && exc.fullscreen_exit_log.length > 0 ? (
-                        <ul className="space-y-1">
-                          {(exc.fullscreen_exit_log || []).map((log, index) => (
-                            <li key={index} className="text-xs text-text-muted font-mono flex items-center gap-2">
-                              <span className="w-1 h-1 rounded-full bg-text-muted animate-pulse" />
-                              Left at {formatTime(log.exited_at)} for {formatDuration(log.duration_seconds || 0)}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-xs text-text-muted italic">No fullscreen exits logged.</span>
-                      )}
+
+                    {/* Hover-reveal compact tooltip — absolutely positioned relative to row container */}
+                    <div className={cn(
+                      "hidden absolute z-20 right-24 top-1/2 -translate-y-1/2 bg-bg-elevated border border-border rounded px-2.5 py-1 text-xs text-text-secondary shadow-lg pointer-events-none whitespace-nowrap",
+                      isExpanded ? "hidden" : "group-hover:block"
+                    )}>
+                      {(exc.presence_percentage * 100).toFixed(0)}% present • {exc.fullscreen_exit_count} exit{exc.fullscreen_exit_count !== 1 ? 's' : ''}
+                      {exc.minutes_late > 0 && ` • ${exc.minutes_late}m late`}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Footer */}
             <div className="border-t border-border pt-4 flex justify-end">
               <button
-                onClick={() => setAttendanceExceptions(null)}
+                onClick={() => { setAttendanceExceptions(null); setExpandedAttendanceId(null); }}
                 className="px-4 py-2 bg-bg-base border border-border hover:border-border/80 text-text-primary text-xs font-medium rounded-lg transition-all"
               >
                 Close

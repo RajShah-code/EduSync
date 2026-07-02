@@ -476,9 +476,21 @@ export function TaskProgress() {
           </div>
 
           {activeTask && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-text-muted">Task Status:</span>
-              <StatusBadge status={activeTask.status === "active" ? "live" : "locked"} />
+            <div className="flex items-center gap-3">
+              {activeTask.status === "active" && (
+                <Button
+                  onClick={() => handleMoveOnTask(activeTask.id)}
+                  size="sm"
+                  variant="outline"
+                  className="border-accent-critical text-accent-critical hover:bg-accent-critical/10 text-xs h-8 px-3 font-semibold transition-all"
+                >
+                  End Task
+                </Button>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-muted">Task Status:</span>
+                <StatusBadge status={activeTask.status === "active" ? "live" : "locked"} />
+              </div>
             </div>
           )}
         </div>
