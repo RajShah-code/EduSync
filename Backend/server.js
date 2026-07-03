@@ -488,9 +488,12 @@ io.on('connection', (socket) => {
   // Used by StudentLayout when returning from a task view (task:closed) so that
   // LiveSession.jsx's sessionStateCache useEffect fires with current mode/code data.
   // No room-join, no joinCount increment, no attendance side effects.
+  // If the teacher is currently screen-sharing, also triggers a fresh WebRTC offer
+  // via student:resync_offer_needed so the student gets live video on return.
   // Payload: { session_id }
   socket.on('student:request_session_state', ({ session_id }) => {
     if (!session_id) return;
+
     const state = sessionStates.get(session_id);
     if (state) {
       socket.emit('student:session_state', {
@@ -501,6 +504,22 @@ io.on('connection', (socket) => {
         output: state.output,
         currentMode: sessionModes.get(session_id) || 'editor',
       });
+    }
+
+    // If the teacher is screen-sharing, ask them to (re)send a WebRTC offer to
+    // this student's socket. The student's PC was destroyed when they navigated
+    // away to the task page, so a fresh offer is needed to restore live video.
+    // We use a dedicated event (not student:joined) to avoid attendance/join-gate
+    // side effects. The teacher's handleStudentResyncOffer calls the identical
+    // createPeerConnectionForStudent path used for initial joins.
+    if (sessionModes.get(session_id) === 'screen') {
+      const teacherSocketId = teacherSockets.get(session_id);
+      if (teacherSocketId) {
+        io.to(teacherSocketId).emit('teacher:resend_offer_to_student', {
+          session_id,
+          student_socket_id: socket.id,
+        });
+      }
     }
   });
 

@@ -252,6 +252,10 @@ export function LiveBroadcast() {
   // When a student disconnects, we set their tile to LEFT status and start a 5s
   // timer to remove them. If they rejoin before it fires, the timer is cancelled.
   const leftTimersRef = useRef(new Map());
+  // Mirrors connectedStudents state so that once-registered socket handlers
+  // (like handleResendOfferToStudent inside registerListeners) always have a
+  // fresh snapshot of the student list without becoming stale closures.
+  const connectedStudentsRef = useRef([]);
 
   // ── Editor refs (for use inside once-registered closures / debounce timers) ─
   const editorSyncTimerRef = useRef(null);
@@ -265,6 +269,7 @@ export function LiveBroadcast() {
   editorCodeRef.current = editorCode;
   editorLanguageRef.current = editorLanguage;
   activeModeRef.current = activeMode;
+  connectedStudentsRef.current = connectedStudents;
 
   // Sync sessionInfoRef whenever sessionInfo state updates
   useEffect(() => {
@@ -629,6 +634,26 @@ export function LiveBroadcast() {
         });
       };
 
+      // handler for teacher:resend_offer_to_student
+      // Fired by the server when a student returns from a task page and the session
+      // is in screen-share mode. Calls the identical createPeerConnectionForStudent
+      // path used by handleStudentJoined so the teacher re-creates the peer connection
+      // and sends a fresh WebRTC offer without a full student:joined cycle.
+      const handleResendOfferToStudent = async ({ session_id, student_socket_id }) => {
+        if (sessionInfoRef.current?.id !== session_id) return;
+        const student = connectedStudentsRef.current.find((s) => s.socket_id === student_socket_id);
+        if (!student) {
+          console.warn(`[WEBRTC-DEBUG] teacher: teacher:resend_offer_to_student — socket_id=${student_socket_id} not found in connectedStudents, skipping`);
+          return;
+        }
+        console.log(`[WEBRTC-DEBUG] teacher: teacher:resend_offer_to_student for socket=${student_socket_id} id=${student.student_id} ts=${Date.now()}`);
+        try {
+          await createPeerConnectionForStudent(student.socket_id, student.student_id, student.student_name);
+        } catch (err) {
+          console.error('[WebRTC] resend offer failed:', err);
+        }
+      };
+
       console.log(`[STUDENT-COUNT-DEBUG] listeners registered on socket id=${socket.id}, connected=${socket.connected}`);
       socket.on("student:joined", handleStudentJoined);
       socket.on("webrtc:answer", handleWebRTCAnswer);
@@ -636,6 +661,7 @@ export function LiveBroadcast() {
       socket.on("student:left", handleStudentLeft);
       socket.on("teacher:student_status_update", handleStudentStatusUpdate);
       socket.on("teacher:rejoin_request", handleRejoinRequest);
+      socket.on("teacher:resend_offer_to_student", handleResendOfferToStudent);
 
       return () => {
         socket.off("student:joined", handleStudentJoined);
@@ -644,6 +670,7 @@ export function LiveBroadcast() {
         socket.off("student:left", handleStudentLeft);
         socket.off("teacher:student_status_update", handleStudentStatusUpdate);
         socket.off("teacher:rejoin_request", handleRejoinRequest);
+        socket.off("teacher:resend_offer_to_student", handleResendOfferToStudent);
       };
     };
 

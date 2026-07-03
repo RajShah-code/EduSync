@@ -168,9 +168,14 @@ export function StudentLayout() {
     socket.on("task:closed", ({ task_id }) => {
       console.log("[StudentLayout] task:closed received for task:", task_id);
       toast.info("Task submissions locked. Returning to broadcast.");
-      // Navigate back to the live-session page. The student is already in the session
-      // room from their original join — no re-join is needed.
-      navigate("/student/live-session");
+      // Navigate back to the live-session page. Pass the session object in location.state
+      // so LiveSession.jsx can read it via location.state?.session on remount.
+      // Without this, location.state is null, sessionStore.getSession() returns null
+      // (startSession is never called), and joinedSession is null — showing the
+      // "No active session" fallback instead of the video/editor view.
+      navigate("/student/live-session", {
+        state: { session: joinedSessionRef.current },
+      });
       // Request a fresh session-state snapshot via the dedicated, gate-free event so
       // that sessionStateCache is populated with the teacher's current mode/code,
       // allowing LiveSession.jsx's sessionStateCache useEffect to fire with real data.
