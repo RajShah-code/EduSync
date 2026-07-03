@@ -125,7 +125,7 @@ npm run dev
 
 ## 🔑 Default Admin Access
 Upon first backend server boot, a default admin account is automatically seeded into the database. 
-* **Username/Email**: `admin`
+* **Email**: `admin@gmail.com`
 * **Password**: `admin123`
 
 *Note: For security reasons, please change this password in production or check with the project owner.*
