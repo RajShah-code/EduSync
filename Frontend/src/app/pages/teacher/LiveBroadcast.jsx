@@ -647,6 +647,21 @@ export function LiveBroadcast() {
           return;
         }
         console.log(`[WEBRTC-DEBUG] teacher: teacher:resend_offer_to_student for socket=${student_socket_id} id=${student.student_id} ts=${Date.now()}`);
+        
+        // Forcibly close and remove any existing stale/connected PC for this student's socket_id
+        // from peerConnectionsRef.current so that createPeerConnectionForStudent is guaranteed
+        // to take the "create fresh PC" branch, wire negotiation needed handlers, and create a fresh offer.
+        const existingPc = peerConnectionsRef.current.get(student_socket_id);
+        if (existingPc) {
+          console.log(`[WEBRTC-DEBUG] teacher: forcibly evicting existing PC (state=${existingPc.connectionState}) for ${student_socket_id} before resend ts=${Date.now()}`);
+          try {
+            existingPc.close();
+          } catch (e) {
+            console.error('[WEBRTC-DEBUG] failed closing existing PC:', e);
+          }
+          peerConnectionsRef.current.delete(student_socket_id);
+        }
+
         try {
           await createPeerConnectionForStudent(student.socket_id, student.student_id, student.student_name);
         } catch (err) {
