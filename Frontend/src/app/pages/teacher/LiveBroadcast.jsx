@@ -337,11 +337,23 @@ export function LiveBroadcast() {
 
         pc.onconnectionstatechange = () => {
           const state = pc.connectionState;
+          console.log(`[WEBRTC-DEBUG] teacher: PC state → ${state} for ${studentSocketId} ts=${Date.now()}`);
           if (state === "failed") {
+            // ROSTER FIX: do NOT touch connectedStudents here.
+            // A WebRTC PC timeout ('failed' via ICE) is NOT the same as the
+            // student leaving the session — their socket connection may still
+            // be fully alive (e.g. they navigated to a task page).
+            // Roster membership is the sole responsibility of the socket-level
+            // handlers: student:joined (add) and student:left (remove).
+            // Removing the student here would cause them to be skipped when
+            // handleStartScreenShare iterates connectedStudents for fresh offers.
+            const rosterBefore = connectedStudentsRef.current.length;
             pc.close();
             peerConnectionsRef.current.delete(studentSocketId);
-            setConnectedStudents((prev) =>
-              prev.filter((s) => s.socket_id !== studentSocketId)
+            const rosterAfter = connectedStudentsRef.current.length;
+            console.log(
+              `[WEBRTC-DEBUG] teacher: PC 'failed' for ${studentSocketId} — PC closed & removed from Map.` +
+              ` Roster intentionally UNCHANGED: rosterBefore=${rosterBefore} rosterAfter=${rosterAfter} ts=${Date.now()}`
             );
           }
         };
