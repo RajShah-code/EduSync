@@ -518,6 +518,24 @@ export function LiveSession() {
     socket.on("teacher:mode_changed", handleTeacherModeChanged);
     socket.on('teacher:code_changed', handleTeacherCodeChanged);
     socket.on('teacher:code_output', handleTeacherCodeOutput);
+    socket.on('student:session_state', handleSessionState);
+
+    // ── Request session-state snapshot AFTER all listeners are registered ──────
+    // This is the structural fix for the task:closed race condition.
+    // Previously, StudentLayout.jsx emitted this request immediately after calling
+    // navigate(), before this component had mounted or registered its webrtc:offer
+    // listener. The offer triggered by the server's response arrived at the socket
+    // before the listener existed and was silently dropped by Socket.io.
+    //
+    // By emitting here — from within the same useEffect that attaches the listener,
+    // synchronously after the socket.on() calls above — we guarantee:
+    //   1. webrtc:offer is registered BEFORE the emit leaves the JS call stack.
+    //   2. The server response (and any offer it triggers) arrives AFTER the
+    //      listener is live. No delay, no poll, no setTimeout — just correct ordering.
+    if (joinedSession?.id) {
+      console.log(`[DIAG] student: emitting student:request_session_state from LiveSession (listeners live) — session_id=${joinedSession.id} ts=${Date.now()}`);
+      socket.emit('student:request_session_state', { session_id: joinedSession.id });
+    }
 
     return () => {
       socket.off('webrtc:offer', handleOffer);
@@ -526,6 +544,7 @@ export function LiveSession() {
       socket.off('teacher:mode_changed', handleTeacherModeChanged);
       socket.off('teacher:code_changed', handleTeacherCodeChanged);
       socket.off('teacher:code_output', handleTeacherCodeOutput);
+      socket.off('student:session_state', handleSessionState);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

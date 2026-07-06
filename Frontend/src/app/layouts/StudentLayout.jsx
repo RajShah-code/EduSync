@@ -173,15 +173,17 @@ export function StudentLayout() {
       // Without this, location.state is null, sessionStore.getSession() returns null
       // (startSession is never called), and joinedSession is null — showing the
       // "No active session" fallback instead of the video/editor view.
+      //
+      // NOTE: student:request_session_state is intentionally NOT emitted here.
+      // Emitting it from StudentLayout was a race condition: navigate() schedules a
+      // route transition asynchronously, so the emit fired before LiveSession.jsx
+      // had mounted and registered its webrtc:offer listener. The offer arrived
+      // at the socket and was silently dropped. The request is now emitted by
+      // LiveSession.jsx itself, from inside the same useEffect that registers
+      // webrtc:offer — guaranteeing the listener exists before the request is sent.
       navigate("/student/live-session", {
         state: { session: joinedSessionRef.current },
       });
-      // Request a fresh session-state snapshot via the dedicated, gate-free event so
-      // that sessionStateCache is populated with the teacher's current mode/code,
-      // allowing LiveSession.jsx's sessionStateCache useEffect to fire with real data.
-      if (joinedSessionRef.current) {
-        socket.emit("student:request_session_state", { session_id: joinedSessionRef.current.id });
-      }
     });
 
     return () => {
