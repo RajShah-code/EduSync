@@ -749,6 +749,45 @@ export function LiveBroadcast() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Request roster snapshot when sessionInfo?.id is available/changes
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket || !sessionInfo?.id) return;
+
+    const requestRoster = () => {
+      console.log(`[WEBRTC-DEBUG] teacher: requesting roster resync for session=${sessionInfo.id} ts=${Date.now()}`);
+      socket.emit('teacher:request_roster', { session_id: sessionInfo.id });
+    };
+
+    const handleRosterSnapshot = ({ session_id, students }) => {
+      if (session_id !== sessionInfo.id) return;
+      console.log(`[WEBRTC-DEBUG] teacher: roster_snapshot received, ${students.length} student(s) ts=${Date.now()}`);
+      
+      const mappedStudents = students.map((s) => ({
+        socket_id: s.socket_id,
+        student_id: s.student_id,
+        student_name: s.student_name,
+        outOfFocus: false,
+        focusLossCount: 0,
+        status: 'live',
+      }));
+      setConnectedStudents(mappedStudents);
+    };
+
+    socket.on('teacher:roster_snapshot', handleRosterSnapshot);
+
+    if (socket.connected) {
+      requestRoster();
+    } else {
+      socket.on('connect', requestRoster);
+    }
+
+    return () => {
+      socket.off('teacher:roster_snapshot', handleRosterSnapshot);
+      socket.off('connect', requestRoster);
+    };
+  }, [sessionInfo?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Attach the screen stream to the preview <video> when screen sharing starts
   // (screenStreamRef.current is set inside handleStartScreenShare, not on broadcastState).
   // We use isScreenSharing state as the trigger so the effect re-runs at the right time.
@@ -768,6 +807,16 @@ export function LiveBroadcast() {
       clearTimeout(editorSyncTimerRef.current);
       peerConnectionsRef.current.forEach((pc) => pc.close());
       peerConnectionsRef.current.clear();
+
+      // Tell students the broadcast ended so their PC is cleanly torn down,
+      // rather than left to time out silently — this was previously missing,
+      // causing stale student-side PCs after any navigation away from this page.
+      const socket = getSocket();
+      if (socket && sessionInfoRef.current && screenStreamRef.current) {
+        console.log(`[WEBRTC-DEBUG] teacher: LiveBroadcast unmounting with active stream, emitting webrtc:broadcast_ended for session=${sessionInfoRef.current.id}`);
+        socket.emit("webrtc:broadcast_ended", { session_id: sessionInfoRef.current.id });
+      }
+
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => t.stop());
         screenStreamRef.current = null;

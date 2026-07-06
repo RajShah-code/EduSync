@@ -739,6 +739,32 @@ io.on('connection', (socket) => {
     }
   });
 
+  // EVENT: teacher:request_roster
+  // Returns the current live roster of students connected to this session,
+  // built from actual room membership — used when LiveBroadcast.jsx remounts
+  // after the teacher navigates to a sibling route (e.g. Task Assignment) and
+  // its local connectedStudents state was wiped on unmount.
+  socket.on('teacher:request_roster', ({ session_id }) => {
+    if (role !== 'teacher' || !session_id) return;
+    console.log(`[Socket] teacher:request_roster received for session ${session_id}`);
+    const room = io.sockets.adapter.rooms.get(`session:${session_id}`);
+    const students = [];
+    if (room) {
+      for (const socketId of room) {
+        const s = io.sockets.sockets.get(socketId);
+        if (s && s.user && s.user.role === 'student') {
+          students.push({
+            socket_id: socketId,
+            student_id: s.user.id,
+            student_name: s.user.name || `Student ${s.user.id}`,
+          });
+        }
+      }
+    }
+    console.log(`[Socket] Sending teacher:roster_snapshot with ${students.length} students`);
+    socket.emit('teacher:roster_snapshot', { session_id, students });
+  });
+
   // ── Live Code Editor Signaling ──────────────────────────────────────────────
   //
   // Three events let the teacher share real-time code and output with students:
