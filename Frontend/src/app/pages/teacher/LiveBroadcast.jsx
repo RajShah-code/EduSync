@@ -942,13 +942,48 @@ export function LiveBroadcast() {
     const isTrackReusable = screenTrackRef.current && screenTrackRef.current.readyState !== 'ended';
 
     if (isTrackReusable) {
-      // Cheap reuse path: same OS-level capture still alive, just re-enable the track.
-      // peerConnectionsRef is NOT touched — RTCRtpSenders already hold this track.
+      // Cheap reuse path: same OS-level capture still alive, just re-enable the track
+      // for students whose RTCRtpSenders already hold it.
       screenTrackRef.current.enabled = true;
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((t) => {
           t.enabled = true;
         });
+      }
+
+      // Per-student health-check: students who joined DURING the pause (between
+      // Stop and this Resume) have no PC, or a PC stuck in 'new' that never
+      // negotiated. Re-enabling the track above does nothing for them.
+      // Evict stale/new PCs and create fresh ones so they get a proper offer.
+      // Healthy PCs ('connected'/'connecting') already hold the live sender
+      // and must NOT get another createPeerConnectionForStudent call — that
+      // would cause a redundant addTrack + renegotiation.
+      for (const student of connectedStudentsRef.current) {
+        try {
+          let pc = peerConnectionsRef.current.get(student.socket_id);
+
+          if (pc && (
+            pc.connectionState === 'closed' ||
+            pc.connectionState === 'failed' ||
+            pc.connectionState === 'disconnected' ||
+            pc.connectionState === 'new'
+          )) {
+            console.log(
+              `[WEBRTC-DEBUG] teacher: reuse-path — evicting ${pc.connectionState === 'new' ? "idle 'new'-state" : `stale (${pc.connectionState})`} PC for ${student.socket_id}, creating fresh ts=${Date.now()}`
+            );
+            pc.close();
+            peerConnectionsRef.current.delete(student.socket_id);
+            pc = null;
+          }
+
+          if (!pc) {
+            console.log(`[WEBRTC-DEBUG] teacher: reuse-path — student ${student.socket_id} had no usable PC, creating fresh ts=${Date.now()}`);
+            await createPeerConnectionForStudent(student.socket_id, student.student_id, student.student_name);
+          }
+          // else: PC is healthy — re-enabling the track above was sufficient, skip.
+        } catch (err) {
+          console.error(`[WebRTC] reuse-path: failed to create PC for ${student.socket_id}:`, err);
+        }
       }
     } else {
       // Fresh-capture path: track was null or ended (e.g. browser Stop Sharing bar fired).
