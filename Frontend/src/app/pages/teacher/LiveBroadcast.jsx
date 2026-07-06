@@ -310,10 +310,24 @@ export function LiveBroadcast() {
       let pc = peerConnectionsRef.current.get(studentSocketId);
 
       // STEP 4 FIX: evict any stale closed/failed PC before creating a new one.
+      // Also evict 'new'-state PCs: a PC found in the map that is still 'new'
+      // means it was created when no screen stream was active, never had tracks
+      // added, and onnegotiationneeded never fired — it will never establish video.
+      // NOTE: this check only applies to a PRE-EXISTING entry from the map (above).
+      // A brand-new PC created in the `if (!pc)` branch below starts in 'new' and
+      // must not be evicted — this block runs before that branch, so it is safe.
       // makingOffer is a property on the PC object itself — destroyed when the
       // object is GC'd. No separate per-student Maps need clearing here.
-      if (pc && (pc.connectionState === 'closed' || pc.connectionState === 'failed')) {
-        console.log(`[WEBRTC-DEBUG] teacher: stale PC (state=${pc.connectionState}) for ${studentSocketId} in createPeerConnectionForStudent, evicting ts=${Date.now()}`);
+      if (pc && (
+        pc.connectionState === 'closed' ||
+        pc.connectionState === 'failed' ||
+        pc.connectionState === 'new'
+      )) {
+        if (pc.connectionState === 'new') {
+          console.log(`[WEBRTC-DEBUG] teacher: evicting idle 'new'-state PC for ${studentSocketId} (never negotiated) ts=${Date.now()}`);
+        } else {
+          console.log(`[WEBRTC-DEBUG] teacher: stale PC (state=${pc.connectionState}) for ${studentSocketId} in createPeerConnectionForStudent, evicting ts=${Date.now()}`);
+        }
         pc.close(); // no-op if already closed
         peerConnectionsRef.current.delete(studentSocketId);
         pc = null;
@@ -969,7 +983,10 @@ export function LiveBroadcast() {
       }
 
       // STEP 3 FIX: health-check every student's PC before adding the new track.
-      // Only unhealthy PCs (closed/failed/disconnected) are closed and recreated.
+      // Unhealthy PCs (closed/failed/disconnected) and idle 'new'-state PCs are
+      // evicted and recreated. A 'new' PC here means the student joined while no
+      // screen share was active — it was never given tracks and never negotiated,
+      // so addTrack alone will not produce a working stream; a fresh PC is needed.
       // Healthy PCs (connected/connecting) receive addTrack directly, preserving
       // the zero-renegotiation path for connections that survived the stop/start.
       // makingOffer lives on the PC object and is destroyed with it — no separate
@@ -982,9 +999,14 @@ export function LiveBroadcast() {
           if (pc && (
             pc.connectionState === 'closed' ||
             pc.connectionState === 'failed' ||
-            pc.connectionState === 'disconnected'
+            pc.connectionState === 'disconnected' ||
+            pc.connectionState === 'new'
           )) {
-            console.log(`[WEBRTC-DEBUG] teacher: stale PC (state=${pc.connectionState}) for ${student.socket_id} on resume, closing & deleting ts=${Date.now()}`);
+            if (pc.connectionState === 'new') {
+              console.log(`[WEBRTC-DEBUG] teacher: evicting idle 'new'-state PC for ${student.socket_id} (never negotiated) ts=${Date.now()}`);
+            } else {
+              console.log(`[WEBRTC-DEBUG] teacher: stale PC (state=${pc.connectionState}) for ${student.socket_id} on resume, closing & deleting ts=${Date.now()}`);
+            }
             pc.close();
             peerConnectionsRef.current.delete(student.socket_id);
             pc = null; // fall through to createPeerConnectionForStudent below
