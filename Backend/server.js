@@ -91,6 +91,12 @@ const rejoinCounts = new Map();
 const sessionStates = new Map(); // Map<session_id, { mode: 'editor'|'screen', code: string, language: string }>
 const sessionModes = new Map(); // Map<session_id, 'editor'|'screen_share'>
 const sessionAttendance = new Map(); // Map<session_id, Map<student_id, studentSessionState>>
+// Set of `${session_id}:${userId}` strings for students currently active in a
+// session room. Used as an idempotency guard: if a student:join_session arrives
+// while the student is already active (e.g. due to a client-side re-render),
+// the handler is a no-op — it re-sends the session-state snapshot and returns
+// without touching rejoinCounts or disconnectedStudents.
+const activeStudentSessions = new Set();
 
 const getConnectedStudentsStatus = (sessionId) => {
   const studentsMap = sessionAttendance.get(sessionId);
@@ -363,21 +369,50 @@ io.on('connection', (socket) => {
     const key = `${userId}:${session_id}`;
     // countKey is scoped differently from disconnectedStudents key to avoid conflicts.
     const countKey = `${session_id}:${userId}`;
+    // activeKey tracks live membership — keyed session_id:userId so lookups
+    // are unambiguous even if the same user has multiple socket connections.
+    const activeKey = `${session_id}:${userId}`;
+
+    // ── Idempotency guard ─────────────────────────────────────────────────
+    // If this student is already an active member of this session (their socket
+    // is in the room and we have them in activeStudentSessions), this is a
+    // duplicate emit — e.g. caused by a client re-render or React Strict Mode.
+    // Treat it as a no-op: re-send the session-state snapshot so their UI is
+    // fresh, but do NOT increment rejoinCounts or touch disconnectedStudents.
+    if (activeStudentSessions.has(activeKey)) {
+      console.log(`[Rejoin] duplicate join_session ignored — student ${userId} already active in session ${session_id}`);
+      const state = sessionStates.get(session_id);
+      if (state) {
+        socket.emit('student:session_state', {
+          session_id,
+          mode: state.mode,
+          code: state.code,
+          language: state.language,
+          output: state.output,
+          currentMode: sessionModes.get(session_id) || 'editor',
+        });
+      }
+      return;
+    }
 
     // Increment join count. First join = 1, subsequent = 2+.
+    // joinCount is used purely for the attempt-number label shown to the teacher
+    // and student ("Rejoin attempt #N"). It no longer drives the gate itself.
     const joinCount = (rejoinCounts.get(countKey) ?? 0) + 1;
     rejoinCounts.set(countKey, joinCount);
     console.log(`[Rejoin] student ${userId} join attempt #${joinCount} for session ${session_id}`);
 
-    // ── Rejoin gate: 2nd join onward requires teacher approval ─────────────
-    // We check disconnectedStudents (set on socket disconnect) OR joinCount >= 2
-    // to ensure any second attempt is gated, even if the disconnect record was
-    // already consumed by a previous approval cycle.
+    // ── Rejoin gate: triggered ONLY by a genuine prior disconnect ─────────
+    // wasDisconnected is set in the socket 'disconnect' handler when the student
+    // drops from the session mid-flight. joinCount alone no longer gates — a
+    // duplicate emit from the frontend while still connected is handled above
+    // by the idempotency guard and never reaches this point.
     const wasDisconnected = disconnectedStudents.has(key);
-    if (wasDisconnected || joinCount >= 2) {
-      // Remove the old disconnect record (consumed; a third attempt resets
-      // through the same gate since joinCount will be >= 2 regardless).
-      if (wasDisconnected) disconnectedStudents.delete(key);
+    if (wasDisconnected) {
+      // Consume the disconnect record. A third attempt will still be gated
+      // because the disconnect handler will have written a new record when
+      // the student disconnects again.
+      disconnectedStudents.delete(key);
       pendingRejoins.set(key, socket.id);
 
       const teacherSocketId = teacherSockets.get(session_id);
@@ -397,6 +432,7 @@ io.on('connection', (socket) => {
         // join so the student lands on a normal "session ended" state.
         socket._sessionId = session_id;
         socket.join(`session:${session_id}`);
+        activeStudentSessions.add(activeKey);
         socket.to(`session:${session_id}`).emit('student:joined', {
           student_id: userId,
           socket_id: socket.id,
@@ -438,9 +474,10 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // ── Normal first-join path (count === 1) ────────────────────────────
+    // ── Normal first-join path ───────────────────────────────────────────
     socket._sessionId = session_id;
     socket.join(`session:${session_id}`);
+    activeStudentSessions.add(activeKey);
     socket.to(`session:${session_id}`).emit('student:joined', {
       student_id: userId,
       socket_id: socket.id,
@@ -543,6 +580,8 @@ io.on('connection', (socket) => {
       if (studentSocket) {
         studentSocket._sessionId = session_id;
         studentSocket.join(`session:${session_id}`);
+        // Mark student as active again so any subsequent duplicate emit is a no-op.
+        activeStudentSessions.add(`${session_id}:${student_id}`);
 
         // Resume attendance clock for approved student
         const studentsMap = sessionAttendance.get(session_id);
@@ -632,6 +671,8 @@ io.on('connection', (socket) => {
   // Payload out: { sdp, session_id, teacher_socket_id }
   socket.on('webrtc:offer', (payload) => {
     try {
+      // DIAG-LOG-3
+      console.log(`[DIAG] webrtc:offer relay received — session_id=${payload?.session_id} target_socket_id=${payload?.target_socket_id} ts=${Date.now()}`);
       if (role !== 'teacher') return;
       const { target_socket_id, sdp, session_id, teacher_socket_id } = payload;
       socket.to(target_socket_id).emit('webrtc:offer', { sdp, session_id, teacher_socket_id });
@@ -709,6 +750,8 @@ io.on('connection', (socket) => {
 
   socket.on('teacher:mode_changed', (payload) => {
     try {
+      // DIAG-LOG-2
+      console.log(`[DIAG] teacher:mode_changed received — sessionId=${payload?.sessionId} mode=${payload?.mode} ts=${Date.now()}`);
       if (role !== 'teacher') return;
       const { sessionId, mode } = payload;
       sessionModes.set(sessionId, mode);
@@ -840,6 +883,12 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if (role === 'student' && socket._sessionId) {
       const key = `${userId}:${socket._sessionId}`;
+      const activeKey = `${socket._sessionId}:${userId}`;
+
+      // Remove from active-session tracking so a subsequent join_session
+      // is not treated as a duplicate no-op.
+      activeStudentSessions.delete(activeKey);
+
       // Only write the disconnect record if the session is still active
       // (teacher still connected). If teacher already left, no point holding
       // the rejoin record — the session is over.
@@ -881,14 +930,26 @@ io.on('connection', (socket) => {
 
       emitStudentStatusUpdate(socket._sessionId);
     }
-    // If a teacher disconnects, remove their socket and session state from tracking.
+    // If a teacher disconnects, remove their socket and all orphaned session state.
+    // This mirrors the cleanup already done in teacher:end_session, preventing
+    // stale disconnectedStudents / pendingRejoins / sessionModes / sessionAttendance
+    // from leaking into a session-id reuse scenario (e.g. teacher closes the tab
+    // instead of clicking "End Session").
     if (role === 'teacher' && socket._sessionId) {
       teacherSockets.delete(socket._sessionId);
       const sid = socket._sessionId;
       for (const [key] of rejoinCounts) {
         if (key.startsWith(`${sid}:`)) rejoinCounts.delete(key);
       }
+      for (const [key] of disconnectedStudents) {
+        if (key.endsWith(`:${sid}`)) disconnectedStudents.delete(key);
+      }
+      for (const [key] of pendingRejoins) {
+        if (key.endsWith(`:${sid}`)) pendingRejoins.delete(key);
+      }
       sessionStates.delete(sid);
+      sessionModes.delete(sid);
+      sessionAttendance.delete(sid);
     }
   });
 });

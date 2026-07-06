@@ -293,6 +293,8 @@ export function LiveSession() {
     // share mid-session). Uses Perfect Negotiation rollback so this handler is safe
     // to call in any RTCPeerConnection signaling state.
     const handleOffer = async ({ sdp, session_id, teacher_socket_id }) => {
+      // DIAG-LOG-5: fires when any webrtc:offer arrives, before any guard clauses
+      console.log(`[DIAG] student: webrtc:offer handler FIRED — session_id=${session_id} teacher_socket_id=${teacher_socket_id} ts=${Date.now()}`);
       const currentSessionId = joinedSession?.id;
       if (currentSessionId && session_id !== currentSessionId) return;
       const pcState = peerConnectionRef.current ? peerConnectionRef.current.signalingState : 'stable';
@@ -508,6 +510,8 @@ export function LiveSession() {
       }
     };
 
+    // DIAG-LOG-4: one-time log confirming the webrtc:offer listener is being attached
+    console.log(`[DIAG] student: attaching webrtc:offer listener (mount) — socket.id=${socket.id} ts=${Date.now()}`);
     socket.on('webrtc:offer', handleOffer);
     socket.on("webrtc:ice-candidate", handleIceCandidate);
     socket.on("webrtc:broadcast_ended", handleBroadcastEnded);

@@ -888,6 +888,18 @@ export function LiveBroadcast() {
   //   3. Students who join AFTER this point are handled by handleStudentJoined →
   //      createPeerConnectionForStudent (which checks screenStreamRef.current).
   const handleStartScreenShare = async () => {
+    // DIAG-LOG-1: dump full roster at the very start, before any other logic
+    console.log(
+      `[DIAG] handleStartScreenShare ENTER — roster (connectedStudentsRef.current):`,
+      JSON.stringify(
+        (connectedStudentsRef.current || []).map(s => ({
+          socket_id: s.socket_id,
+          student_id: s.student_id,
+          student_name: s.student_name,
+        }))
+      ),
+      `ts=${Date.now()}`
+    );
     setScreenShareError("");
     console.log(`[WEBRTC-DEBUG] teacher: handleStartScreenShare called, Map size=${peerConnectionsRef.current.size} ts=${Date.now()}`);
 
