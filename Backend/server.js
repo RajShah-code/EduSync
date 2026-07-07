@@ -16,6 +16,7 @@ const classesRoutes = require('./routes/classesRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const tasksRoutes = require('./routes/tasksRoutes');
 const doubtsRoutes = require('./routes/doubtsRoutes');
+const examsRoutes = require('./routes/examsRoutes');
 const protect = require('./middleware/authMiddleware');
 const dbSetup = require('./config/dbSetup');
 
@@ -41,6 +42,7 @@ app.use('/classes', protect(), classesRoutes);
 app.use('/admin', protect(['admin']), adminRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/doubts', doubtsRoutes);
+app.use('/exams', examsRoutes);
 
 app.get('/', (req, res) => { res.send('EduSync backend running'); });
 
@@ -91,6 +93,11 @@ const rejoinCounts = new Map();
 const sessionStates = new Map(); // Map<session_id, { mode: 'editor'|'screen', code: string, language: string }>
 const sessionModes = new Map(); // Map<session_id, 'editor'|'screen_share'>
 const sessionAttendance = new Map(); // Map<session_id, Map<student_id, studentSessionState>>
+// examStudentSockets: Map<student_id, socket_id>
+// Populated when students emit exam:register_socket (on ExamScreen mount and on reconnect).
+// Used to send exam:start, exam:force_lock, exam:violation_warning to individual students.
+// Cleaned up on socket disconnect to prevent stale entries.
+const examStudentSockets = new Map();
 // Set of `${session_id}:${userId}` strings for students currently active in a
 // session room. Used as an idempotency guard: if a student:join_session arrives
 // while the student is already active (e.g. due to a client-side re-render),
@@ -154,6 +161,23 @@ io.on('connection', (socket) => {
         console.error('[Reconnect] Failed to check active session for teacher:', err);
       });
   }
+
+  // ── Phase 10: Exam socket registration ────────────────────────────────────
+  // Students emit exam:register_socket on ExamScreen mount AND on every socket
+  // reconnect (client re-emits from a useEffect that depends on socket.id).
+  // This ensures the map stays current after network blips or page refreshes,
+  // preventing the stale-socket-id class of bugs seen in the WebRTC phase.
+  if (role === 'student') {
+    // Immediately register on connection — this handles the reconnect case where
+    // the client may not have had time to emit exam:register_socket yet.
+    examStudentSockets.set(userId, socket.id);
+  }
+
+  socket.on('exam:register_socket', () => {
+    if (role !== 'student') return;
+    examStudentSockets.set(userId, socket.id);
+    console.log(`[ExamSocket] Student ${userId} registered socket ${socket.id}`);
+  });
 
   // Teacher joins their own room (room name = 'teacher:{userId}')
   // Students join a session room when they join a session (room name = 'session:{sessionId}')
@@ -977,12 +1001,21 @@ io.on('connection', (socket) => {
       sessionModes.delete(sid);
       sessionAttendance.delete(sid);
     }
+    // ── Phase 10: Exam socket cleanup ─────────────────────────────────────────
+    // Remove the student's socket entry on disconnect to prevent stale map entries.
+    // On reconnect, the student re-emits exam:register_socket (or is auto-registered
+    // at connection time above) with their new socket.id.
+    if (role === 'student') {
+      examStudentSockets.delete(userId);
+      console.log(`[ExamSocket] Student ${userId} socket cleaned up on disconnect`);
+    }
   });
 });
 
 // Make io accessible in route controllers via req.app.get('io')
 app.set('io', io);
 app.set('sessionAttendance', sessionAttendance);
+app.set('examStudentSockets', examStudentSockets);
 
 dbSetup()
   .then(() => {

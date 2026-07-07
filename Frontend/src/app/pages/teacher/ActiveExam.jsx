@@ -1,195 +1,317 @@
-import { Timer } from "../../components/Timer";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router";
+import { getSocket } from "../../store/socket";
 import { StatusBadge } from "../../components/StatusBadge";
+import { Timer } from "../../components/Timer";
 import { Button } from "../../components/ui/button";
-import { AlertTriangle, Plus, Lock, Pause, FileText } from "lucide-react";
-
-// Mock data cleared - empty states shown
-const mockStudents = [];
-const warnings = [];
+import {
+  AlertTriangle,
+  Lock,
+  FileText,
+  Loader2,
+  Users,
+  ChevronRight,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export function ActiveExam() {
-  const submitted = mockStudents.filter((s) => s.status === "submitted").length;
-  const total = mockStudents.length;
+  const { examId } = useParams();
+  const navigate = useNavigate();
+
+  const [exam, setExam] = useState(null);
+  const [studentAttempts, setStudentAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [ending, setEnding] = useState(false);
+
+  // Seconds remaining — derived from server-side start + time_limit
+  const [secondsRemaining, setSecondsRemaining] = useState(null);
+
+  const token = localStorage.getItem("edusync_token");
+
+  // ── Fetch exam data ─────────────────────────────────────────────────────────
+  const fetchExamData = async () => {
+    try {
+      const [examRes, resultsRes] = await Promise.all([
+        fetch(`http://localhost:3000/exams/${examId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`http://localhost:3000/exams/${examId}/results`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (examRes.ok) {
+        const { exam: examData } = await examRes.json();
+        setExam(examData);
+
+        // Compute time remaining from server-authoritative start time
+        // We use the started_at of the first in_progress or submitted attempt
+        // as a proxy for when the exam clock started.
+        // The exam table doesn't store started_at — it's on the attempts.
+      }
+
+      if (resultsRes.ok) {
+        const { results } = await resultsRes.json();
+        setStudentAttempts(results || []);
+      }
+    } catch (err) {
+      console.error("[ActiveExam] Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExamData();
+    // Poll every 30s so submission counts stay roughly current without websocket overhead
+    const interval = setInterval(fetchExamData, 30_000);
+    return () => clearInterval(interval);
+  }, [examId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Compute time remaining from attempts' started_at ───────────────────────
+  useEffect(() => {
+    if (!exam || !studentAttempts.length) return;
+    const firstStarted = studentAttempts.find((a) => a.started_at)?.started_at;
+    if (!firstStarted || !exam.time_limit_minutes) return;
+
+    const expiresAt = new Date(firstStarted).getTime() + exam.time_limit_minutes * 60 * 1000;
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+      setSecondsRemaining(remaining);
+    };
+    updateRemaining();
+    const iv = setInterval(updateRemaining, 1000);
+    return () => clearInterval(iv);
+  }, [exam, studentAttempts]);
+
+  // ── Socket listeners: violation warnings + force lock updates ──────────────
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleViolationWarning = ({ examId: eId, violationCount, violationLimit, ...rest }) => {
+      if (parseInt(eId) !== parseInt(examId)) return;
+      toast.warning(`Violation warning — ${violationCount}/${violationLimit}`, { duration: 3000 });
+      // Refresh to pick up updated violation count
+      fetchExamData();
+    };
+
+    const handleForceLock = ({ examId: eId }) => {
+      if (parseInt(eId) !== parseInt(examId)) return;
+      fetchExamData();
+    };
+
+    socket.on("exam:violation_warning", handleViolationWarning);
+    socket.on("exam:force_lock", handleForceLock);
+
+    return () => {
+      socket.off("exam:violation_warning", handleViolationWarning);
+      socket.off("exam:force_lock", handleForceLock);
+    };
+  }, [examId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── End exam early ──────────────────────────────────────────────────────────
+  const handleEndExam = async () => {
+    if (!window.confirm("End the exam for all students now? This cannot be undone.")) return;
+    setEnding(true);
+    try {
+      const res = await fetch(`http://localhost:3000/exams/${examId}/end`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast.success("Exam ended — all students locked out");
+        navigate(`/teacher/exam/results/${examId}`);
+      } else {
+        const data = await res.json();
+        toast.error(data.message);
+      }
+    } catch {
+      toast.error("Failed to end exam");
+    } finally {
+      setEnding(false);
+    }
+  };
+
+  const submitted = studentAttempts.filter(
+    (a) => a.status === "submitted" || a.status === "locked"
+  ).length;
+  const total = studentAttempts.length;
+  const violations = studentAttempts.filter((a) => a.violation_count > 0);
+
+  const getStatusBadgeKey = (status) => {
+    if (status === "submitted") return "submitted";
+    if (status === "locked") return "locked";
+    if (status === "in_progress") return "in-progress";
+    return "pending";
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
+      </div>
+    );
+  }
+
+  if (!exam) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-3">
+        <FileText className="w-12 h-12 text-text-muted" />
+        <p className="text-base font-medium text-text-primary">Exam not found</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full flex flex-col bg-bg-base">
-      {/* Top Control Bar */}
-      <div className="px-6 py-4 border-b border-border bg-bg-surface">
+    <div className="h-full flex flex-col bg-bg-base overflow-hidden">
+      {/* Top control bar */}
+      <div className="px-6 py-4 border-b border-border bg-bg-surface flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-text-primary">
-              Active Exam Monitor
-            </h1>
-            <p className="text-sm text-text-secondary mt-0.5">
-              Monitor active exams in real-time
+            <h1 className="text-lg font-semibold text-text-primary">{exam.title}</h1>
+            <p className="text-xs text-text-muted font-mono mt-0.5 uppercase tracking-wider">
+              {exam.question_type} · {exam.num_sets} set(s) · {exam.time_limit_minutes} min ·
+              limit {exam.violation_limit} violation(s)
             </p>
           </div>
 
-          {mockStudents.length > 0 && (
-            <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6">
+            {secondsRemaining !== null && (
               <div className="text-center">
-                <div className="text-xs text-text-secondary mb-1">
-                  TIME REMAINING
+                <div className="text-xs text-text-muted mb-1 uppercase tracking-wider">
+                  Time Remaining
                 </div>
-                <Timer seconds={1847} size="lg" />
+                <Timer seconds={secondsRemaining} size="lg" />
               </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="text-center">
-                <div className="text-xs text-text-secondary mb-1">
-                  SUBMITTED
-                </div>
-                <div className="text-xl font-mono font-semibold text-text-primary">
-                  {submitted} / {total}
-                </div>
+            )}
+            <div className="h-8 w-px bg-border" />
+            <div className="text-center">
+              <div className="text-xs text-text-muted mb-1 uppercase tracking-wider">
+                Submitted
+              </div>
+              <div className="text-xl font-mono font-semibold text-text-primary">
+                {submitted} / {total}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Action Buttons (only if exam active) */}
-        {mockStudents.length > 0 && (
-          <div className="flex items-center gap-2 mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-accent-warning text-accent-warning hover:bg-accent-warning/10"
-            >
-              <Pause className="w-4 h-4 mr-2" />
-              Pause Exam
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-accent-info text-accent-info hover:bg-accent-info/10"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              +5 min
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-accent-info text-accent-info hover:bg-accent-info/10"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              +10 min
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-accent-locked text-accent-locked hover:bg-accent-locked/10"
-            >
-              <Lock className="w-4 h-4 mr-2" />
-              Lock All Screens
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-accent-critical text-accent-critical hover:bg-accent-critical/10"
-            >
-              End Exam
-            </Button>
+            <div className="h-8 w-px bg-border" />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-accent-locked text-accent-locked hover:bg-accent-locked/10"
+                onClick={handleEndExam}
+                disabled={ending}
+              >
+                {ending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Lock className="w-4 h-4 mr-2" />
+                )}
+                End Exam
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/teacher/exam/results/${examId}`)}
+              >
+                Results
+                <ChevronRight className="w-4 h-4 ml-1.5" />
+              </Button>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto p-6 space-y-6">
-        {mockStudents.length === 0 ? (
-          /* Empty State */
+        {/* Violation summary */}
+        {violations.length > 0 && (
+          <div className="p-4 bg-accent-critical/5 border border-accent-critical/20 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-accent-critical" />
+              <h3 className="text-sm font-semibold text-accent-critical">
+                {violations.length} student(s) with violations
+              </h3>
+            </div>
+            <div className="space-y-1">
+              {violations.map((a) => (
+                <div key={a.attempt_id} className="flex items-center justify-between text-xs">
+                  <span className="text-text-primary font-medium">{a.student_name}</span>
+                  <span className="font-mono text-accent-critical">
+                    {a.violation_count} / {exam.violation_limit}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Student grid */}
+        {total === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <FileText className="w-12 h-12 text-text-muted" />
-            <h3 className="text-base font-medium text-text-primary">
-              No active exam session
-            </h3>
+            <Users className="w-12 h-12 text-text-muted" />
+            <p className="text-base font-medium text-text-primary">
+              No students have started yet
+            </p>
             <p className="text-sm text-text-secondary">
-              No students are currently taking an exam.
+              Students will appear here once the exam is delivered.
             </p>
           </div>
         ) : (
-          <>
-            {/* Warnings */}
-            {warnings.length > 0 && (
-              <div className="p-4 bg-accent-critical/10 border border-accent-critical/20 rounded-lg">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-5 h-5 text-accent-critical" />
-                  <h3 className="font-semibold text-accent-critical">
-                    Suspicious Activity Detected
-                  </h3>
-                </div>
-                <div className="space-y-2">
-                  {warnings.map((warning) => (
-                    <div
-                      key={warning.id}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <div>
-                        <span className="text-text-primary font-medium">
-                          {warning.studentName}
-                        </span>
-                        <span className="text-text-secondary mx-2">—</span>
-                        <span className="text-text-secondary">
-                          {warning.event}
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono text-text-muted">
-                        {warning.time}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Student Progress</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {studentAttempts.map((attempt) => {
+                const answeredCount = attempt.answers?.length ?? 0;
+                const hasViolations = attempt.violation_count > 0;
 
-            {/* Student Progress Grid */}
-            <div>
-              <h3 className="text-sm font-semibold text-text-primary mb-3">
-                Student Progress
-              </h3>
-              <div className="grid grid-cols-3 gap-4">
-                {mockStudents.map((student) => (
+                return (
                   <div
-                    key={student.id}
+                    key={attempt.attempt_id}
                     className={`p-4 bg-bg-surface border rounded-lg ${
-                      student.warnings > 0
-                        ? "border-accent-critical"
+                      attempt.status === "locked"
+                        ? "border-accent-locked/40"
+                        : hasViolations
+                        ? "border-accent-critical/30"
                         : "border-border"
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
+                      <div>
                         <div className="font-medium text-text-primary text-sm">
-                          {student.name}
+                          {attempt.student_name}
+                        </div>
+                        <div className="text-xs text-text-muted font-mono mt-0.5">
+                          {attempt.roll_no ? `Roll ${attempt.roll_no}` : ""} · Set{" "}
+                          {attempt.set_number}
                         </div>
                       </div>
-                      <StatusBadge status={student.status} />
+                      <StatusBadge status={getStatusBadgeKey(attempt.status)} />
                     </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <div className="flex-1 h-1.5 bg-bg-base rounded-full overflow-hidden">
+
+                    <div className="flex items-center gap-2 text-xs mt-2">
+                      <div className="flex-1 h-1 bg-bg-base rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-accent-info"
-                          style={{
-                            width: `${
-                              (student.questionsAnswered /
-                                student.totalQuestions) *
-                              100
-                            }%`,
-                          }}
+                          className="h-full bg-accent-info transition-all"
+                          style={{ width: `${Math.min(100, (answeredCount / Math.max(1, attempt.answers?.length || 1)) * 100)}%` }}
                         />
                       </div>
-                      <span className="text-xs font-mono text-text-secondary">
-                        {student.questionsAnswered}/{student.totalQuestions}
-                      </span>
+                      <span className="font-mono text-text-muted">{answeredCount} ans</span>
                     </div>
-                    {student.warnings > 0 && (
+
+                    {hasViolations && (
                       <div className="mt-2 flex items-center gap-1 text-xs text-accent-critical">
                         <AlertTriangle className="w-3 h-3" />
-                        <span>{student.warnings} warning(s)</span>
+                        <span>
+                          {attempt.violation_count}/{exam.violation_limit} violations
+                        </span>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>

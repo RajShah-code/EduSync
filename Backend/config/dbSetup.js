@@ -56,6 +56,84 @@ const setup = async () => {
     `;
     console.log("Database Setup: tasks.updated_at column checked.");
 
+    // ── Phase 10: Secure Exam Mode ─────────────────────────────────────────────
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS exams (
+        id SERIAL PRIMARY KEY,
+        session_id INTEGER REFERENCES sessions(id),
+        title VARCHAR(255) NOT NULL,
+        question_type VARCHAR(20) NOT NULL,
+        num_sets INTEGER NOT NULL,
+        time_limit_minutes INTEGER NOT NULL,
+        violation_limit INTEGER NOT NULL DEFAULT 3,
+        status VARCHAR(20) DEFAULT 'draft',
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+    console.log("Database Setup: exams table checked.");
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS exam_sets (
+        id SERIAL PRIMARY KEY,
+        exam_id INTEGER REFERENCES exams(id),
+        set_number INTEGER NOT NULL
+      );
+    `;
+    console.log("Database Setup: exam_sets table checked.");
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS questions (
+        id SERIAL PRIMARY KEY,
+        exam_set_id INTEGER REFERENCES exam_sets(id),
+        type VARCHAR(10) NOT NULL,
+        question_text TEXT NOT NULL,
+        options JSONB,
+        correct_option INTEGER,
+        language VARCHAR(20),
+        starter_code TEXT
+      );
+    `;
+    console.log("Database Setup: questions table checked.");
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS exam_attempts (
+        id SERIAL PRIMARY KEY,
+        exam_id INTEGER REFERENCES exams(id),
+        student_id INTEGER REFERENCES users(id),
+        exam_set_id INTEGER REFERENCES exam_sets(id),
+        started_at TIMESTAMP,
+        submitted_at TIMESTAMP,
+        auto_submitted BOOLEAN DEFAULT FALSE,
+        status VARCHAR(20) DEFAULT 'not_started'
+      );
+    `;
+    console.log("Database Setup: exam_attempts table checked.");
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS exam_answers (
+        id SERIAL PRIMARY KEY,
+        exam_attempt_id INTEGER REFERENCES exam_attempts(id),
+        question_id INTEGER REFERENCES questions(id),
+        selected_option INTEGER,
+        code_answer TEXT,
+        score NUMERIC,
+        UNIQUE (exam_attempt_id, question_id)
+      );
+    `;
+    console.log("Database Setup: exam_answers table checked.");
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS exam_violations (
+        id SERIAL PRIMARY KEY,
+        exam_attempt_id INTEGER REFERENCES exam_attempts(id),
+        violation_type VARCHAR(30),
+        occurred_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
+    console.log("Database Setup: exam_violations table checked.");
+
     // 3. Seed default classes if none exist
     const [{ count: classCount }] = await sql`SELECT COUNT(*)::int FROM classes;`;
     if (classCount === 0) {
