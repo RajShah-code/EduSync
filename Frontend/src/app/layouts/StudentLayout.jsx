@@ -186,6 +186,17 @@ export function StudentLayout() {
       });
     });
 
+    socket.on("exam:opened", (data) => {
+      console.log("[StudentLayout] exam:opened received:", data);
+      toast.info(`New exam available: ${data.title}`, {
+        action: {
+          label: 'View',
+          onClick: () => navigate(`/student/exam/${data.examId}`),
+        },
+        duration: 8000,
+      });
+    });
+
     return () => {
       socket.off("session:started");
       socket.off("session:ended");
@@ -195,6 +206,7 @@ export function StudentLayout() {
       socket.off("student:session_state");
       socket.off("task:assigned");
       socket.off("task:closed");
+      socket.off("exam:opened");
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

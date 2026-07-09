@@ -6,6 +6,7 @@ import { Timer } from "../../components/Timer";
 import { Code, FileText, Clock, Calendar, WifiOff } from "lucide-react";
 import { cn } from "../../components/ui/utils";
 import { getSocket } from "../../store/socket";
+import { toast } from "sonner";
 
 // Mock data cleared - empty states shown
 const mockActiveTask = null;
@@ -18,6 +19,61 @@ export function StudentDashboard() {
 
   const [attendance, setAttendance] = useState([]);
   const [totalLectures, setTotalLectures] = useState(0);
+  const [exams, setExams] = useState([]);
+
+  useEffect(() => {
+    const fetchAvailableExams = async () => {
+      try {
+        const token = localStorage.getItem("edusync_token");
+        if (!token) return;
+        const res = await fetch("http://localhost:3000/exams/available", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setExams(data.exams || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch available exams:", err);
+      }
+    };
+    fetchAvailableExams();
+
+    let socket = getSocket();
+    const handleRefresh = () => {
+      fetchAvailableExams();
+    };
+
+    const setupListener = (s) => {
+      s.on("exam:opened", handleRefresh);
+      s.on("exam:start", handleRefresh);
+      return () => {
+        s.off("exam:opened", handleRefresh);
+        s.off("exam:start", handleRefresh);
+      };
+    };
+
+    let cleanup = null;
+    if (socket) {
+      cleanup = setupListener(socket);
+    } else {
+      const interval = setInterval(() => {
+        const s = getSocket();
+        if (s) {
+          clearInterval(interval);
+          cleanup = setupListener(s);
+        }
+      }, 200);
+      return () => {
+        clearInterval(interval);
+        if (cleanup) cleanup();
+      };
+    }
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchAttendance = async () => {
@@ -82,6 +138,36 @@ export function StudentDashboard() {
             100
           ).toFixed(1)
         : "0.0",
+  };
+
+  const handleJoinExam = async (examId) => {
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`http://localhost:3000/exams/${examId}/join`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to join exam");
+      }
+      navigate(`/student/exam/${examId}`);
+    } catch (err) {
+      toast.error(err.message);
+      // Refresh available exams
+      try {
+        const token = localStorage.getItem("edusync_token");
+        const refreshRes = await fetch("http://localhost:3000/exams/available", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (refreshRes.ok) {
+          const data = await refreshRes.json();
+          setExams(data.exams || []);
+        }
+      } catch (refreshErr) {
+        console.error("Failed to refresh exams list:", refreshErr);
+      }
+    }
   };
 
   return (
@@ -271,49 +357,67 @@ export function StudentDashboard() {
             </Button>
           </div>
 
-          {/* Upcoming Exam */}
-          {mockUpcomingExam ? (
-            <div className="bg-bg-surface border border-accent-locked/20 rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-5 h-5 text-accent-locked" />
+          {/* Available Exams */}
+          {exams.length > 0 ? (
+            <div className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-accent-info" />
                 <h2 className="text-lg font-semibold text-text-primary">
-                  Upcoming Exam
+                  Available Exams
                 </h2>
               </div>
-              <div>
-                <p className="font-semibold text-text-primary mb-2">
-                  {mockUpcomingExam.title}
-                </p>
-                <div className="space-y-1 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Date</span>
-                    <span className="font-mono text-text-primary">
-                      {mockUpcomingExam.date}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Duration</span>
-                    <span className="font-mono text-text-primary">
-                      {mockUpcomingExam.duration}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Total Marks</span>
-                    <span className="font-mono text-text-primary">
-                      {mockUpcomingExam.totalMarks}
-                    </span>
-                  </div>
-                </div>
+              <div className="space-y-3">
+                {exams.map((exam) => {
+                  const isWaiting = exam.status === "waiting_room";
+                  return (
+                    <div
+                      key={exam.id}
+                      className="p-4 bg-bg-base border border-border rounded-lg hover:border-accent-info/50 transition-colors flex items-center justify-between"
+                    >
+                      <div className="space-y-1">
+                        <div className="font-semibold text-text-primary text-sm">
+                          {exam.title}
+                        </div>
+                        <div className="text-xs text-text-secondary flex items-center gap-2">
+                          <span>{exam.time_limit_minutes} mins</span>
+                          <span>•</span>
+                          <span className={isWaiting ? "text-accent-warning" : "text-accent-success"}>
+                            {isWaiting ? "Waiting Room Open" : "Active / In Progress"}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        {isWaiting ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handleJoinExam(exam.id)}
+                            className="bg-accent-warning hover:bg-accent-warning/90 text-black font-semibold text-xs"
+                          >
+                            Join Waiting Room
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => navigate(`/student/exam/${exam.id}`)}
+                            className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold text-xs"
+                          >
+                            Enter Exam
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ) : (
             <div className="p-6 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3">
               <Clock className="w-12 h-12 text-text-muted" />
               <h3 className="text-base font-medium text-text-primary">
-                No upcoming exams
+                No active/upcoming exams
               </h3>
               <p className="text-sm text-text-secondary">
-                You will be notified when an exam is scheduled.
+                You will be notified when an exam is opened.
               </p>
             </div>
           )}

@@ -114,7 +114,7 @@ const createExam = async (req, res) => {
     return res.status(403).json({ message: 'Access denied: teacher role required' });
   }
 
-  const { session_id, title, question_type, num_sets, time_limit_minutes, violation_limit } = req.body;
+  const { session_id, title, question_type, num_sets, time_limit_minutes, violation_limit, class_ids } = req.body;
   const teacherId = req.user.id;
 
   if (!title || !question_type || !num_sets || !time_limit_minutes) {
@@ -151,6 +151,12 @@ const createExam = async (req, res) => {
       )
       RETURNING *
     `;
+
+    if (Array.isArray(class_ids)) {
+      for (const classId of class_ids) {
+        await sql`INSERT INTO exam_classes (exam_id, class_id) VALUES (${exam.id}, ${classId}) ON CONFLICT DO NOTHING`;
+      }
+    }
 
     // Pre-create the exam_sets rows so questions can be added immediately
     for (let i = 1; i <= parseInt(num_sets); i++) {
@@ -235,28 +241,28 @@ const startExam = async (req, res) => {
   const teacherId = req.user.id;
 
   try {
-    // Verify teacher owns this exam and it's still in draft
+    // Verify teacher owns this exam and it's in draft or waiting_room status
     const [exam] = await sql`
       SELECT * FROM exams WHERE id = ${examId} AND created_by = ${teacherId}
     `;
     if (!exam) {
       return res.status(403).json({ message: 'Unauthorized or exam not found' });
     }
-    if (exam.status !== 'draft') {
+    if (exam.status !== 'draft' && exam.status !== 'waiting_room') {
       return res.status(400).json({ message: `Exam is already ${exam.status}` });
     }
 
-    // Fetch all students in the session's targeted classes, sorted by roll_no
+    // Fetch all students in the exam's targeted classes, sorted by roll_no
     const students = await sql`
       SELECT u.id, u.name, u.roll_no
       FROM users u
-      JOIN session_classes sc ON u.class_id = sc.class_id
-      WHERE sc.session_id = ${exam.session_id} AND u.role = 'student'
+      JOIN exam_classes ec ON u.class_id = ec.class_id
+      WHERE ec.exam_id = ${exam.id} AND u.role = 'student'
       ORDER BY u.roll_no ASC NULLS LAST, u.id ASC
     `;
 
     if (students.length === 0) {
-      return res.status(400).json({ message: 'No students found in this session' });
+      return res.status(400).json({ message: 'No students found in the classes assigned to this exam' });
     }
 
     // Fetch exam_sets to resolve set_number -> exam_set_id
@@ -333,9 +339,11 @@ const getMyQuestions = async (req, res) => {
   try {
     // Verify this student has an attempt for this exam
     const [attempt] = await sql`
-      SELECT ea.id, ea.exam_set_id, ea.status, es.set_number
+      SELECT ea.id, ea.exam_set_id, ea.status, es.set_number, e.violation_limit, e.time_limit_minutes, e.title, ea.started_at,
+        (SELECT COUNT(*)::int FROM exam_violations ev WHERE ev.exam_attempt_id = ea.id) AS violation_count
       FROM exam_attempts ea
       JOIN exam_sets es ON ea.exam_set_id = es.id
+      JOIN exams e ON ea.exam_id = e.id
       WHERE ea.exam_id = ${examId} AND ea.student_id = ${studentId}
     `;
     if (!attempt) {
@@ -354,10 +362,30 @@ const getMyQuestions = async (req, res) => {
     `;
     // Note: correct_option is deliberately excluded from student-facing response
 
+    const formattedQuestions = questions.map(q => {
+      let parsedOptions = q.options;
+      if (typeof q.options === 'string') {
+        try {
+          parsedOptions = JSON.parse(q.options);
+        } catch (e) {
+          parsedOptions = [];
+        }
+      }
+      return {
+        ...q,
+        options: parsedOptions
+      };
+    });
+
     res.json({
       attemptId: attempt.id,
       setNumber: attempt.set_number,
-      questions,
+      violationCount: attempt.violation_count,
+      violationLimit: attempt.violation_limit,
+      timeLimitMinutes: attempt.time_limit_minutes,
+      title: attempt.title,
+      startedAt: attempt.started_at,
+      questions: formattedQuestions,
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -577,7 +605,21 @@ const getExamResults = async (req, res) => {
         WHERE ans.exam_attempt_id = ${attempt.attempt_id}
         ORDER BY q.id ASC
       `;
-      results.push({ ...attempt, answers });
+      const formattedAnswers = answers.map(ans => {
+        let parsedOptions = ans.options;
+        if (typeof ans.options === 'string') {
+          try {
+            parsedOptions = JSON.parse(ans.options);
+          } catch (e) {
+            parsedOptions = [];
+          }
+        }
+        return {
+          ...ans,
+          options: parsedOptions
+        };
+      });
+      results.push({ ...attempt, answers: formattedAnswers });
     }
 
     res.json({ exam, results });
@@ -613,7 +655,28 @@ const getExamById = async (req, res) => {
       ORDER BY es.set_number ASC
     `;
 
-    res.json({ exam, sets });
+    const formattedSets = sets.map(set => {
+      const questions = (set.questions || []).map(q => {
+        let parsedOptions = q.options;
+        if (typeof q.options === 'string') {
+          try {
+            parsedOptions = JSON.parse(q.options);
+          } catch (e) {
+            parsedOptions = [];
+          }
+        }
+        return {
+          ...q,
+          options: parsedOptions
+        };
+      });
+      return {
+        ...set,
+        questions
+      };
+    });
+
+    res.json({ exam, sets: formattedSets });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -716,6 +779,67 @@ const getSessionExams = async (req, res) => {
   }
 };
 
+const openExam = async (req, res) => {
+  if (req.user.role !== 'teacher') return res.status(403).json({ message: 'Access denied: teacher role required' });
+  const examId = parseInt(req.params.id);
+  const teacherId = req.user.id;
+  try {
+    const [exam] = await sql`SELECT * FROM exams WHERE id = ${examId} AND created_by = ${teacherId}`;
+    if (!exam) return res.status(403).json({ message: 'Unauthorized or exam not found' });
+    if (exam.status !== 'draft') return res.status(400).json({ message: `Exam is already ${exam.status}` });
+
+    await sql`UPDATE exams SET status = 'waiting_room' WHERE id = ${examId}`;
+
+    const classes = await sql`SELECT class_id FROM exam_classes WHERE exam_id = ${examId}`;
+    const io = req.app.get('io');
+    if (io) {
+      for (const { class_id } of classes) {
+        io.to(`class:${class_id}`).emit('exam:opened', {
+          examId,
+          title: exam.title,
+          timeLimitMinutes: exam.time_limit_minutes,
+        });
+      }
+    }
+    res.json({ message: 'Exam opened', examId });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+const getAvailableExams = async (req, res) => {
+  if (req.user.role !== 'student') return res.status(403).json({ message: 'Access denied: student role required' });
+  const studentId = req.user.id;
+  try {
+    const exams = await sql`
+      SELECT e.id, e.title, e.status, e.time_limit_minutes
+      FROM exams e
+      JOIN exam_classes ec ON e.id = ec.exam_id
+      JOIN users u ON u.class_id = ec.class_id
+      WHERE u.id = ${studentId} AND e.status IN ('waiting_room', 'active')
+      ORDER BY e.created_at DESC
+    `;
+    res.json({ exams });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+const joinExam = async (req, res) => {
+  if (req.user.role !== 'student') return res.status(403).json({ message: 'Access denied: student role required' });
+  const examId = parseInt(req.params.id);
+  try {
+    const [exam] = await sql`SELECT * FROM exams WHERE id = ${examId}`;
+    if (!exam) return res.status(404).json({ message: 'Exam not found' });
+    if (exam.status !== 'waiting_room') {
+      return res.status(400).json({ message: 'Exam is not open for joining right now' });
+    }
+    res.json({ examId, status: exam.status, title: exam.title });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 module.exports = {
   createExam,
   addQuestion,
@@ -728,6 +852,9 @@ module.exports = {
   endExam,
   scoreAnswer,
   getSessionExams,
+  openExam,
+  getAvailableExams,
+  joinExam,
   // Exported for server.js timer restoration on restart (future use)
   scheduleExamTimer,
 };

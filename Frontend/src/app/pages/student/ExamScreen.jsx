@@ -154,6 +154,51 @@ export function ExamScreen() {
     };
   }, [phase, reportViolation]);
 
+  // ── Recovery check on mount: check if exam is already in progress ───────────
+  useEffect(() => {
+    let active = true;
+    const checkActiveAttempt = async () => {
+      setLoadingQuestions(true);
+      try {
+        const res = await fetch(`http://localhost:3000/exams/${examId}/my-questions`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!active) return;
+        if (res.ok && data.questions && data.questions.length > 0) {
+          // If a valid active attempt exists, restore it immediately
+          const parsedQuestions = data.questions.map(q => {
+            let opts = q.options;
+            if (typeof q.options === 'string') {
+              try { opts = JSON.parse(q.options); } catch (e) { opts = []; }
+            }
+            return { ...q, options: opts || [] };
+          });
+          setQuestions(parsedQuestions);
+          setAttemptId(data.attemptId);
+          setViolationCount(data.violationCount ?? 0);
+          setViolationLimit(data.violationLimit ?? 3);
+          setExamMeta({
+            examId,
+            setNumber: data.setNumber,
+            timeLimitMinutes: data.timeLimitMinutes,
+            serverStartTimestamp: new Date(data.startedAt).getTime(),
+            title: data.title,
+          });
+          setPhase("in_progress");
+        }
+      } catch (err) {
+        console.error("[ExamScreen] Failed to recover active attempt:", err);
+      } finally {
+        if (active) setLoadingQuestions(false);
+      }
+    };
+    checkActiveAttempt();
+    return () => {
+      active = false;
+    };
+  }, [examId, token]);
+
   // ── Socket: register socket + listen for exam events ───────────────────────
   useEffect(() => {
     const socket = getSocket();
@@ -181,7 +226,14 @@ export function ExamScreen() {
         });
         const data = await res.json();
         if (res.ok) {
-          setQuestions(data.questions);
+          const parsedQuestions = (data.questions || []).map(q => {
+            let opts = q.options;
+            if (typeof q.options === 'string') {
+              try { opts = JSON.parse(q.options); } catch (e) { opts = []; }
+            }
+            return { ...q, options: opts || [] };
+          });
+          setQuestions(parsedQuestions);
           setAttemptId(data.attemptId);
           // Transition to active exam
           setPhase("in_progress");

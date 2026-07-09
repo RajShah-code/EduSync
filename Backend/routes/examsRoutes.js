@@ -13,11 +13,16 @@ const {
   endExam,
   scoreAnswer,
   getSessionExams,
+  openExam,
+  getAvailableExams,
+  joinExam,
 } = require('../controllers/examsController');
 
 // Teacher routes
 router.post('/create', protect(['teacher']), createExam);
 router.get('/session/:sessionId', protect(['teacher']), getSessionExams);
+router.post('/:id/open', protect(['teacher']), openExam);
+router.get('/available', protect(['student']), getAvailableExams);
 router.get('/:id', protect(['teacher']), getExamById);
 router.post('/:id/sets/:setNumber/questions', protect(['teacher']), addQuestion);
 router.post('/:id/start', protect(['teacher']), startExam);
@@ -29,5 +34,6 @@ router.post('/:id/answers/:answerId/score', protect(['teacher']), scoreAnswer);
 router.get('/:id/my-questions', protect(['student']), getMyQuestions);
 router.post('/:id/submit', protect(['student']), submitExam);
 router.post('/:id/violation', protect(['student']), recordViolation);
+router.post('/:id/join', protect(['student']), joinExam);
 
 module.exports = router;

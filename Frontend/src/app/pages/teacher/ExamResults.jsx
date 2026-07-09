@@ -90,7 +90,7 @@ export function ExamResults() {
   };
 
   const totalScore = (attempt) =>
-    attempt.answers.reduce((sum, a) => sum + (a.score ?? 0), 0);
+    attempt.answers.reduce((sum, a) => sum + Number(a.score ?? 0), 0);
 
   if (loading) {
     return (
@@ -234,7 +234,10 @@ export function ExamResults() {
                               {/* MCQ answer display — auto-scored */}
                               {ans.type === "mcq" && (
                                 <div className="space-y-1">
-                                  {(ans.options || []).map((opt, oi) => {
+                                  {(typeof ans.options === 'string'
+                                    ? JSON.parse(ans.options)
+                                    : ans.options || []
+                                  ).map((opt, oi) => {
                                     const isSelected = ans.selected_option === oi;
                                     const isCorrect = ans.correct_option === oi;
                                     return (

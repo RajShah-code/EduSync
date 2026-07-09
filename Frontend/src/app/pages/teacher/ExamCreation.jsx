@@ -59,6 +59,30 @@ export function ExamCreation() {
   // After creation, exam_id is stored here
   const [examId, setExamId] = useState(null);
 
+  // Target classes state
+  const [classes, setClasses] = useState([]);
+  const [selectedClassIds, setSelectedClassIds] = useState([]);
+  const [examOpened, setExamOpened] = useState(false);
+
+  // Fetch classes on mount
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const token = localStorage.getItem("edusync_token");
+        const res = await fetch("http://localhost:3000/classes", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setClasses(data.classes || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch classes:", err);
+      }
+    };
+    fetchClasses();
+  }, []);
+
   // Step 2 — Per-set question arrays: { [setNumber]: Question[] }
   const [setQuestions, setSetQuestions] = useState({});
   const [activeSet, setActiveSet] = useState(1);
@@ -68,7 +92,7 @@ export function ExamCreation() {
   // ── Step 1: Create Exam ────────────────────────────────────────────────────
   const handleCreateExam = async () => {
     if (!settings.title.trim()) return toast.error("Exam title is required");
-    if (!sessionInfo?.id) return toast.error("No active session — start a session first");
+    if (selectedClassIds.length === 0) return toast.error("Please select at least one class");
 
     setSaving(true);
     try {
@@ -76,7 +100,11 @@ export function ExamCreation() {
       const res = await fetch("http://localhost:3000/exams/create", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...settings, session_id: sessionInfo.id }),
+        body: JSON.stringify({
+          ...settings,
+          session_id: sessionInfo?.id || null,
+          class_ids: selectedClassIds,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -89,6 +117,25 @@ export function ExamCreation() {
       setActiveSet(1);
       setDraft(null);
       setStep(2);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleOpenExam = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`http://localhost:3000/exams/${examId}/open`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setExamOpened(true);
+      toast.success("Exam opened! Students can now join the waiting room.");
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -183,7 +230,7 @@ export function ExamCreation() {
           <p className="text-text-secondary text-sm">
             {sessionInfo
               ? `Session: ${sessionInfo.lectureName}`
-              : "⚠ No active session — start a session from Broadcast first"}
+              : "Configure settings, select classes, and build your question sets"}
           </p>
         </div>
 
@@ -309,6 +356,48 @@ export function ExamCreation() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div>
+                  <Label>Target Classes</Label>
+                  <div className="grid grid-cols-3 gap-3 mt-2">
+                    {classes.map((cls) => {
+                      const isSelected = selectedClassIds.includes(cls.id);
+                      return (
+                        <button
+                          key={cls.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedClassIds(selectedClassIds.filter((id) => id !== cls.id));
+                            } else {
+                              setSelectedClassIds([...selectedClassIds, cls.id]);
+                            }
+                          }}
+                          className={`p-3 rounded-lg border text-left transition-all flex items-center gap-3 ${
+                            isSelected
+                              ? "border-accent-info bg-accent-info/10"
+                              : "border-border bg-bg-base hover:border-border/60"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="rounded border-border text-accent-info focus:ring-accent-info h-4 w-4 bg-bg-base"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-text-primary">
+                              {cls.name}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {classes.length === 0 && (
+                    <p className="text-xs text-text-muted mt-1">No classes found. Please create classes first.</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -672,11 +761,27 @@ export function ExamCreation() {
                   adjacent roll numbers get the same set). The timer starts immediately for all students.
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <Button variant="outline" onClick={() => setStep(2)}>
                     <ChevronLeft className="w-4 h-4 mr-1.5" />
                     Back to Questions
                   </Button>
+                  {!examOpened ? (
+                    <Button
+                      onClick={handleOpenExam}
+                      disabled={saving}
+                      className="bg-accent-info hover:bg-accent-info/90 text-white"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      Open Exam
+                    </Button>
+                  ) : (
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold bg-accent-warning/15 text-accent-warning border border-accent-warning/20 animate-pulse">
+                      ● Waiting Room Open
+                    </span>
+                  )}
                   <Button
                     onClick={handleStartExam}
                     disabled={saving}

@@ -58,6 +58,7 @@ const setup = async () => {
 
     // ── Phase 10: Secure Exam Mode ─────────────────────────────────────────────
 
+    // Exam status lifecycle flow: draft -> waiting_room -> active -> ended
     await sql`
       CREATE TABLE IF NOT EXISTS exams (
         id SERIAL PRIMARY KEY,
@@ -73,6 +74,15 @@ const setup = async () => {
       );
     `;
     console.log("Database Setup: exams table checked.");
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS exam_classes (
+        exam_id INTEGER REFERENCES exams(id) ON DELETE CASCADE,
+        class_id INTEGER REFERENCES classes(id) ON DELETE CASCADE,
+        PRIMARY KEY (exam_id, class_id)
+      );
+    `;
+    console.log("Database Setup: exam_classes join table checked.");
 
     await sql`
       CREATE TABLE IF NOT EXISTS exam_sets (
@@ -110,6 +120,18 @@ const setup = async () => {
       );
     `;
     console.log("Database Setup: exam_attempts table checked.");
+
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'exam_attempts_exam_student_unique'
+        ) THEN
+          ALTER TABLE exam_attempts ADD CONSTRAINT exam_attempts_exam_student_unique UNIQUE (exam_id, student_id);
+        END IF;
+      END $$;
+    `;
+    console.log("Database Setup: exam_attempts unique constraint checked.");
 
     await sql`
       CREATE TABLE IF NOT EXISTS exam_answers (
