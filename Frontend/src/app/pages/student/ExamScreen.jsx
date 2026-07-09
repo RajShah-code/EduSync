@@ -15,14 +15,61 @@ import {
   ChevronRight,
   Loader2,
   FileText,
+  Play,
 } from "lucide-react";
 import { toast } from "sonner";
 
-// Phase state machine
-// 'waiting'    — holding screen before exam:start arrives
-// 'in_progress'— active exam UI
-// 'submitted'  — student manually submitted
-// 'locked'     — exam:force_lock received OR violation_limit reached
+// ─── Pyodide lazy-loader (self-hosted) ─────────────────────────────────────────
+let _studentPyodideLoadPromise = null;
+
+async function loadStudentPyodide() {
+  if (_studentPyodideLoadPromise) return _studentPyodideLoadPromise;
+
+  _studentPyodideLoadPromise = (async () => {
+    if (!window.__edusync_pyodide_ready) {
+      await new Promise((resolve, reject) => {
+        const el = document.createElement("script");
+        el.src = "/pyodide/pyodide.js";
+        el.onload = () => {
+          window.__edusync_pyodide_ready = true;
+          resolve();
+        };
+        el.onerror = () =>
+          reject(
+            new Error(
+              "Could not load /pyodide/pyodide.js — ensure Pyodide files are in public/pyodide/"
+            )
+          );
+        document.head.appendChild(el);
+      });
+    }
+    return globalThis.loadPyodide({ indexURL: "/pyodide/" });
+  })();
+
+  return _studentPyodideLoadPromise;
+}
+
+const buildJsSrcdoc = (code, qId) =>
+  `<!DOCTYPE html><html><head>
+<script>
+(function(){
+  const send=(m,args)=>{
+    const msg=args.map(a=>{try{return typeof a==='object'?JSON.stringify(a,null,2):String(a)}catch{return String(a)}}).join(' ');
+    window.parent.postMessage({type:'__edusync_student_console__',method:m,msg,qId:${qId}},'*');
+  };
+  ['log','warn','error','info'].forEach(fn=>{console[fn]=(...a)=>send(fn,a);});
+  window.onerror=(msg,_,line)=>{send('error',['Line '+line+': '+msg]);return true;};
+  window.onunhandledrejection=e=>{send('error',['Unhandled promise: '+e.reason]);};
+})();
+<\/script>
+</head>
+<body style="margin:0;background:#1a1a24;color:#f0f0f5;font-family:system-ui;padding:12px">
+<script>
+try{
+${code}
+}catch(e){window.parent.postMessage({type:'__edusync_student_console__',method:'error',msg:e.message,qId:${qId}},'*');}
+<\/script>
+</body></html>`;
 
 export function ExamScreen() {
   const { examId } = useParams();
@@ -35,9 +82,15 @@ export function ExamScreen() {
   const [attemptId, setAttemptId] = useState(null);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
 
-  // Answer state
   const [mcqAnswers, setMcqAnswers] = useState({}); // question_id -> selected_option (int index)
   const [codeAnswers, setCodeAnswers] = useState({}); // question_id -> code string
+
+  // Runner local execution states (scoped by question ID)
+  const [isRunning, setIsRunning] = useState({}); // { [qId]: boolean }
+  const [pyodideLoading, setPyodideLoading] = useState({}); // { [qId]: boolean }
+  const [textOutput, setTextOutput] = useState({}); // { [qId]: string }
+  const [iframeSrcdoc, setIframeSrcdoc] = useState({}); // { [qId]: string }
+  const [iframeKey, setIframeKey] = useState({}); // { [qId]: number }
 
   // UI state
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -277,6 +330,31 @@ export function ExamScreen() {
     };
   }, [examId, token, requestFullscreen, examMeta]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Listener for iframe postMessage (console mode for JS sandbox) ───────────
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.data?.type !== "__edusync_student_console__") return;
+      const { method, msg, qId } = event.data;
+      // Validate qId is present and belongs to our active questions list
+      if (qId === undefined || qId === null) return;
+      const questionExists = questions.some((q) => q.id === qId);
+      if (!questionExists) return;
+
+      const prefix =
+        method === "error" ? "❌" : method === "warn" ? "⚠️" : method === "info" ? "info" : "›";
+
+      setTextOutput((prev) => {
+        const current = prev[qId] || "";
+        return {
+          ...prev,
+          [qId]: current ? `${current}\n${prefix} ${msg}` : `${prefix} ${msg}`
+        };
+      });
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [questions]);
+
   // ── Enter fullscreen on transition to in_progress ──────────────────────────
   useEffect(() => {
     if (phase === "in_progress") {
@@ -284,6 +362,78 @@ export function ExamScreen() {
       requestFullscreen();
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Monaco local runner ─────────────────────────────────────────────────────
+  const handleRunCode = async (qId, language) => {
+    const code = codeAnswers[qId] ?? questions.find((q) => q.id === qId)?.starter_code ?? "";
+    setIsRunning((prev) => ({ ...prev, [qId]: true }));
+
+    if (language === "python") {
+      setTextOutput((prev) => ({ ...prev, [qId]: "⏳ Loading Python runtime…" }));
+      setPyodideLoading((prev) => ({ ...prev, [qId]: true }));
+
+      let pyodide;
+      try {
+        pyodide = await loadStudentPyodide();
+      } catch (loadErr) {
+        setPyodideLoading((prev) => ({ ...prev, [qId]: false }));
+        setIsRunning((prev) => ({ ...prev, [qId]: false }));
+        setTextOutput((prev) => ({
+          ...prev,
+          [qId]: `❌ Python runtime unavailable:\n${loadErr.message}\n\nEnsure Pyodide files are in public/pyodide/`
+        }));
+        return;
+      }
+
+      setPyodideLoading((prev) => ({ ...prev, [qId]: false }));
+      setTextOutput((prev) => ({ ...prev, [qId]: "" }));
+
+      try {
+        pyodide.runPython(
+          `import sys, io\n_out=io.StringIO()\n_err=io.StringIO()\nsys.stdout=_out\nsys.stderr=_err`
+        );
+        await pyodide.runPythonAsync(code);
+        const stdout = pyodide.runPython("_out.getvalue()");
+        const stderr = pyodide.runPython("_err.getvalue()");
+        const combined = [stdout, stderr ? `[stderr]\n${stderr}` : ""]
+          .filter(Boolean)
+          .join("\n");
+        setTextOutput((prev) => ({ ...prev, [qId]: combined || "(no output)" }));
+      } catch (runErr) {
+        let errText = runErr.message || String(runErr);
+        try {
+          const stderr = pyodide.runPython("_err.getvalue()");
+          if (stderr) errText = stderr;
+        } catch {
+          // ignore
+        }
+        setTextOutput((prev) => ({ ...prev, [qId]: `❌ ${errText}` }));
+      } finally {
+        setIsRunning((prev) => ({ ...prev, [qId]: false }));
+      }
+    } else if (language === "javascript") {
+      setTextOutput((prev) => ({ ...prev, [qId]: "⏳ Sandboxing JavaScript execution…" }));
+      // Set the iframe srcdoc to trigger the sandboxed run
+      setIframeSrcdoc((prev) => ({ ...prev, [qId]: buildJsSrcdoc(code, qId) }));
+      setIframeKey((prev) => ({ ...prev, [qId]: (prev[qId] || 0) + 1 }));
+      setIsRunning((prev) => ({ ...prev, [qId]: false }));
+      // Clear the loading message after a brief delay
+      setTimeout(() => {
+        setTextOutput((prev) => {
+          if (prev[qId] === "⏳ Sandboxing JavaScript execution…") {
+            return { ...prev, [qId]: "(no output)" };
+          }
+          return prev;
+        });
+      }, 500);
+    } else {
+      setIsRunning((prev) => ({ ...prev, [qId]: false }));
+      setTextOutput((prev) => ({
+        ...prev,
+        [qId]: `❌ Local execution not supported for language: ${language.toUpperCase()}`
+      }));
+    }
+  };
 
   // ── Submit exam ─────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
@@ -517,22 +667,78 @@ export function ExamScreen() {
 
               {/* Code editor */}
               {question.type === "code" && (
-                <div className="border border-border rounded-lg overflow-hidden" style={{ height: 400 }}>
-                  <Editor
-                    height="400px"
-                    language={question.language || "python"}
-                    value={codeAnswers[question.id] ?? question.starter_code ?? ""}
-                    onChange={(val) =>
-                      setCodeAnswers((prev) => ({ ...prev, [question.id]: val || "" }))
-                    }
-                    theme="vs-dark"
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                      scrollBeyondLastLine: false,
-                      padding: { top: 12 },
-                    }}
-                  />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-text-secondary font-mono capitalize">
+                      Language: {question.language || "python"}
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => handleRunCode(question.id, question.language || "python")}
+                      disabled={
+                        isRunning[question.id] ||
+                        pyodideLoading[question.id] ||
+                        phase === "submitted" ||
+                        phase === "locked"
+                      }
+                      className="bg-accent-info hover:bg-accent-info/90 text-white flex items-center gap-1.5 h-8 text-xs font-semibold"
+                    >
+                      {pyodideLoading[question.id] ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Loading Pyodide...</span>
+                        </>
+                      ) : isRunning[question.id] ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Running...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5" />
+                          <span>Run Code</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="border border-border rounded-lg overflow-hidden" style={{ height: 350 }}>
+                    <Editor
+                      height="350px"
+                      language={question.language || "python"}
+                      value={codeAnswers[question.id] ?? question.starter_code ?? ""}
+                      onChange={(val) =>
+                        setCodeAnswers((prev) => ({ ...prev, [question.id]: val || "" }))
+                      }
+                      theme="vs-dark"
+                      options={{
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                        scrollBeyondLastLine: false,
+                        padding: { top: 12 },
+                        readOnly: phase === "submitted" || phase === "locked",
+                      }}
+                    />
+                  </div>
+
+                  {/* Hidden Iframe for JS sandbox */}
+                  {question.language === "javascript" && iframeSrcdoc[question.id] && (
+                    <iframe
+                      key={`${question.id}-${iframeKey[question.id] || 0}`}
+                      srcDoc={iframeSrcdoc[question.id]}
+                      style={{ width: 0, height: 0, border: 0, display: "none" }}
+                    />
+                  )}
+
+                  {/* Output Panel */}
+                  <div className="bg-bg-surface border border-border rounded-lg p-4 font-mono text-xs space-y-2">
+                    <div className="text-text-muted font-semibold uppercase tracking-wider text-[10px]">
+                      Console Output
+                    </div>
+                    <pre className="text-text-primary whitespace-pre-wrap min-h-[80px] max-h-[200px] overflow-y-auto bg-bg-base p-3 rounded border border-border/50">
+                      {textOutput[question.id] || "(click Run to see output)"}
+                    </pre>
+                  </div>
                 </div>
               )}
 

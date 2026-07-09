@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code } from "lucide-react";
+import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { sessionStore } from "../store/sessionStore"; // kept in place but no longer source of truth
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
@@ -27,6 +27,31 @@ const navigation = [
 export function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [activeExam, setActiveExam] = useState(null); // { examId, title } | null
+
+  // Check for currently active exam on mount
+  useEffect(() => {
+    const checkActiveExam = async () => {
+      try {
+        const token = localStorage.getItem("edusync_token");
+        if (!token) return;
+        const res = await fetch("http://localhost:3000/exams/available", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const active = (data.exams || []).find((e) => e.status === "active");
+          if (active) {
+            setActiveExam({ examId: active.id, title: active.title });
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching available exams:", err);
+      }
+    };
+    checkActiveExam();
+  }, []);
 
   // All running sessions (global)
   const [activeSessions, setActiveSessions] = useState([]);
@@ -197,6 +222,20 @@ export function StudentLayout() {
       });
     });
 
+    socket.on("exam:start", (payload) => {
+      console.log("[StudentLayout] exam:start received:", payload);
+      setActiveExam({ examId: payload.examId, title: payload.title });
+    });
+
+    socket.on("exam:force_lock", (payload) => {
+      setActiveExam((prev) => {
+        if (prev && parseInt(prev.examId) === parseInt(payload.examId)) {
+          return null;
+        }
+        return prev;
+      });
+    });
+
     return () => {
       socket.off("session:started");
       socket.off("session:ended");
@@ -207,6 +246,8 @@ export function StudentLayout() {
       socket.off("task:assigned");
       socket.off("task:closed");
       socket.off("exam:opened");
+      socket.off("exam:start");
+      socket.off("exam:force_lock");
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -543,6 +584,7 @@ export function StudentLayout() {
         <nav className="flex-1" style={{ padding: "12px 8px" }}>
           {[
             ...navigation,
+            ...(activeExam ? [{ name: "Exam", href: `/student/exam/${activeExam.examId}`, icon: FileText }] : []),
             ...(joinedSession ? [{ name: "Tasks", href: "/student/tasks", icon: Code }] : [])
           ].map((item) => {
             const isActive =

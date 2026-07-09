@@ -408,8 +408,10 @@ const submitExam = async (req, res) => {
 
   try {
     const [attempt] = await sql`
-      SELECT id, status FROM exam_attempts
-      WHERE exam_id = ${examId} AND student_id = ${studentId}
+      SELECT ea.id, ea.status, e.created_by, e.title
+      FROM exam_attempts ea
+      JOIN exams e ON ea.exam_id = e.id
+      WHERE ea.exam_id = ${examId} AND ea.student_id = ${studentId}
     `;
     if (!attempt) {
       return res.status(404).json({ message: 'No exam attempt found' });
@@ -457,6 +459,19 @@ const submitExam = async (req, res) => {
       SET status = 'submitted', submitted_at = NOW()
       WHERE id = ${attempt.id}
     `;
+
+    let studentName = req.user.name;
+    if (!studentName) {
+      const [u] = await sql`SELECT name FROM users WHERE id = ${req.user.id}`;
+      studentName = u?.name || 'Student';
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`teacher:${attempt.created_by}`).emit('exam:student_submitted', {
+        examId, studentId: req.user.id, studentName,
+      });
+    }
 
     res.json({ message: 'Exam submitted successfully' });
   } catch (err) {
@@ -676,6 +691,11 @@ const getExamById = async (req, res) => {
       };
     });
 
+    const classIds = await sql`
+      SELECT class_id FROM exam_classes WHERE exam_id = ${examId}
+    `;
+    exam.class_ids = classIds.map(c => c.class_id);
+
     res.json({ exam, sets: formattedSets });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -779,6 +799,22 @@ const getSessionExams = async (req, res) => {
   }
 };
 
+const getMyExams = async (req, res) => {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Access denied: teacher role required' });
+  }
+  try {
+    const exams = await sql`
+      SELECT id, title, status, question_type, time_limit_minutes, created_at, num_sets, violation_limit
+      FROM exams WHERE created_by = ${req.user.id}
+      ORDER BY created_at DESC
+    `;
+    res.json({ exams });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 const openExam = async (req, res) => {
   if (req.user.role !== 'teacher') return res.status(403).json({ message: 'Access denied: teacher role required' });
   const examId = parseInt(req.params.id);
@@ -834,6 +870,20 @@ const joinExam = async (req, res) => {
     if (exam.status !== 'waiting_room') {
       return res.status(400).json({ message: 'Exam is not open for joining right now' });
     }
+
+    let studentName = req.user.name;
+    if (!studentName) {
+      const [u] = await sql`SELECT name FROM users WHERE id = ${req.user.id}`;
+      studentName = u?.name || 'Student';
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`teacher:${exam.created_by}`).emit('exam:student_joined_waiting', {
+        examId, studentId: req.user.id, studentName,
+      });
+    }
+
     res.json({ examId, status: exam.status, title: exam.title });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -855,6 +905,7 @@ module.exports = {
   openExam,
   getAvailableExams,
   joinExam,
+  getMyExams,
   // Exported for server.js timer restoration on restart (future use)
   scheduleExamTimer,
 };

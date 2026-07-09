@@ -101,12 +101,28 @@ export function ActiveExam() {
       fetchExamData();
     };
 
+    const handleStudentJoinedWaiting = ({ examId: eId, studentName }) => {
+      if (parseInt(eId) !== parseInt(examId)) return;
+      toast.info(`${studentName || 'A student'} joined the waiting room`);
+      fetchExamData();
+    };
+
+    const handleStudentSubmitted = ({ examId: eId, studentName }) => {
+      if (parseInt(eId) !== parseInt(examId)) return;
+      toast.success(`${studentName || 'A student'} submitted the exam`);
+      fetchExamData();
+    };
+
     socket.on("exam:violation_warning", handleViolationWarning);
     socket.on("exam:force_lock", handleForceLock);
+    socket.on("exam:student_joined_waiting", handleStudentJoinedWaiting);
+    socket.on("exam:student_submitted", handleStudentSubmitted);
 
     return () => {
       socket.off("exam:violation_warning", handleViolationWarning);
       socket.off("exam:force_lock", handleForceLock);
+      socket.off("exam:student_joined_waiting", handleStudentJoinedWaiting);
+      socket.off("exam:student_submitted", handleStudentSubmitted);
     };
   }, [examId]); // eslint-disable-line react-hooks/exhaustive-deps
 

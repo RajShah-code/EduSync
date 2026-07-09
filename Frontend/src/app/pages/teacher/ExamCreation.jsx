@@ -3,6 +3,7 @@ import { useOutletContext, useNavigate } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { StatusBadge } from "../../components/StatusBadge";
 import Editor from "@monaco-editor/react";
 import {
   Plus,
@@ -14,6 +15,7 @@ import {
   CheckSquare,
   Play,
   Loader2,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,6 +84,86 @@ export function ExamCreation() {
     };
     fetchClasses();
   }, []);
+
+  const [activeTab, setActiveTab] = useState("create"); // "create" | "manage"
+  const [myExams, setMyExams] = useState([]);
+  const [loadingExams, setLoadingExams] = useState(false);
+
+  const fetchMyExams = async () => {
+    setLoadingExams(true);
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch("http://localhost:3000/exams/my-exams", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMyExams(data.exams || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch teacher exams:", err);
+    } finally {
+      setLoadingExams(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "manage") {
+      fetchMyExams();
+    }
+  }, [activeTab]);
+
+  const handleManageExam = async (exam) => {
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`http://localhost:3000/exams/${exam.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Populate settings
+        setSettings({
+          title: data.exam.title,
+          question_type: data.exam.question_type,
+          num_sets: data.exam.num_sets,
+          time_limit_minutes: data.exam.time_limit_minutes,
+          violation_limit: data.exam.violation_limit
+        });
+        setExamId(data.exam.id);
+        setSelectedClassIds(data.exam.class_ids || []);
+        setExamOpened(data.exam.status === "waiting_room");
+
+        // Reconstruct setQuestions: { [setNumber]: questions[] }
+        const questionsMap = {};
+        for (let i = 1; i <= data.exam.num_sets; i++) {
+          questionsMap[i] = [];
+        }
+        for (const s of data.sets) {
+          questionsMap[s.set_number] = s.questions || [];
+        }
+        setSetQuestions(questionsMap);
+
+        // Go to Step 3 (Review & Start)
+        setStep(3);
+        setActiveTab("create"); // Switch back to the create tab to show this exam's detail view!
+      } else {
+        toast.error("Failed to load exam details");
+      }
+    } catch (err) {
+      console.error("Error loading exam details:", err);
+      toast.error("Error loading exam details");
+    }
+  };
+
+  const handleExamClick = (exam) => {
+    if (exam.status === "draft" || exam.status === "waiting_room") {
+      handleManageExam(exam);
+    } else if (exam.status === "active") {
+      navigate(`/teacher/exam/active/${exam.id}`);
+    } else if (exam.status === "ended") {
+      navigate(`/teacher/exam/results/${exam.id}`);
+    }
+  };
 
   // Step 2 — Per-set question arrays: { [setNumber]: Question[] }
   const [setQuestions, setSetQuestions] = useState({});
@@ -224,17 +306,44 @@ export function ExamCreation() {
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-text-primary mb-1">Create Exam</h1>
-          <p className="text-text-secondary text-sm">
-            {sessionInfo
-              ? `Session: ${sessionInfo.lectureName}`
-              : "Configure settings, select classes, and build your question sets"}
-          </p>
+        {/* Header and Tabs */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">Exam Manager</h1>
+            <p className="text-sm text-text-secondary">
+              Configure exams, manage sets, and track student results
+            </p>
+          </div>
+
+          {/* Tab buttons */}
+          <div className="flex bg-bg-surface p-1 rounded border border-border">
+            <button
+              onClick={() => setActiveTab("create")}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded transition-all ${
+                activeTab === "create"
+                  ? "bg-accent-info/10 text-accent-info"
+                  : "text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              <Plus className="w-4 h-4" />
+              Create Exam
+            </button>
+            <button
+              onClick={() => setActiveTab("manage")}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded transition-all ${
+                activeTab === "manage"
+                  ? "bg-accent-info/10 text-accent-info"
+                  : "text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Manage Exams ({myExams.length})
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-[220px_1fr] gap-6">
+        {activeTab === "create" ? (
+          <div className="grid grid-cols-[220px_1fr] gap-6">
           {/* Left: Step indicator + summary */}
           <div className="space-y-4">
             <div className="p-4 bg-bg-surface border border-border rounded-lg">
@@ -799,6 +908,63 @@ export function ExamCreation() {
             )}
           </div>
         </div>
+        ) : (
+          /* Manage Exams List Tab */
+          <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+            <div className="p-4 border-b border-border bg-bg-elevated">
+              <h3 className="text-sm font-semibold text-text-primary">
+                My Exams List
+              </h3>
+            </div>
+
+            {loadingExams ? (
+              <div className="p-12 text-center text-text-muted">Loading exams...</div>
+            ) : myExams.length === 0 ? (
+              <div className="p-12 text-center text-text-muted italic">
+                No exams created yet.
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {myExams.map((exam) => (
+                  <div
+                    key={exam.id}
+                    className="p-4 flex items-center justify-between hover:bg-bg-elevated transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-semibold text-text-primary">
+                        {exam.title}
+                      </h4>
+                      <div className="flex items-center gap-3 text-xs text-text-secondary">
+                        <span className="capitalize font-mono text-[10px] border border-border bg-bg-base px-1.5 py-0.5 rounded text-text-muted">
+                          Type: {exam.question_type}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-text-muted" />
+                          {exam.time_limit_minutes} mins
+                        </span>
+                        <span>•</span>
+                        <span>Created: {new Date(exam.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <StatusBadge status={exam.status === "waiting_room" ? "pending" : exam.status === "active" ? "live" : exam.status === "ended" ? "locked" : "draft"} />
+                      <Button
+                        onClick={() => handleExamClick(exam)}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-8"
+                      >
+                        Manage / View
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
