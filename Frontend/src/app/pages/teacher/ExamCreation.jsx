@@ -949,7 +949,7 @@ export function ExamCreation() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <StatusBadge status={exam.status === "waiting_room" ? "pending" : exam.status === "active" ? "live" : exam.status === "ended" ? "locked" : "draft"} />
+                      <StatusBadge status={exam.status} />
                       <Button
                         onClick={() => handleExamClick(exam)}
                         variant="outline"

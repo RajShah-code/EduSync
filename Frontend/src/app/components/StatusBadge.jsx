@@ -103,10 +103,38 @@ const statusConfig = {
     bg: "rgba(34,197,94,0.10)",
     border: "rgba(34,197,94,0.20)",
   },
+  draft: {
+    label: "DRAFT",
+    icon: "⋯",
+    color: "#8B8BA7",
+    bg: "rgba(255,255,255,0.04)",
+    border: "rgba(255,255,255,0.08)",
+  },
+  waiting_room: {
+    label: "WAITING ROOM",
+    icon: "⋯",
+    color: "#F59E0B",
+    bg: "rgba(245,158,11,0.12)",
+    border: "rgba(245,158,11,0.25)",
+    pulse: true,
+  },
+  ended: {
+    label: "ENDED",
+    icon: "⊘",
+    color: "#A371F7",
+    bg: "rgba(163,113,247,0.10)",
+    border: "rgba(163,113,247,0.20)",
+  },
 };
 
 export function StatusBadge({ status, className }) {
-  const cfg = statusConfig[status];
+  const cfg = statusConfig[status] || {
+    label: String(status || "UNKNOWN").toUpperCase(),
+    icon: "⋯",
+    color: "#8B8BA7",
+    bg: "rgba(255,255,255,0.04)",
+    border: "rgba(255,255,255,0.08)",
+  };
 
   return (
     <span
