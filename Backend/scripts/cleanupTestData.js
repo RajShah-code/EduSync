@@ -38,34 +38,30 @@ async function main() {
   }
   const testUserIds = testUserRows.map(r => r.id);
 
-  // 3. Fetch test exam IDs (created by test users OR mapped exclusively to test classes)
+  // 3. Fetch test exam IDs (created by test users AND mapped to test classes)
   let testExamRows = [];
-  if (testUserIds.length > 0 || testClassIds.length > 0) {
-    const userParams = testUserIds.length > 0 ? testUserIds : [-1];
-    const classParams = testClassIds.length > 0 ? testClassIds : [-1];
+  if (testUserIds.length > 0 && testClassIds.length > 0) {
     testExamRows = await sql`
       SELECT DISTINCT e.id, e.title, e.status, e.created_by, e.created_at, u.email AS creator_email
       FROM exams e
-      LEFT JOIN exam_classes ec ON e.id = ec.exam_id
+      JOIN exam_classes ec ON e.id = ec.exam_id
       LEFT JOIN users u ON e.created_by = u.id
-      WHERE e.created_by = ANY(${userParams})
-         OR ec.class_id = ANY(${classParams})
+      WHERE e.created_by = ANY(${testUserIds})
+        AND ec.class_id = ANY(${testClassIds})
     `;
   }
   const testExamIds = testExamRows.map(r => r.id);
 
-  // 4. Fetch test session IDs (created by test users OR mapped to test classes)
+  // 4. Fetch test session IDs (created by test users AND mapped to test classes)
   let testSessionRows = [];
-  if (testUserIds.length > 0 || testClassIds.length > 0) {
-    const userParams = testUserIds.length > 0 ? testUserIds : [-1];
-    const classParams = testClassIds.length > 0 ? testClassIds : [-1];
+  if (testUserIds.length > 0 && testClassIds.length > 0) {
     testSessionRows = await sql`
       SELECT DISTINCT s.id, s.lecture_name, s.started_at, u.email AS teacher_email
       FROM sessions s
-      LEFT JOIN session_classes sc ON s.id = sc.session_id
+      JOIN session_classes sc ON s.id = sc.session_id
       LEFT JOIN users u ON s.teacher_id = u.id
-      WHERE s.teacher_id = ANY(${userParams})
-         OR sc.class_id = ANY(${classParams})
+      WHERE s.teacher_id = ANY(${testUserIds})
+        AND sc.class_id = ANY(${testClassIds})
     `;
   }
   const testSessionIds = testSessionRows.map(r => r.id);
@@ -98,20 +94,21 @@ async function main() {
   console.log('CATEGORY B: Ambiguous / Genuinely In-Progress (NEVER AUTO-DELETED)');
   console.log('========================================================================');
   
-  const knownTestUserIds = testUserIds.length > 0 ? testUserIds : [-1];
+  const knownTestExamIds = testExamIds.length > 0 ? testExamIds : [-1];
+  const knownTestSessionIds = testSessionIds.length > 0 ? testSessionIds : [-1];
 
   const ambiguousSessions = await sql`
     SELECT s.id, s.lecture_name, s.started_at, u.email AS teacher_email
     FROM sessions s
     LEFT JOIN users u ON s.teacher_id = u.id
-    WHERE s.ended_at IS NULL AND NOT (s.teacher_id = ANY(${knownTestUserIds}))
+    WHERE s.ended_at IS NULL AND NOT (s.id = ANY(${knownTestSessionIds}))
   `;
 
   const ambiguousExams = await sql`
     SELECT e.id, e.title, e.status, e.created_at, u.email AS creator_email
     FROM exams e
     LEFT JOIN users u ON e.created_by = u.id
-    WHERE e.status IN ('waiting_room', 'active') AND NOT (e.created_by = ANY(${knownTestUserIds}))
+    WHERE e.status IN ('waiting_room', 'active') AND NOT (e.id = ANY(${knownTestExamIds}))
   `;
 
   console.log(`\n--- Active/In-Progress Sessions (${ambiguousSessions.length} found) ---`);
@@ -190,13 +187,7 @@ async function main() {
               WHERE exam_id = ANY(${testExamIds})
             `;
           }
-          // 7. Nullify exam references to sessions
-          await tx`
-            UPDATE exams 
-            SET session_id = NULL 
-            WHERE id = ANY(${testExamIds})
-          `;
-          // 8. exams
+          // 7. exams
           await tx`
             DELETE FROM exams 
             WHERE id = ANY(${testExamIds})
@@ -211,6 +202,15 @@ async function main() {
           if (await tableExists('session_classes')) {
             await tx`DELETE FROM session_classes WHERE class_id = ANY(${testClassIds})`;
           }
+        }
+
+        // 8. Nullify exam references to test sessions before deleting sessions
+        if (testSessionIds.length > 0) {
+          await tx`
+            UPDATE exams 
+            SET session_id = NULL 
+            WHERE session_id = ANY(${testSessionIds})
+          `;
         }
 
         // 9. session_classes
