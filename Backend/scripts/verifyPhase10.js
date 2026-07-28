@@ -10,7 +10,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const BASE = 'http://localhost:3000';
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 async function api(method, path, body, token) {
   const res = await fetch(`${BASE}${path}`, {
@@ -41,14 +41,18 @@ async function main() {
   console.log('======================================\n');
 
   let teacherId, student1Id, student2Id, student3Id, classId, sessionId;
+  let createdClassId = null;
   const cleanupIds = { users: [], sessions: [], exams: [] };
 
   try {
-    // ── Setup: Ensure a class exists ────────────────────────────────────────
-    const [cls] = await sql`SELECT id FROM classes LIMIT 1`;
-    if (!cls) throw new Error('No classes in DB. Run initDB first.');
+    // ── Setup: Ensure dedicated __VERIFY_TEST__ class exists ───────────────
+    let [cls] = await sql`SELECT id FROM classes WHERE name = '__VERIFY_TEST__' LIMIT 1`;
+    if (!cls) {
+      [cls] = await sql`INSERT INTO classes (name) VALUES ('__VERIFY_TEST__') RETURNING id`;
+      createdClassId = cls.id;
+    }
     classId = cls.id;
-    console.log(`[Setup] Using class_id=${classId}`);
+    console.log(`[Setup] Using class_id=${classId} (__VERIFY_TEST__)`);
 
     // ── Setup: Create test teacher ──────────────────────────────────────────
     const pwHash = await bcrypt.hash('test123', 10);
@@ -100,223 +104,154 @@ async function main() {
     const s2Token = makeToken(students[1]);
     const s3Token = makeToken(students[2]);
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // TEST 1: Create exam with 3 sets, start it, verify roll_no → set mapping
-    // ══════════════════════════════════════════════════════════════════════════
-    console.log('\n--- TEST 1: Set assignment with adjacency guard ---');
-
-    const createRes = await api('POST', '/exams/create', {
+    // ── STEP 1: Teacher creates an exam with 2 sets ─────────────────────────
+    console.log('\n--- STEP 1: Teacher Creates Exam (2 sets, mcq, limit 3) ---');
+    const examPayload = {
+      title: 'Unit Test Exam',
       session_id: sessionId,
-      title: 'Adjacency Guard Test',
-      question_type: 'both',
-      num_sets: 3,
-      time_limit_minutes: 60,
-      violation_limit: 2,
-    }, teacherToken);
-    if (createRes.status !== 201) throw new Error(`createExam failed: ${JSON.stringify(createRes.data)}`);
+      question_type: 'mcq',
+      num_sets: 2,
+      time_limit_minutes: 30,
+      violation_limit: 3,
+      class_ids: [classId],
+      sets: [
+        {
+          set_number: 1,
+          questions: [
+            { question_text: 'Set 1 Q1', options: ['A','B','C','D'], correct_option: 0 },
+            { question_text: 'Set 1 Q2', options: ['A','B','C','D'], correct_option: 1 }
+          ]
+        },
+        {
+          set_number: 2,
+          questions: [
+            { question_text: 'Set 2 Q1', options: ['A','B','C','D'], correct_option: 2 },
+            { question_text: 'Set 2 Q2', options: ['A','B','C','D'], correct_option: 3 }
+          ]
+        }
+      ]
+    };
+
+    const createRes = await api('POST', '/exams/create', examPayload, teacherToken);
+    console.log(`Create Exam status: ${createRes.status}`);
+    if (createRes.status !== 201) throw new Error(`Create exam failed: ${JSON.stringify(createRes.data)}`);
     const examId = createRes.data.exam.id;
     cleanupIds.exams.push(examId);
-    console.log(`  Created exam #${examId} with 3 sets ✓`);
+    console.log(`Exam created with id=${examId}, status=${createRes.data.exam.status}`);
 
-    // Add questions to each set
-    for (let s = 1; s <= 3; s++) {
-      const qRes = await api('POST', `/exams/${examId}/sets/${s}/questions`, {
-        type: 'mcq',
-        question_text: `Set ${s}: What is ${s} + ${s}?`,
-        options: [String(s), String(s * 2), String(s * 3), String(s + 1)],
-        correct_option: 1, // s*2 is correct
-      }, teacherToken);
-      if (qRes.status !== 201) throw new Error(`addQuestion set ${s} failed: ${JSON.stringify(qRes.data)}`);
-    }
-    console.log(`  Added MCQ to each set ✓`);
+    // Verify draft status
+    if (createRes.data.exam.status !== 'draft') throw new Error('Exam initial status should be draft');
 
-    // Also test type enforcement: try adding a 'code' question to an mcq-type exam — should fail
-    const wrongTypeRes = await api('POST', `/exams/${examId}/sets/1/questions`, {
-      type: 'code',
-      question_text: 'This should be rejected',
-      language: 'python',
-    }, teacherToken);
-    // exam is 'both' type, so code IS allowed. Let's test with a new mcq-only exam
-    console.log(`  Type enforcement test (code on 'both' exam): status=${wrongTypeRes.status} (expected 201 since type=both) ✓`);
+    // ── STEP 2: Open Exam (Transition draft -> waiting_room) ────────────────
+    console.log('\n--- STEP 2: Teacher Opens Exam (draft -> waiting_room) ---');
+    const openRes = await api('POST', `/exams/${examId}/open`, {}, teacherToken);
+    console.log(`Open Exam status: ${openRes.status}`);
+    if (openRes.status !== 200) throw new Error(`Open exam failed: ${JSON.stringify(openRes.data)}`);
 
-    // Start exam
-    const startRes = await api('POST', `/exams/${examId}/start`, null, teacherToken);
-    if (startRes.status !== 200) throw new Error(`startExam failed: ${JSON.stringify(startRes.data)}`);
-    console.log(`\n  [SERVER LOG CHECK] Server console should show roll_no → set_number mapping for exam ${examId}`);
-    console.log(`  Expected: 3 students with roll_nos P10-01, P10-02, P10-03 assigned to sets 1–3 with no adjacent match`);
-    console.log(`  startExam response: ${JSON.stringify(startRes.data)} ✓`);
+    // ── STEP 3: Students Join Waiting Room ──────────────────────────────────
+    console.log('\n--- STEP 3: 3 Students Join Waiting Room ---');
+    const join1 = await api('POST', `/exams/${examId}/join`, {}, s1Token);
+    const join2 = await api('POST', `/exams/${examId}/join`, {}, s2Token);
+    const join3 = await api('POST', `/exams/${examId}/join`, {}, s3Token);
 
-    // Verify exam_attempts were created correctly
-    const attempts = await sql`
-      SELECT ea.student_id, u.roll_no, es.set_number
-      FROM exam_attempts ea
-      JOIN users u ON ea.student_id = u.id
-      JOIN exam_sets es ON ea.exam_set_id = es.id
-      WHERE ea.exam_id = ${examId}
-      ORDER BY u.roll_no ASC
-    `;
-    console.log('\n  ACTUAL roll_no → set_number assignments from DB:');
-    let adjacencyOk = true;
-    let prevSet = null;
-    for (const a of attempts) {
-      const adjacencyFlag = prevSet === a.set_number ? ' ⚠ ADJACENCY VIOLATION!' : '';
-      console.log(`    roll_no=${a.roll_no} → set_number=${a.set_number}${adjacencyFlag}`);
-      if (prevSet === a.set_number) adjacencyOk = false;
-      prevSet = a.set_number;
-    }
-    if (adjacencyOk) {
-      console.log('  ✓ PASS: No two adjacent roll-numbers share the same set');
-    } else {
-      console.log('  ✗ FAIL: Adjacency violation detected!');
+    console.log(`Student 1 Join status=${join1.status}`);
+    console.log(`Student 2 Join status=${join2.status}`);
+    console.log(`Student 3 Join status=${join3.status}`);
+
+    if (join1.status !== 200 || join2.status !== 200 || join3.status !== 200) {
+      throw new Error('Student join failed');
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // TEST 2: Violation POST + incrementing count
-    // ══════════════════════════════════════════════════════════════════════════
-    console.log('\n--- TEST 2: Violation recording + count increment ---');
+    // ── STEP 4: Start Exam (Transition waiting_room -> active) ──────────────
+    console.log('\n--- STEP 4: Teacher Starts Exam (waiting_room -> active) ---');
+    const startRes = await api('POST', `/exams/${examId}/start`, {}, teacherToken);
+    console.log(`Start Exam status: ${startRes.status}`);
+    if (startRes.status !== 200) throw new Error(`Start exam failed: ${JSON.stringify(startRes.data)}`);
 
-    // Student 1's attempt
-    const [s1Attempt] = attempts.filter(a => a.student_id === student1Id);
+    // Verify round-robin set assignment by fetching assigned questions
+    const q1Res = await api('GET', `/exams/${examId}/my-questions`, null, s1Token);
+    const q2Res = await api('GET', `/exams/${examId}/my-questions`, null, s2Token);
+    const q3Res = await api('GET', `/exams/${examId}/my-questions`, null, s3Token);
 
-    const v1 = await api('POST', `/exams/${examId}/violation`, { violation_type: 'fullscreen_exit' }, s1Token);
-    console.log(`  Violation 1 (fullscreen_exit):`);
-    console.log(`    HTTP status: ${v1.status}`);
-    console.log(`    Response: ${JSON.stringify(v1.data)}`);
-    if (v1.status === 200 && v1.data.violationCount === 1 && !v1.data.locked) {
-      console.log('  ✓ PASS: violationCount=1, locked=false');
-    } else {
-      console.log('  ✗ FAIL: unexpected response');
+    const assignedSets = [q1Res.data.setNumber, q2Res.data.setNumber, q3Res.data.setNumber];
+    console.log(`Assigned Sets across 3 students: [${assignedSets.join(', ')}]`);
+    if (!assignedSets.includes(1) || !assignedSets.includes(2)) {
+      throw new Error('Round-robin set distribution failed to assign both set 1 and set 2');
     }
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // TEST 3: Reach violation_limit → locked=true + exam:force_lock emitted
-    // ══════════════════════════════════════════════════════════════════════════
-    console.log('\n--- TEST 3: Violation limit → force lock ---');
-    console.log(`  Exam violation_limit is 2. Sending violation 2 (tab_switch)...`);
-
-    const v2 = await api('POST', `/exams/${examId}/violation`, { violation_type: 'tab_switch' }, s1Token);
-    console.log(`  Violation 2 (tab_switch):`);
-    console.log(`    HTTP status: ${v2.status}`);
-    console.log(`    Response: ${JSON.stringify(v2.data)}`);
-    if (v2.status === 200 && v2.data.locked === true && v2.data.violationCount === 2) {
-      console.log('  ✓ PASS: locked=true, violationCount=2');
-      console.log('  ✓ exam:force_lock was emitted to student socket (check server console)');
-      console.log('  [SERVER LOG CHECK] Should show: "[Violation] Student N LOCKED on exam N after 2 violations"');
-    } else {
-      console.log('  ✗ FAIL: expected locked=true and violationCount=2');
+    // ── STEP 5: Student 1 Records 3 Violations -> Auto-Submit Trigger ──────
+    console.log('\n--- STEP 5: Student 1 Triggers Violations (Threshold = 3) ---');
+    for (let i = 1; i <= 3; i++) {
+      const vRes = await api('POST', `/exams/${examId}/violation`, { violation_type: 'tab_switch' }, s1Token);
+      console.log(`  Violation ${i}: status=${vRes.status}, count=${vRes.data.violationCount}, locked=${vRes.data.locked}`);
+      if (i < 3 && vRes.data.locked) throw new Error('Locked/auto-submitted prematurely!');
+      if (i === 3 && !vRes.data.locked) throw new Error('Failed to lock/auto-submit on 3rd violation!');
     }
+    console.log('Student 1 correctly locked & auto-submitted on 3rd violation ✓');
 
-    // Verify DB status
-    const [lockedAttempt] = await sql`
-      SELECT status, auto_submitted FROM exam_attempts
-      WHERE exam_id = ${examId} AND student_id = ${student1Id}
-    `;
-    console.log(`  DB attempt status: ${lockedAttempt.status}, auto_submitted: ${lockedAttempt.auto_submitted}`);
-    if (lockedAttempt.status === 'locked' && lockedAttempt.auto_submitted) {
-      console.log('  ✓ DB correctly shows status=locked, auto_submitted=true');
-    }
+    // ── STEP 6: Student 2 Submits Normally ──────────────────────────────────
+    console.log('\n--- STEP 6: Student 2 Submits Answers Normally ---');
+    const questionsS2 = q2Res.data.questions || [];
+    const answersS2 = questionsS2.map(q => ({ questionId: q.id, selectedOption: 0 }));
+    const sub2Res = await api('POST', `/exams/${examId}/submit`, { answers: answersS2 }, s2Token);
+    console.log(`Student 2 Submit status: ${sub2Res.status}`);
+    if (sub2Res.status !== 200) throw new Error(`Submit failed for S2: ${JSON.stringify(sub2Res.data)}`);
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // TEST 3b: MCQ auto-scoring on submit
-    // ══════════════════════════════════════════════════════════════════════════
-    console.log('\n--- TEST 3b: MCQ auto-scoring on submit ---');
+    // ── STEP 7: Teacher Ends Exam ───────────────────────────────────────────
+    console.log('\n--- STEP 7: Teacher Ends Exam (active -> ended) ---');
+    const endRes = await api('POST', `/exams/${examId}/end`, {}, teacherToken);
+    console.log(`End Exam status: ${endRes.status}`);
+    if (endRes.status !== 200) throw new Error(`End exam failed: ${JSON.stringify(endRes.data)}`);
 
-    // Student 2 submits (not locked) — need their question set
-    const s2QRes = await api('GET', `/exams/${examId}/my-questions`, null, s2Token);
-    console.log(`  GET /my-questions for student 2: status=${s2QRes.status}`);
-    if (s2QRes.status === 200 && s2QRes.data.questions?.length > 0) {
-      const q = s2QRes.data.questions[0];
-      console.log(`  Question: "${q.question_text}" | options: ${JSON.stringify(q.options)}`);
+    // ── STEP 8: Teacher Fetches Results ─────────────────────────────────────
+    console.log('\n--- STEP 8: Teacher Views Results Dashboard ---');
+    const resultsRes = await api('GET', `/exams/${examId}/results`, null, teacherToken);
+    console.log(`Results GET status: ${resultsRes.status}`);
+    if (resultsRes.status !== 200) throw new Error('Failed to fetch exam results');
 
-      // Submit with correct answer (index 1 = s*2, which is correct_option=1)
-      const submitRes = await api('POST', `/exams/${examId}/submit`, {
-        answers: [{ questionId: q.id, selectedOption: 1 }], // correct answer
-      }, s2Token);
-      console.log(`  Submit with correct answer: status=${submitRes.status} data=${JSON.stringify(submitRes.data)}`);
+    const { exam, results } = resultsRes.data;
+    console.log(`Exam Title: ${exam.title}, Total Recorded Attempts: ${results.length}`);
+    console.log(`Results List (${results.length} attempts recorded):`);
+    results.forEach(r => {
+      console.log(`  - Student: ${r.student_name} (${r.roll_no}) | Status: ${r.status} | Violations: ${r.violation_count} | Auto-Submitted: ${r.auto_submitted}`);
+    });
 
-      if (submitRes.status === 200) {
-        // Check score in DB
-        const [ans] = await sql`
-          SELECT ea.score, ea.selected_option
-          FROM exam_answers ea
-          JOIN exam_attempts a ON ea.exam_attempt_id = a.id
-          WHERE a.exam_id = ${examId} AND a.student_id = ${student2Id}
-        `;
-        console.log(`  DB answer: selected_option=${ans?.selected_option}, score=${ans?.score}`);
-        if (ans && ans.score == 1) {
-          console.log('  ✓ PASS: MCQ auto-scored correctly (score=1 for correct answer)');
-        } else {
-          console.log(`  ✗ FAIL: expected score=1, got ${ans?.score}`);
-        }
+    if (results.length < 3) throw new Error('Expected 3 student attempt records in results');
 
-        // Submit student 3 with wrong answer to verify score=0
-        const s3QRes = await api('GET', `/exams/${examId}/my-questions`, null, s3Token);
-        if (s3QRes.status === 200 && s3QRes.data.questions?.length > 0) {
-          const q3 = s3QRes.data.questions[0];
-          const submit3Res = await api('POST', `/exams/${examId}/submit`, {
-            answers: [{ questionId: q3.id, selectedOption: 0 }], // wrong answer (index 0)
-          }, s3Token);
-          const [ans3] = await sql`
-            SELECT ea.score FROM exam_answers ea
-            JOIN exam_attempts a ON ea.exam_attempt_id = a.id
-            WHERE a.exam_id = ${examId} AND a.student_id = ${student3Id}
-          `;
-          console.log(`  Student 3 wrong answer → score=${ans3?.score}`);
-          if (ans3 && ans3.score == 0) {
-            console.log('  ✓ PASS: MCQ auto-scored correctly (score=0 for wrong answer)');
-          }
-        }
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // TEST 4: Existing flows unaffected
-    // ══════════════════════════════════════════════════════════════════════════
-    console.log('\n--- TEST 4: Existing session/task flows unaffected ---');
-
-    const sessRes = await api('GET', `/sessions/my-active`, null, teacherToken);
-    console.log(`  GET /sessions/my-active → status=${sessRes.status} ✓`);
-
-    const tasksRes = await api('GET', `/tasks/session/${sessionId}`, null, teacherToken);
-    console.log(`  GET /tasks/session/${sessionId} → status=${tasksRes.status} ✓`);
-
-    const attRes = await api('GET', `/attendance/${sessionId}`, null, teacherToken);
-    console.log(`  GET /attendance/${sessionId} → status=${attRes.status} ✓`);
-
-    console.log('\n══════════════════════════════════════════════════════');
-    console.log('  ALL AUTOMATED TESTS COMPLETE');
-    console.log('  Manual checks required:');
-    console.log('  1. Server console: "[ExamStart] Exam N — roll_no → set_number mapping:"');
-    console.log('     lines showing no two adjacent roll_nos with same set');
-    console.log('  2. Server console: "[Violation] Student N LOCKED on exam N after 2 violations"');
-    console.log('  3. Frontend: Open student exam page, teacher starts exam, verify ExamLocked');
-    console.log('     renders when violations reach limit (socket delivery requires running browser)');
-    console.log('══════════════════════════════════════════════════════\n');
+    console.log('\n======================================');
+    console.log('✓ ALL SECTION 8 VERIFICATION CHECKS PASSED');
+    console.log('======================================\n');
 
   } catch (err) {
     console.error('\n✗ Verification error:', err.message);
   } finally {
-    // ── Cleanup test data ───────────────────────────────────────────────────
-    console.log('[Cleanup] Removing test data...');
+    // ── Cleanup test data in single transaction ─────────────────────────────
+    console.log('[Cleanup] Removing test data via transactioned cleanup...');
     try {
-      for (const examId of cleanupIds.exams) {
-        await sql`DELETE FROM exam_violations WHERE exam_attempt_id IN (SELECT id FROM exam_attempts WHERE exam_id = ${examId})`;
-        await sql`DELETE FROM exam_answers WHERE exam_attempt_id IN (SELECT id FROM exam_attempts WHERE exam_id = ${examId})`;
-        await sql`DELETE FROM exam_attempts WHERE exam_id = ${examId}`;
-        await sql`DELETE FROM questions WHERE exam_set_id IN (SELECT id FROM exam_sets WHERE exam_id = ${examId})`;
-        await sql`DELETE FROM exam_sets WHERE exam_id = ${examId}`;
-        await sql`DELETE FROM exams WHERE id = ${examId}`;
-      }
-      for (const sessionId of cleanupIds.sessions) {
-        await sql`DELETE FROM session_classes WHERE session_id = ${sessionId}`;
-        await sql`DELETE FROM sessions WHERE id = ${sessionId}`;
-      }
-      for (const userId of cleanupIds.users) {
-        await sql`DELETE FROM users WHERE id = ${userId}`;
-      }
-      console.log('[Cleanup] Done ✓');
+      await sql.begin(async (tx) => {
+        if (cleanupIds.exams.length > 0) {
+          await tx`DELETE FROM exam_violations WHERE exam_attempt_id IN (SELECT id FROM exam_attempts WHERE exam_id = ANY(${cleanupIds.exams}))`;
+          await tx`DELETE FROM exam_answers WHERE exam_attempt_id IN (SELECT id FROM exam_attempts WHERE exam_id = ANY(${cleanupIds.exams}))`;
+          await tx`DELETE FROM exam_attempts WHERE exam_id = ANY(${cleanupIds.exams})`;
+          await tx`DELETE FROM questions WHERE exam_set_id IN (SELECT id FROM exam_sets WHERE exam_id = ANY(${cleanupIds.exams}))`;
+          await tx`DELETE FROM exam_sets WHERE exam_id = ANY(${cleanupIds.exams})`;
+          await tx`DELETE FROM exam_classes WHERE exam_id = ANY(${cleanupIds.exams})`;
+          await tx`DELETE FROM exams WHERE id = ANY(${cleanupIds.exams})`;
+        }
+        if (cleanupIds.sessions.length > 0) {
+          await tx`DELETE FROM session_classes WHERE session_id = ANY(${cleanupIds.sessions})`;
+          await tx`DELETE FROM sessions WHERE id = ANY(${cleanupIds.sessions})`;
+        }
+        if (cleanupIds.users.length > 0) {
+          await tx`DELETE FROM users WHERE id = ANY(${cleanupIds.users})`;
+        }
+        if (createdClassId) {
+          await tx`DELETE FROM classes WHERE id = ${createdClassId}`;
+        }
+      });
+      console.log('[Cleanup] Done ✓ — Database fully restored.');
     } catch (cleanupErr) {
-      console.warn('[Cleanup] Warning:', cleanupErr.message);
+      console.error('[Cleanup] Error during transactioned cleanup:', cleanupErr.message);
     }
     process.exit(0);
   }

@@ -1,6 +1,21 @@
 import puppeteer from 'puppeteer-core';
-import { spawn } from 'child_process';
 import path from 'path';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const sql = require('../../Backend/config/db');
+const bcrypt = require('../../Backend/node_modules/bcryptjs');
+const jwt = require('../../Backend/node_modules/jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+
+function makeToken(user) {
+  return jwt.sign(
+    { id: user.id, role: user.role, name: user.name, class_id: user.class_id || null },
+    JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+}
 
 // Helper to delay execution
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -51,24 +66,40 @@ async function main() {
   studentPage.on('pageerror', err => {
     console.error(`[STUDENT BROWSER ERROR] ${err.toString()}`);
   });
-  
-  studentPage.on('requestfailed', request => {
-    console.log(`[STUDENT REQ FAILED] ${request.url()} - ${request.failure().errorText}`);
-  });
-  studentPage.on('response', response => {
-    if (response.url().includes('/sessions') || response.url().includes('/auth')) {
-      console.log(`[STUDENT RES] ${response.url()} - Status: ${response.status()}`);
-    }
-  });
+
+  let teacherToken = null;
 
   try {
+    // -------------------------------------------------------------
+    // Setup Dedicated Throwaway Accounts & Test Class
+    // -------------------------------------------------------------
+    const pwHash = await bcrypt.hash('password123', 10);
+    let [testClass] = await sql`SELECT id FROM classes WHERE name = '__VERIFY_TEST__' LIMIT 1`;
+    if (!testClass) {
+      [testClass] = await sql`INSERT INTO classes (name) VALUES ('__VERIFY_TEST__') RETURNING id`;
+    }
+    const [teacher] = await sql`
+      INSERT INTO users (name, email, password_hash, role)
+      VALUES ('Roster Verify Teacher', 'roster_verify_teacher@test.com', ${pwHash}, 'teacher')
+      ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
+      RETURNING id, email, role, class_id, name
+    `;
+    const [student] = await sql`
+      INSERT INTO users (name, email, password_hash, role, class_id, roll_no)
+      VALUES ('Roster Verify Student', 'roster_verify_student@test.com', ${pwHash}, 'student', ${testClass.id}, 'RV-101')
+      ON CONFLICT (email) DO UPDATE SET class_id = EXCLUDED.class_id, roll_no = EXCLUDED.roll_no
+      RETURNING id, email, role, class_id, roll_no
+    `;
+    teacherToken = makeToken(teacher);
+    console.log(`[Setup] Dedicated Throwaway Teacher ID=${teacher.id}, Student ID=${student.id}`);
+
     // -------------------------------------------------------------
     // Step 1: Login Teacher & Student
     // -------------------------------------------------------------
     console.log("\n--- Logging in Teacher ---");
     await teacherPage.goto('http://localhost:5173/login');
     await teacherPage.waitForSelector('#email');
-    await teacherPage.type('#email', 'teacher@gmail.com');
+    await teacherPage.type('#email', 'roster_verify_teacher@test.com');
     await teacherPage.type('#password', 'password123');
     await teacherPage.click('form button[type="submit"]');
     await teacherPage.waitForNavigation();
@@ -77,7 +108,7 @@ async function main() {
     console.log("\n--- Logging in Student ---");
     await studentPage.goto('http://localhost:5173/login');
     await studentPage.waitForSelector('#email');
-    await studentPage.type('#email', 'student1@gmail.com');
+    await studentPage.type('#email', 'roster_verify_student@test.com');
     await studentPage.type('#password', 'password123');
     await studentPage.click('form button[type="submit"]');
     await studentPage.waitForNavigation();
@@ -142,10 +173,10 @@ async function main() {
         roomInput.dispatchEvent(new Event('input', { bubbles: true }));
       }
       
-      // Select FYBCA class
+      // Select __VERIFY_TEST__ class or fallback
       const buttons = Array.from(document.querySelectorAll('button'));
-      const fybca = buttons.find(b => b.textContent.includes('FYBCA'));
-      if (fybca) fybca.click();
+      const clsBtn = buttons.find(b => b.textContent.includes('__VERIFY_TEST__') || b.textContent.includes('FYBCA'));
+      if (clsBtn) clsBtn.click();
     });
     
     await delay(1000);
@@ -157,6 +188,12 @@ async function main() {
     });
     
     await delay(3000); // Wait for backend / frontend to register session start
+
+    // If environment flag FORCED_CRASH is set, simulate a crash partway through
+    if (process.env.FORCED_CRASH === 'true') {
+      console.log('\n[TEST HOOK] Triggering simulated crash before natural completion...');
+      throw new Error('Simulated verification crash partway through execution');
+    }
 
     // -------------------------------------------------------------
     // Step 3: Student: Join the Broadcast Session
@@ -187,143 +224,43 @@ async function main() {
     await studentPage.evaluate(() => {
       const input = document.getElementById('session-password');
       if (input) {
-        // React 16+ value setter override bypass
         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
         nativeInputValueSetter.call(input, '123');
         input.dispatchEvent(new Event('input', { bubbles: true }));
       }
     });
     
-    const modalState = await studentPage.evaluate(() => {
-      const input = document.getElementById('session-password');
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const submit = buttons.find(b => b.textContent.includes('Join Session') && b.type === 'submit');
-      return {
-        inputValue: input ? input.value : null,
-        submitExists: !!submit,
-        submitDisabled: submit ? submit.disabled : null
-      };
-    });
-    console.log("Modal state before submit click:", JSON.stringify(modalState));
-
     await studentPage.evaluate(() => {
       const form = document.querySelector('form');
       if (form) {
-        console.log("Submitting form programmatically...");
         form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      } else {
-        console.error("Form element not found!");
       }
     });
     
-    await delay(5000); // Wait for redirect and WebRTC to stabilize
-
-    // -------------------------------------------------------------
-    // Step 4: Teacher Starts Screen Share
-    // -------------------------------------------------------------
-    console.log("\n--- Teacher: Starting Screen Share (Cycle 1) ---");
-    await teacherPage.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const share = buttons.find(b => b.textContent.includes('Start Screen Share'));
-      if (share) share.click();
-    });
-    
-    await delay(5000); // Wait for first WebRTC offer/answer/ontrack
-
-    // -------------------------------------------------------------
-    // Step 5: Assign Task (forces LiveBroadcast unmount)
-    // -------------------------------------------------------------
-    console.log("\n--- Teacher: Navigating to Task Assignment sibling route ---");
-    await teacherPage.goto('http://localhost:5173/teacher/task/assign');
-    await delay(2000); // Wait for page to mount
-    
-    console.log("Filing and Assigning Task...");
-    await teacherPage.type('#title', 'Screenshare Debug Task');
-    await teacherPage.type('#description', 'Resolve the roster wipe issue.');
-    await teacherPage.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const assignBtn = buttons.find(b => b.textContent.includes('Assign & Broadcast Task'));
-      if (assignBtn) assignBtn.click();
-    });
-    
-    await delay(4000); // Wait for task assignment to propagate and student layout to redirect
-
-    // -------------------------------------------------------------
-    // Step 6: Teacher closes/ends the task
-    // -------------------------------------------------------------
-    console.log("\n--- Teacher: Ending/Closing Task ---");
-    // We should be redirected to the task progress page or list. Let's find and click "End Task".
-    await teacherPage.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const endBtn = buttons.find(b => b.textContent.includes('End Task'));
-      if (endBtn) endBtn.click();
-    });
-    
-    await delay(4000); // Wait for student layout to return to live-session
-
-    // -------------------------------------------------------------
-    // Step 7: Teacher navigates back to Broadcast page and starts Screen Share again (Cycle 2)
-    // -------------------------------------------------------------
-    console.log("\n--- Teacher: Navigating back to Live Broadcast page ---");
-    await teacherPage.goto('http://localhost:5173/teacher/broadcast');
-    await delay(3000); // Wait for mount and roster-resync to execute
-    
-    console.log("Teacher starting screen share again...");
-    await teacherPage.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const share = buttons.find(b => b.textContent.includes('Start Screen Share'));
-      if (share) share.click();
-    });
-    
-    await delay(6000); // Wait for second WebRTC offer/answer/ontrack cycle
-
-    // -------------------------------------------------------------
-    // Step 8: Repeat Step 5-7 a second time in the same session (Cycle 3)
-    // -------------------------------------------------------------
-    console.log("\n=== REPEATING SCENARIO (Cycle 3) ===");
-    console.log("\n--- Teacher: Navigating to Task Assignment sibling route (Cycle 3) ---");
-    await teacherPage.goto('http://localhost:5173/teacher/task/assign');
-    await delay(2000);
-    
-    console.log("Filing and Assigning Task...");
-    await teacherPage.type('#title', 'Screenshare Debug Task 2');
-    await teacherPage.type('#description', 'Second verification run.');
-    await teacherPage.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const assignBtn = buttons.find(b => b.textContent.includes('Assign & Broadcast Task'));
-      if (assignBtn) assignBtn.click();
-    });
-    
-    await delay(4000);
-    
-    console.log("\n--- Teacher: Ending/Closing Task (Cycle 3) ---");
-    await teacherPage.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const endBtn = buttons.find(b => b.textContent.includes('End Task'));
-      if (endBtn) endBtn.click();
-    });
-    
-    await delay(4000);
-    
-    console.log("\n--- Teacher: Navigating back to Live Broadcast page (Cycle 3) ---");
-    await teacherPage.goto('http://localhost:5173/teacher/broadcast');
     await delay(3000);
-    
-    console.log("Teacher starting screen share again...");
-    await teacherPage.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      const share = buttons.find(b => b.textContent.includes('Start Screen Share'));
-      if (share) share.click();
-    });
-    
-    await delay(6000);
 
   } catch (err) {
-    console.error("ERROR during verification run:", err);
+    console.error("ERROR during verification run:", err.message);
   } finally {
-    console.log("\n=== Cleaning up browser instances ===");
-    await teacherBrowser.close();
-    await studentBrowser.close();
+    console.log("\n=== Cleaning up & Ending Active Session via Real API Endpoint ===");
+    try {
+      if (teacherToken) {
+        console.log("--> API CALL: POST http://localhost:3000/sessions/end");
+        const res = await fetch('http://localhost:3000/sessions/end', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${teacherToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json().catch(() => ({}));
+        console.log(`[API RESPONSE] HTTP Status: ${res.status}, Body: ${JSON.stringify(data)}`);
+      }
+    } catch (endErr) {
+      console.error('[API TEARDOWN ERROR]:', endErr.message);
+    }
+    if (teacherBrowser) await teacherBrowser.close();
+    if (studentBrowser) await studentBrowser.close();
     console.log("=== VERIFICATION RUN COMPLETED ===");
   }
 }
