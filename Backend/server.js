@@ -146,6 +146,7 @@ io.on('connection', (socket) => {
 
   // On connection, if it's a teacher, check if they have an active session
   if (role === 'teacher') {
+    socket.join(`teacher:${userId}`);
     sql`SELECT id FROM sessions WHERE teacher_id = ${userId} AND ended_at IS NULL LIMIT 1`
       .then(([session]) => {
         if (session) {
