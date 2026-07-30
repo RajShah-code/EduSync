@@ -22,6 +22,7 @@ import {
   X,
   Loader2,
   TriangleAlert,
+  Download,
 } from "lucide-react";
 import {
   Dialog,
@@ -218,6 +219,8 @@ export function LiveBroadcast() {
   // without any screen share active.
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenShareError, setScreenShareError] = useState("");
+  const [recordingDownloadUrl, setRecordingDownloadUrl] = useState(null);
+  const [recordingError, setRecordingError] = useState("");
 
   // ── Audio state ─────────────────────────────────────────────────────────────
   const [micMuted, setMicMuted] = useState(false);
@@ -240,6 +243,11 @@ export function LiveBroadcast() {
 
   // ── WebRTC refs ─────────────────────────────────────────────────────────────
   const screenStreamRef = useRef(null);   // MediaStream from getDisplayMedia
+  const mediaRecorderRef = useRef(null);
+  const recordedChunksRef = useRef([]);
+  const recordingOwnStreamRef = useRef(null);
+  const recordingUsesBroadcastStreamRef = useRef(false);
+  const fileWritableRef = useRef(null);
   const screenTrackRef = useRef(null);    // MediaStreamTrack for screen sharing
   const micStreamRef = useRef(null);      // MediaStream from getUserMedia (mic)
   const peerConnectionsRef = useRef(new Map()); // Map<socketId, RTCPeerConnection>
@@ -481,6 +489,12 @@ export function LiveBroadcast() {
     clearTimeout(editorSyncTimerRef.current);
 
     // Reset all state
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      console.log(`[DEBUG][RECORDING] full broadcast stop — finalizing active recording`);
+      mediaRecorderRef.current.stop();
+    }
+    recordingUsesBroadcastStreamRef.current = false;
+
     setBroadcastState("idle");
     setRecordingState("off");
     setSessionSeconds(0);
@@ -804,6 +818,13 @@ export function LiveBroadcast() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        console.log(
+          `[DEBUG][RECORDING] LiveBroadcast unmounting with active recorder (state=${mediaRecorderRef.current.state}) — stopping to finalize in-progress recording`
+        );
+        mediaRecorderRef.current.stop();
+      }
+
       clearTimeout(editorSyncTimerRef.current);
       peerConnectionsRef.current.forEach((pc) => pc.close());
       peerConnectionsRef.current.clear();
@@ -914,11 +935,137 @@ export function LiveBroadcast() {
     else if (broadcastState === "paused") setBroadcastState("live");
   };
 
-  const handleToggleRecording = () => {
+  const handleToggleRecording = async () => {
     if (recordingState === "off") {
-      setRecordingSeconds(0);
-      setRecordingState("recording");
+      setRecordingError("");
+
+      const supportsFileSystemAccess = typeof window.showSaveFilePicker === "function";
+
+      if (supportsFileSystemAccess) {
+        try {
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: `session-recording-${Date.now()}.webm`,
+            types: [{ description: "WebM Video", accept: { "video/webm": [".webm"] } }],
+          });
+          fileWritableRef.current = await fileHandle.createWritable();
+          console.log(`[DEBUG][RECORDING-FSA] writable stream opened, target=${fileHandle.name}`);
+        } catch (err) {
+          if (err.name !== "AbortError") {
+            console.error(`[DEBUG][RECORDING-FSA] picker failed:`, err);
+            setRecordingError(err?.message || "Could not open save location picker.");
+          }
+          return;
+        }
+      }
+
+      let stream = null;
+      const reusedBroadcastStream = !!screenStreamRef.current;
+      recordingUsesBroadcastStreamRef.current = reusedBroadcastStream;
+
+      if (reusedBroadcastStream) {
+        stream = screenStreamRef.current;
+      } else {
+        try {
+          stream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true,
+          });
+          recordingOwnStreamRef.current = stream;
+        } catch (err) {
+          console.error(`[DEBUG][RECORDING] start failed:`, err);
+          if (err.name !== "AbortError") {
+            setRecordingError(err?.message || "Permission denied or failed to select screen.");
+          }
+          if (fileWritableRef.current) {
+            try { await fileWritableRef.current.close(); } catch {}
+            fileWritableRef.current = null;
+          }
+          return;
+        }
+      }
+
+      try {
+        const mimeTypes = [
+          "video/webm;codecs=vp9",
+          "video/webm;codecs=vp8",
+          "video/webm",
+        ];
+        const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+
+        recordedChunksRef.current = [];
+
+        const options = mimeType ? { mimeType } : {};
+        const recorder = new MediaRecorder(stream, options);
+        mediaRecorderRef.current = recorder;
+
+        recorder.ondataavailable = async (event) => {
+          if (!event.data || event.data.size === 0) return;
+          if (fileWritableRef.current) {
+            try {
+              await fileWritableRef.current.write(event.data);
+              console.log(`[DEBUG][RECORDING-FSA] chunk written to disk, size=${event.data.size}`);
+            } catch (err) {
+              console.error(`[DEBUG][RECORDING-FSA] write failed:`, err);
+              setRecordingError("Failed to write to the selected file — recording may be incomplete.");
+            }
+          } else {
+            recordedChunksRef.current.push(event.data);
+            console.log(
+              `[DEBUG][RECORDING] chunk received, size=${event.data.size} totalChunks=${recordedChunksRef.current.length}`
+            );
+          }
+        };
+
+        recorder.onstop = async () => {
+          if (fileWritableRef.current) {
+            try {
+              await fileWritableRef.current.close();
+              console.log(`[DEBUG][RECORDING-FSA] file closed and saved successfully`);
+            } catch (err) {
+              console.error(`[DEBUG][RECORDING-FSA] close failed:`, err);
+              setRecordingError("Error finalizing the saved file.");
+            }
+            fileWritableRef.current = null;
+          } else {
+            const finalType = recorder.mimeType || mimeType || "video/webm";
+            const blob = new Blob(recordedChunksRef.current, { type: finalType });
+            const url = URL.createObjectURL(blob);
+            setRecordingDownloadUrl(url);
+            console.log(`[DEBUG][RECORDING] stopped, finalBlobSizeBytes=${blob.size}`);
+          }
+
+          if (recordingOwnStreamRef.current) {
+            recordingOwnStreamRef.current.getTracks().forEach((track) => track.stop());
+            recordingOwnStreamRef.current = null;
+          }
+          setRecordingState("off");
+          setRecordingSeconds(0);
+        };
+
+        recorder.start(1000);
+        console.log(
+          `[DEBUG][RECORDING] started, mimeType=${mimeType}, reusedBroadcastStream=${reusedBroadcastStream}`
+        );
+
+        setRecordingSeconds(0);
+        setRecordingState("recording");
+      } catch (err) {
+        console.error(`[DEBUG][RECORDING] start failed:`, err);
+        setRecordingError(err?.message || "Failed to initialize MediaRecorder.");
+        if (fileWritableRef.current) {
+          try { await fileWritableRef.current.close(); } catch {}
+          fileWritableRef.current = null;
+        }
+        if (recordingOwnStreamRef.current) {
+          recordingOwnStreamRef.current.getTracks().forEach((track) => track.stop());
+          recordingOwnStreamRef.current = null;
+        }
+      }
     } else {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      recordingUsesBroadcastStreamRef.current = false;
       setRecordingState("off");
       setRecordingSeconds(0);
     }
@@ -998,6 +1145,15 @@ export function LiveBroadcast() {
         screenStreamRef.current.getTracks().forEach((t) => {
           t.enabled = true;
         });
+      }
+
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state === "paused" &&
+        recordingUsesBroadcastStreamRef.current
+      ) {
+        mediaRecorderRef.current.resume();
+        console.log(`[DEBUG][RECORDING] resumed — screen share restarted (in-app), same stream reused`);
       }
 
       // Per-student health-check: students who joined DURING the pause (between
@@ -1142,6 +1298,24 @@ export function LiveBroadcast() {
     if (screenTrackRef.current && screenTrackRef.current.readyState === 'ended') {
       screenTrackRef.current = null;
       screenStreamRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && recordingUsesBroadcastStreamRef.current) {
+      const recorderState = mediaRecorderRef.current.state;
+      if (recorderState === "recording") {
+        if (!screenStreamRef.current) {
+          // Native "Stop sharing" bar — stream truly ended, can't pause/resume onto a dead stream.
+          console.log(`[DEBUG][RECORDING] auto-stopping — broadcast stream ended (native stop-sharing bar), finalizing recording now`);
+          mediaRecorderRef.current.stop();
+          recordingUsesBroadcastStreamRef.current = false;
+          setRecordingState("off");
+          setRecordingSeconds(0);
+        } else {
+          // In-app button — track still alive, just disabled. Pause, can resume.
+          console.log(`[DEBUG][RECORDING] pausing recording — screen share stopped (in-app button), stream preserved for resume`);
+          mediaRecorderRef.current.pause();
+        }
+      }
     }
 
     if (previewVideoRef.current) {
@@ -1707,6 +1881,18 @@ export function LiveBroadcast() {
                   {isRecording ? "Stop Recording" : "Record"}
                 </Button>
 
+                {/* Download Recording temporary link */}
+                {recordingDownloadUrl && recordingState === "off" && (
+                  <a
+                    href={recordingDownloadUrl}
+                    download="session-recording.webm"
+                    className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors border border-border rounded-md text-text-primary hover:bg-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Recording
+                  </a>
+                )}
+
                 {/* Mic toggle — only if mic was granted */}
                 {(hasMic || micWarning === "") && (
                   <Button
@@ -1782,6 +1968,22 @@ export function LiveBroadcast() {
                 <X className="w-3 h-3" />
               </button>
             </div>
+          )}
+          {/* Recording error — shown below control bar */}
+          {recordingError && (
+            <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-accent-critical/10 border border-accent-critical/20 rounded text-xs text-accent-critical">
+              <TriangleAlert className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{recordingError}</span>
+              <button onClick={() => setRecordingError("")} className="ml-auto text-accent-critical/60 hover:text-accent-critical">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+          {/* Note for browsers without File System Access API support */}
+          {typeof window.showSaveFilePicker !== "function" && (isRecording || (recordingDownloadUrl && recordingState === "off")) && (
+            <p className="text-xs text-text-muted mt-1 text-center w-full">
+              Your browser doesn't support direct-to-folder saving; a download link will appear here when you stop recording.
+            </p>
           )}
         </div>
 
