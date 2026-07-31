@@ -15,7 +15,7 @@ async function main() {
   };
 
   // 1. Fetch test class IDs
-  const testClassRows = await sql`SELECT id, name, created_at FROM classes WHERE name = '__VERIFY_TEST__'`;
+  const testClassRows = await sql`SELECT id, name, created_at FROM classes WHERE name IN ('__VERIFY_TEST__', '__RECORDING_TEST__')`;
   const testClassIds = testClassRows.map(r => r.id);
 
   // 2. Fetch test user IDs (by email OR by class_id of test classes)
@@ -26,6 +26,7 @@ async function main() {
       WHERE email LIKE '%_verify@test.com' 
          OR email = 'dec_teacher@test.com' 
          OR email = 'dec_student@test.com'
+         OR email = 'rec_teacher@test.com'
          OR class_id = ANY(${testClassIds})
     `;
   } else {
@@ -34,6 +35,7 @@ async function main() {
       WHERE email LIKE '%_verify@test.com' 
          OR email = 'dec_teacher@test.com' 
          OR email = 'dec_student@test.com'
+         OR email = 'rec_teacher@test.com'
     `;
   }
   const testUserIds = testUserRows.map(r => r.id);
@@ -271,7 +273,7 @@ async function main() {
       // Re-run Category A queries to verify zero rows
       const postUserCount = await sql`
         SELECT COUNT(*)::int FROM users
-        WHERE email LIKE '%_verify@test.com' OR email = 'dec_teacher@test.com' OR email = 'dec_student@test.com'
+        WHERE email LIKE '%_verify@test.com' OR email = 'dec_teacher@test.com' OR email = 'dec_student@test.com' OR email = 'rec_teacher@test.com'
       `;
       const postExamCount = testUserIds.length > 0 ? await sql`
         SELECT COUNT(*)::int FROM exams
@@ -283,7 +285,7 @@ async function main() {
       ` : [{ count: 0 }];
       const postClassCount = await sql`
         SELECT COUNT(*)::int FROM classes
-        WHERE name = '__VERIFY_TEST__'
+        WHERE name IN ('__VERIFY_TEST__', '__RECORDING_TEST__')
       `;
 
       console.log('\n========================================================================');
