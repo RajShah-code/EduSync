@@ -42,3 +42,9 @@ scratch/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Verification and local test scripts
+Backend/scripts/verify*.js
+Backend/scripts/check_chrome.js
+Backend/scripts/test_launch*.js
+

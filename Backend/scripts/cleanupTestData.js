@@ -24,6 +24,7 @@ async function main() {
     testUserRows = await sql`
       SELECT id, name, email, role, created_at FROM users
       WHERE email LIKE '%_verify@test.com' 
+         OR email LIKE '%@test.com'
          OR email = 'dec_teacher@test.com' 
          OR email = 'dec_student@test.com'
          OR email = 'rec_teacher@test.com'
@@ -33,6 +34,7 @@ async function main() {
     testUserRows = await sql`
       SELECT id, name, email, role, created_at FROM users
       WHERE email LIKE '%_verify@test.com' 
+         OR email LIKE '%@test.com'
          OR email = 'dec_teacher@test.com' 
          OR email = 'dec_student@test.com'
          OR email = 'rec_teacher@test.com'
@@ -40,30 +42,26 @@ async function main() {
   }
   const testUserIds = testUserRows.map(r => r.id);
 
-  // 3. Fetch test exam IDs (created by test users AND mapped to test classes)
+  // 3. Fetch test exam IDs (created by test users)
   let testExamRows = [];
-  if (testUserIds.length > 0 && testClassIds.length > 0) {
+  if (testUserIds.length > 0) {
     testExamRows = await sql`
       SELECT DISTINCT e.id, e.title, e.status, e.created_by, e.created_at, u.email AS creator_email
       FROM exams e
-      JOIN exam_classes ec ON e.id = ec.exam_id
       LEFT JOIN users u ON e.created_by = u.id
       WHERE e.created_by = ANY(${testUserIds})
-        AND ec.class_id = ANY(${testClassIds})
     `;
   }
   const testExamIds = testExamRows.map(r => r.id);
 
-  // 4. Fetch test session IDs (created by test users AND mapped to test classes)
+  // 4. Fetch test session IDs (created by test users)
   let testSessionRows = [];
-  if (testUserIds.length > 0 && testClassIds.length > 0) {
+  if (testUserIds.length > 0) {
     testSessionRows = await sql`
       SELECT DISTINCT s.id, s.lecture_name, s.started_at, u.email AS teacher_email
       FROM sessions s
-      JOIN session_classes sc ON s.id = sc.session_id
       LEFT JOIN users u ON s.teacher_id = u.id
       WHERE s.teacher_id = ANY(${testUserIds})
-        AND sc.class_id = ANY(${testClassIds})
     `;
   }
   const testSessionIds = testSessionRows.map(r => r.id);
@@ -273,7 +271,7 @@ async function main() {
       // Re-run Category A queries to verify zero rows
       const postUserCount = await sql`
         SELECT COUNT(*)::int FROM users
-        WHERE email LIKE '%_verify@test.com' OR email = 'dec_teacher@test.com' OR email = 'dec_student@test.com' OR email = 'rec_teacher@test.com'
+        WHERE email LIKE '%_verify@test.com' OR email LIKE '%@test.com' OR email = 'dec_teacher@test.com' OR email = 'dec_student@test.com' OR email = 'rec_teacher@test.com'
       `;
       const postExamCount = testUserIds.length > 0 ? await sql`
         SELECT COUNT(*)::int FROM exams

@@ -17,6 +17,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const tasksRoutes = require('./routes/tasksRoutes');
 const doubtsRoutes = require('./routes/doubtsRoutes');
 const examsRoutes = require('./routes/examsRoutes');
+const filesRoutes = require('./routes/filesRoutes');
 const protect = require('./middleware/authMiddleware');
 const dbSetup = require('./config/dbSetup');
 
@@ -33,8 +34,9 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(bodyParser.json());
 app.use(helmet());
+app.use('/files', express.json({ limit: '35mb' }), filesRoutes);
+app.use(bodyParser.json());
 app.use('/auth', authRoutes);
 app.use('/sessions', sessionRoutes);
 app.use('/attendance', attendanceRoutes);
@@ -43,6 +45,7 @@ app.use('/admin', protect(['admin']), adminRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/doubts', doubtsRoutes);
 app.use('/exams', examsRoutes);
+
 
 app.get('/', (req, res) => { res.send('EduSync backend running'); });
 

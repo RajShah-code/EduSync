@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText } from "lucide-react";
+import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { sessionStore } from "../store/sessionStore"; // kept in place but no longer source of truth
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
@@ -21,8 +21,10 @@ const navigation = [
   { name: "Dashboard", href: "/student", icon: Home },
   { name: "Live Sessions", href: "/student/sessions", icon: Radio },
   { name: "My Files", href: "/student/files", icon: FolderOpen },
+  { name: "Email My Folder", href: "/student/email-folder", icon: Mail },
   { name: "Attendance", href: "/student/attendance", icon: CalendarCheck },
 ];
+
 
 export function StudentLayout() {
   const location = useLocation();
