@@ -210,8 +210,20 @@ const addQuestion = async (req, res) => {
       return res.status(404).json({ message: `Set ${setNumber} not found for this exam` });
     }
 
+    let finalMaxScore = 1;
+    if (type === 'mcq') {
+      finalMaxScore = 1;
+    } else if (type === 'code') {
+      if (req.body.max_score === undefined || req.body.max_score === null) {
+        console.warn('[addQuestion] max_score omitted for code question, defaulting to 10');
+        finalMaxScore = 10;
+      } else {
+        finalMaxScore = parseFloat(req.body.max_score) || 10;
+      }
+    }
+
     const [question] = await sql`
-      INSERT INTO questions (exam_set_id, type, question_text, options, correct_option, language, starter_code)
+      INSERT INTO questions (exam_set_id, type, question_text, options, correct_option, language, starter_code, max_score)
       VALUES (
         ${examSet.id},
         ${type},
@@ -219,7 +231,8 @@ const addQuestion = async (req, res) => {
         ${type === 'mcq' ? JSON.stringify(options) : null},
         ${type === 'mcq' ? correct_option : null},
         ${type === 'code' ? language : null},
-        ${type === 'code' ? starter_code : null}
+        ${type === 'code' ? starter_code : null},
+        ${finalMaxScore}
       )
       RETURNING *
     `;
@@ -425,16 +438,16 @@ const submitExam = async (req, res) => {
     for (const ans of answers) {
       const questionId = parseInt(ans.questionId);
 
-      // Fetch question to check type and correct_option
+      // Fetch question to check type, correct_option, and max_score
       const [question] = await sql`
-        SELECT type, correct_option FROM questions WHERE id = ${questionId}
+        SELECT type, correct_option, max_score FROM questions WHERE id = ${questionId}
       `;
       if (!question) continue;
 
       let score = null;
       if (question.type === 'mcq' && ans.selectedOption !== undefined && ans.selectedOption !== null) {
-        // Auto-score: 1 point for correct, 0 for incorrect
-        score = parseInt(ans.selectedOption) === question.correct_option ? 1 : 0;
+        // Auto-score: max_score for correct, 0 for incorrect
+        score = parseInt(ans.selectedOption) === question.correct_option ? parseFloat(question.max_score || 1) : 0;
       }
 
       await sql`
@@ -614,6 +627,7 @@ const getExamResults = async (req, res) => {
           q.question_text,
           q.options,
           q.correct_option,
+          q.max_score,
           ans.selected_option,
           ans.code_answer,
           ans.score
@@ -750,20 +764,31 @@ const scoreAnswer = async (req, res) => {
   const teacherId = req.user.id;
 
   try {
-    // Verify teacher owns the exam this answer belongs to
+    // Verify teacher owns the exam this answer belongs to and fetch max_score
     const [answerRow] = await sql`
-      SELECT ans.id FROM exam_answers ans
+      SELECT ans.id, q.max_score FROM exam_answers ans
       JOIN exam_attempts ea ON ans.exam_attempt_id = ea.id
       JOIN exams e ON ea.exam_id = e.id
+      JOIN questions q ON ans.question_id = q.id
       WHERE ans.id = ${answerId} AND e.id = ${examId} AND e.created_by = ${teacherId}
     `;
     if (!answerRow) {
       return res.status(403).json({ message: 'Unauthorized or answer not found' });
     }
 
+    if (score !== undefined && score !== null && score !== '') {
+      const parsedScore = parseFloat(score);
+      const maxScore = parseFloat(answerRow.max_score || 10);
+      if (parsedScore < 0 || parsedScore > maxScore) {
+        return res.status(400).json({
+          message: `Score must be between 0 and ${maxScore}`
+        });
+      }
+    }
+
     const [updated] = await sql`
       UPDATE exam_answers
-      SET score = ${score !== undefined && score !== null ? parseFloat(score) : null}
+      SET score = ${score !== undefined && score !== null && score !== '' ? parseFloat(score) : null}
       WHERE id = ${answerId}
       RETURNING *
     `;

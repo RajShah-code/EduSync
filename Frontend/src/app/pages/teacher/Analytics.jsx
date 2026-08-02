@@ -209,7 +209,9 @@ export function Analytics() {
                 {summary.avgExamScore}%
               </div>
               <p className="text-xs text-text-secondary">
-                {summary.totalExamAnswers > 0
+                {summary.examsExcludedFromAvg > 0
+                  ? `Excludes ${summary.examsExcludedFromAvg} exam(s) still being graded.`
+                  : summary.totalExamAnswers > 0
                   ? `${summary.totalGradedAnswers}/${summary.totalExamAnswers} answers graded`
                   : "Exam aggregate average"}
               </p>
@@ -396,6 +398,9 @@ export function Analytics() {
                 </tbody>
               </table>
             </div>
+            <p className="text-xs text-text-muted italic text-right mt-1">
+              * = exam not yet fully graded, score may change
+            </p>
           </div>
         </>
       )}

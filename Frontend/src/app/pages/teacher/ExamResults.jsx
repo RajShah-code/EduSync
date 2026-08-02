@@ -269,10 +269,10 @@ export function ExamResults() {
                                     <span className="text-xs text-text-muted">Auto-score:</span>
                                     <span
                                       className={`text-xs font-mono font-semibold ${
-                                        ans.score === 1 ? "text-accent-success" : "text-accent-critical"
+                                        ans.score > 0 ? "text-accent-success" : "text-accent-critical"
                                       }`}
                                     >
-                                      {ans.score ?? 0}/1
+                                      {ans.score ?? 0}/{ans.max_score ?? 1}
                                     </span>
                                   </div>
                                 </div>
@@ -293,7 +293,9 @@ export function ExamResults() {
 
                                   {/* Manual scoring row */}
                                   <div className="flex items-center gap-2">
-                                    <span className="text-xs text-text-muted">Score:</span>
+                                    <span className="text-xs text-text-muted">
+                                      Score (out of {ans.max_score ?? 10}):
+                                    </span>
                                     {ans.score !== null && ans.score !== undefined &&
                                      scoreDrafts[ans.answer_id] === undefined ? (
                                       <span className="text-xs font-mono text-text-primary">
@@ -304,19 +306,26 @@ export function ExamResults() {
                                       type="number"
                                       step="0.5"
                                       min={0}
+                                      max={ans.max_score ?? 10}
                                       placeholder={
                                         ans.score !== null && ans.score !== undefined
                                           ? String(ans.score)
-                                          : "0"
+                                          : `0 - ${ans.max_score ?? 10}`
                                       }
                                       value={scoreDrafts[ans.answer_id] ?? ""}
-                                      onChange={(e) =>
+                                      onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        const maxVal = parseFloat(ans.max_score ?? 10);
+                                        if (!isNaN(val) && val > maxVal) {
+                                          toast.error(`Score cannot exceed max score of ${maxVal}`);
+                                          return;
+                                        }
                                         setScoreDrafts((prev) => ({
                                           ...prev,
                                           [ans.answer_id]: e.target.value,
-                                        }))
-                                      }
-                                      className="w-24 h-7 text-xs bg-bg-base border-border font-mono"
+                                        }));
+                                      }}
+                                      className="w-28 h-7 text-xs bg-bg-base border-border font-mono"
                                     />
                                     <Button
                                       size="sm"

@@ -183,34 +183,40 @@ const getClassAnalytics = async (req, res) => {
     const examPerformance = [];
     let totalGradedAnswers = 0;
     let totalExamAnswers = 0;
-    let sumExamScores = 0;
-    let examCountWithScores = 0;
+    let sumFullyGradedScores = 0;
+    let fullyGradedExamCount = 0;
+    let examsExcludedFromAvg = 0;
 
     for (const exam of exams) {
       const [answerStats] = await sql`
         SELECT 
           COUNT(ea.id)::int AS total_answers,
           COUNT(ea.score)::int AS graded_answers,
-          COALESCE(AVG(ea.score), 0) AS avg_score
+          COALESCE(SUM(ea.score), 0) AS total_earned_score,
+          COALESCE(SUM(CASE WHEN ea.score IS NOT NULL THEN q.max_score ELSE 0 END), 0) AS total_graded_max_score
         FROM exam_answers ea
+        JOIN questions q ON ea.question_id = q.id
         JOIN exam_attempts att ON ea.exam_attempt_id = att.id
         WHERE att.exam_id = ${exam.id}
       `;
 
       const total = answerStats ? answerStats.total_answers : 0;
       const graded = answerStats ? answerStats.graded_answers : 0;
-      const avg = answerStats ? parseFloat(answerStats.avg_score) : 0;
+      const earned = answerStats ? parseFloat(answerStats.total_earned_score) : 0;
+      const maxPossible = answerStats ? parseFloat(answerStats.total_graded_max_score) : 0;
 
-      // Note: assuming question score is 0..1 or scaled 0..100.
-      // If score is 0..1, avgScorePct = avg * 100.
-      const avgScorePct = Math.round(avg * 1000) / 10;
+      // Normalized average percentage: SUM(score) / SUM(max_score) * 100
+      const avgScorePct = maxPossible > 0 ? Math.round((earned / maxPossible) * 1000) / 10 : 0;
+      const isFullyGraded = total > 0 && graded === total;
 
       totalExamAnswers += total;
       totalGradedAnswers += graded;
 
-      if (total > 0 && graded > 0) {
-        sumExamScores += avgScorePct;
-        examCountWithScores += 1;
+      if (total > 0 && isFullyGraded) {
+        sumFullyGradedScores += avgScorePct;
+        fullyGradedExamCount += 1;
+      } else if (total > 0 && !isFullyGraded) {
+        examsExcludedFromAvg += 1;
       }
 
       examPerformance.push({
@@ -219,13 +225,13 @@ const getClassAnalytics = async (req, res) => {
         avg: avgScorePct,
         graded_count: graded,
         total_count: total,
-        is_fully_graded: total > 0 && graded === total,
+        is_fully_graded: isFullyGraded,
       });
     }
 
     const overallAvgExamScore =
-      examCountWithScores > 0
-        ? Math.round((sumExamScores / examCountWithScores) * 10) / 10
+      fullyGradedExamCount > 0
+        ? Math.round((sumFullyGradedScores / fullyGradedExamCount) * 10) / 10
         : 0;
 
     // 6. At-Risk Students (scoped to users in class_id, filtered by teacher sessions)
@@ -271,13 +277,15 @@ const getClassAnalytics = async (req, res) => {
 
       const hasTaskRisk = totalTasks > 0 && studentTaskCompPct < TASK_COMPLETION_THRESHOLD;
 
-      // Student Exam Score & Grading Completeness Guard
+      // Student Exam Score & Grading Completeness Guard (Normalized)
       const [studentExamRow] = await sql`
         SELECT 
           COUNT(ea.id)::int AS total_answers,
           COUNT(ea.score)::int AS graded_answers,
-          COALESCE(AVG(ea.score), 0) AS avg_score
+          COALESCE(SUM(ea.score), 0) AS total_earned_score,
+          COALESCE(SUM(CASE WHEN ea.score IS NOT NULL THEN q.max_score ELSE 0 END), 0) AS total_graded_max_score
         FROM exam_answers ea
+        JOIN questions q ON ea.question_id = q.id
         JOIN exam_attempts att ON ea.exam_attempt_id = att.id
         JOIN exams e ON att.exam_id = e.id
         LEFT JOIN exam_classes ec ON e.id = ec.exam_id
@@ -290,9 +298,10 @@ const getClassAnalytics = async (req, res) => {
 
       const totalAns = studentExamRow ? studentExamRow.total_answers : 0;
       const gradedAns = studentExamRow ? studentExamRow.graded_answers : 0;
-      const studentExamScorePct = studentExamRow
-        ? Math.round(parseFloat(studentExamRow.avg_score) * 1000) / 10
-        : 0;
+      const earnedAns = studentExamRow ? parseFloat(studentExamRow.total_earned_score) : 0;
+      const maxAns = studentExamRow ? parseFloat(studentExamRow.total_graded_max_score) : 0;
+
+      const studentExamScorePct = maxAns > 0 ? Math.round((earnedAns / maxAns) * 1000) / 10 : 0;
 
       // Exam Risk Exclusion Guard (Rule 1a):
       // Only flag exam risk if an exam attempt is 100% graded (no pending score IS NULL code questions)
@@ -331,6 +340,7 @@ const getClassAnalytics = async (req, res) => {
         atRiskCount: atRiskStudents.length,
         totalGradedAnswers,
         totalExamAnswers,
+        examsExcludedFromAvg,
       },
       attendanceTrend,
       taskCompletion: { overallPct: taskCompletionPct },

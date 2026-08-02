@@ -102,10 +102,15 @@ const setup = async () => {
         options JSONB,
         correct_option INTEGER,
         language VARCHAR(20),
-        starter_code TEXT
+        starter_code TEXT,
+        max_score NUMERIC NOT NULL DEFAULT 1
       );
     `;
-    console.log("Database Setup: questions table checked.");
+    await sql`
+      ALTER TABLE questions
+      ADD COLUMN IF NOT EXISTS max_score NUMERIC NOT NULL DEFAULT 1;
+    `;
+    console.log("Database Setup: questions table and max_score column checked.");
 
     await sql`
       CREATE TABLE IF NOT EXISTS exam_attempts (

@@ -32,6 +32,7 @@ const emptyMcq = () => ({
   question_text: "",
   options: ["", "", "", ""],
   correct_option: 0,
+  max_score: 1,
 });
 
 const emptyCode = () => ({
@@ -39,6 +40,7 @@ const emptyCode = () => ({
   question_text: "",
   language: "python",
   starter_code: "",
+  max_score: 10,
 });
 
 export function ExamCreation() {
@@ -733,31 +735,53 @@ export function ExamCreation() {
                               />
                             </div>
                           ))}
-                          <p className="text-xs text-text-muted">
-                            Circle = correct answer (index {draft.correct_option})
-                          </p>
+                          <div className="flex items-center justify-between pt-1">
+                            <p className="text-xs text-text-muted">
+                              Circle = correct answer (index {draft.correct_option})
+                            </p>
+                            <span className="text-xs font-mono px-2 py-0.5 bg-bg-surface border border-border rounded text-text-secondary">
+                              1 point (auto)
+                            </span>
+                          </div>
                         </div>
                       </>
                     )}
 
                     {isDraftCode && (
                       <>
-                        <div>
-                          <Label>Language</Label>
-                          <div className="flex gap-2 mt-1 flex-wrap">
-                            {LANGUAGES.map((lang) => (
-                              <button
-                                key={lang}
-                                onClick={() => setDraft({ ...draft, language: lang })}
-                                className={`px-3 py-1 rounded text-xs font-mono border transition-colors ${
-                                  draft.language === lang
-                                    ? "border-accent-info bg-accent-info/10 text-accent-info"
-                                    : "border-border text-text-muted hover:border-border/60"
-                                }`}
-                              >
-                                {lang}
-                              </button>
-                            ))}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label>Language</Label>
+                            <div className="flex gap-2 mt-1 flex-wrap">
+                              {LANGUAGES.map((lang) => (
+                                <button
+                                  key={lang}
+                                  onClick={() => setDraft({ ...draft, language: lang })}
+                                  className={`px-3 py-1 rounded text-xs font-mono border transition-colors ${
+                                    draft.language === lang
+                                      ? "border-accent-info bg-accent-info/10 text-accent-info"
+                                      : "border-border text-text-muted hover:border-border/60"
+                                  }`}
+                                >
+                                  {lang}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="code-max-score">Max Score (Points)</Label>
+                            <Input
+                              id="code-max-score"
+                              type="number"
+                              min={1}
+                              max={100}
+                              value={draft.max_score ?? 10}
+                              onChange={(e) =>
+                                setDraft({ ...draft, max_score: parseInt(e.target.value) || 1 })
+                              }
+                              className="mt-1 bg-bg-surface border-border font-mono w-32 text-sm"
+                            />
                           </div>
                         </div>
                         <div>
