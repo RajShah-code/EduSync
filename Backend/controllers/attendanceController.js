@@ -1,4 +1,5 @@
 const sql = require('../config/db');
+const { invalidateAnalyticsCache } = require('./analyticsController');
 
 // GET /attendance/session/:session_id — teacher only
 const getSessionAttendance = async (req, res) => {
@@ -69,6 +70,7 @@ const decideAttendance = async (req, res) => {
       return res.status(404).json({ message: 'Attendance record not found' });
     }
 
+    invalidateAnalyticsCache(req.user.id, null, req.app.get('io'));
     res.json({ message: 'Decision saved', attendance: updated });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

@@ -1,4 +1,5 @@
 const sql = require('../config/db');
+const { invalidateAnalyticsCache } = require('./analyticsController');
 
 // In-memory exam expiry timers: exam_id -> Timeout
 const examTimers = new Map();
@@ -473,6 +474,7 @@ const submitExam = async (req, res) => {
       });
     }
 
+    invalidateAnalyticsCache(attempt.created_by, null, io);
     res.json({ message: 'Exam submitted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -766,6 +768,7 @@ const scoreAnswer = async (req, res) => {
       RETURNING *
     `;
 
+    invalidateAnalyticsCache(teacherId, null, req.app.get('io'));
     res.json({ answer: updated });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

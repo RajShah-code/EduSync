@@ -1,7 +1,19 @@
 const sql = require('../config/db');
+const { invalidateAnalyticsCache } = require('./analyticsController');
 
 // In-memory timers mapping: task_id -> Timeout instance
 const taskTimers = new Map();
+
+const invalidateTaskAnalytics = async (app, sessionId) => {
+  try {
+    const [session] = await sql`SELECT teacher_id FROM sessions WHERE id = ${sessionId}`;
+    if (session && session.teacher_id) {
+      invalidateAnalyticsCache(session.teacher_id, null, app ? app.get('io') : null);
+    }
+  } catch (e) {
+    console.error('Failed to invalidate task analytics cache:', e);
+  }
+};
 
 /**
  * Triggers when a task deadline expires.
@@ -89,6 +101,8 @@ const triggerDeadlineExpired = async (app, taskId, sessionId, title) => {
       });
       io.to(`session:${sessionId}`).emit('task:deadline_reached', { task_id: taskId });
     }
+
+    invalidateTaskAnalytics(app, sessionId);
   } catch (err) {
     console.error(`[Timer] Error handling deadline expiration for task ${taskId}:`, err);
   }
@@ -239,6 +253,7 @@ const submitTask = async (req, res) => {
       });
     }
 
+    invalidateTaskAnalytics(req.app, task.session_id);
     res.json({ submission });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -447,6 +462,7 @@ const scoreSubmission = async (req, res) => {
       RETURNING *
     `;
 
+    invalidateAnalyticsCache(teacherId, null, req.app.get('io'));
     res.json({ submission });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -625,6 +641,7 @@ const moveOnTask = async (req, res) => {
       io.to(`session:${task.session_id}`).emit('task:closed', { task_id: taskId });
     }
 
+    invalidateTaskAnalytics(req.app, task.session_id);
     res.json({ task: updatedTask });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

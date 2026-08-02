@@ -18,6 +18,8 @@ const tasksRoutes = require('./routes/tasksRoutes');
 const doubtsRoutes = require('./routes/doubtsRoutes');
 const examsRoutes = require('./routes/examsRoutes');
 const filesRoutes = require('./routes/filesRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const { invalidateAnalyticsCache } = require('./controllers/analyticsController');
 const protect = require('./middleware/authMiddleware');
 const dbSetup = require('./config/dbSetup');
 
@@ -45,6 +47,7 @@ app.use('/admin', protect(['admin']), adminRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/doubts', doubtsRoutes);
 app.use('/exams', examsRoutes);
+app.use('/analytics', protect(['teacher']), analyticsRoutes);
 
 
 app.get('/', (req, res) => { res.send('EduSync backend running'); });
@@ -366,6 +369,8 @@ io.on('connection', (socket) => {
     }
     sessionStates.delete(sid);
     sessionAttendance.delete(sid);
+
+    invalidateAnalyticsCache(userId, null, io);
 
     if (targetClassIds.length > 0) {
       let emitter = io;
