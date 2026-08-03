@@ -42,6 +42,16 @@ export function TeacherLayout() {
     navigate("/");
   };
 
+  const [displayUser, setDisplayUser] = useState(() =>
+    JSON.parse(localStorage.getItem("edusync_user") || "{}")
+  );
+
+  useEffect(() => {
+    const refresh = () => setDisplayUser(JSON.parse(localStorage.getItem("edusync_user") || "{}"));
+    window.addEventListener("edusync:user-updated", refresh);
+    return () => window.removeEventListener("edusync:user-updated", refresh);
+  }, []);
+
   // ── Lifted Broadcast State ──────────────────────────────────────────────────
   const [broadcastState, setBroadcastState] = useState("idle");
   const [recordingState, setRecordingState] = useState("off");
@@ -334,14 +344,14 @@ export function TeacherLayout() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="px-3 py-2">
-            <div className="text-sm font-medium text-text-primary">
-              Prof. Shah
+            <div className="text-sm font-medium text-text-primary truncate">
+              {displayUser.name || "Teacher"}
             </div>
             <div
-              className="font-mono text-text-muted"
+              className="font-mono text-text-muted truncate"
               style={{ fontSize: "11px" }}
             >
-              CS-TCHR-001
+              {displayUser.email || ""}
             </div>
           </div>
           <button

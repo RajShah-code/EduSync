@@ -255,6 +255,7 @@ export function Analytics() {
                     domain={[0, 100]}
                   />
                   <Tooltip
+                    cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 1 }}
                     contentStyle={{
                       backgroundColor: "#111118",
                       border: "1px solid #2A2A3A",
@@ -300,6 +301,7 @@ export function Analytics() {
                     domain={[0, 100]}
                   />
                   <Tooltip
+                    cursor={{ fill: "rgba(255,255,255,0.06)" }}
                     contentStyle={{
                       backgroundColor: "#111118",
                       border: "1px solid #2A2A3A",

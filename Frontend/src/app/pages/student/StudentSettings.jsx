@@ -6,7 +6,7 @@ import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { User, Key } from "lucide-react";
 
-export function TeacherSettings() {
+export function StudentSettings() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);

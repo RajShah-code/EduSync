@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail } from "lucide-react";
+import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail, Settings } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { sessionStore } from "../store/sessionStore"; // kept in place but no longer source of truth
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
@@ -23,6 +23,7 @@ const navigation = [
   { name: "My Files", href: "/student/files", icon: FolderOpen },
   { name: "Email My Folder", href: "/student/email-folder", icon: Mail },
   { name: "Attendance", href: "/student/attendance", icon: CalendarCheck },
+  { name: "Settings", href: "/student/settings", icon: Settings },
 ];
 
 
@@ -81,6 +82,16 @@ export function StudentLayout() {
 
   // Cached one-time join-response snapshot (mode, code, language, output)
   const [sessionStateCache, setSessionStateCache] = useState(null);
+
+  const [displayUser, setDisplayUser] = useState(() =>
+    JSON.parse(localStorage.getItem("edusync_user") || "{}")
+  );
+
+  useEffect(() => {
+    const refresh = () => setDisplayUser(JSON.parse(localStorage.getItem("edusync_user") || "{}"));
+    window.addEventListener("edusync:user-updated", refresh);
+    return () => window.removeEventListener("edusync:user-updated", refresh);
+  }, []);
 
   // Keep a ref to joinedSession so the socket handler always has the latest value
   // without needing to re-register listeners on every render
@@ -621,14 +632,14 @@ export function StudentLayout() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="px-3 py-2">
-            <div className="text-sm font-medium text-text-primary">
-              {JSON.parse(localStorage.getItem("edusync_user") || "{}").name || ""}
+            <div className="text-sm font-medium text-text-primary truncate">
+              {displayUser.name || ""}
             </div>
             <div
-              className="font-mono text-text-muted"
+              className="font-mono text-text-muted truncate"
               style={{ fontSize: "11px" }}
             >
-              {JSON.parse(localStorage.getItem("edusync_user") || "{}").roll_no || ""}
+              {displayUser.roll_no || ""}
             </div>
           </div>
           <button

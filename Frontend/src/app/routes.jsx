@@ -38,6 +38,7 @@ import { MyFiles } from "./pages/student/MyFiles";
 import { SendMyFiles } from "./pages/student/SendMyFiles";
 import { AttendanceHistory } from "./pages/student/AttendanceHistory";
 import { SessionList } from "./pages/student/SessionList";
+import { StudentSettings } from "./pages/student/StudentSettings";
 import { StudentLayout } from "./layouts/StudentLayout";
 
 export const router = createBrowserRouter([
@@ -95,6 +96,7 @@ export const router = createBrowserRouter([
       { path: "files", Component: MyFiles },
       { path: "email-folder", Component: SendMyFiles },
       { path: "attendance", Component: AttendanceHistory },
+      { path: "settings", Component: StudentSettings },
     ],
   },
 ]);
