@@ -295,6 +295,7 @@ export function StudentLayout() {
     if (lastEmittedSessionIdRef.current === joinedSession.id) return;
 
     if (socket.connected) {
+      console.log(`[DEBUG] [student StudentLayout Effect 1] EMITTING student:join_session — session_id=${joinedSession.id} socket.id=${socket.id} lastEmittedRef=${lastEmittedSessionIdRef.current} ts=${Date.now()}`);
       console.log(`[StudentLayout] Emitting student:join_session for session ${joinedSession.id}`);
       socket.emit("student:join_session", { session_id: joinedSession.id });
       lastEmittedSessionIdRef.current = joinedSession.id;
@@ -317,10 +318,12 @@ export function StudentLayout() {
     const onDisconnect = () => {
       // Record that a real transport-level disconnect happened.
       hadRealDisconnectRef.current = true;
+      console.log(`[DEBUG] [student StudentLayout] socket disconnect event fired — socket.id=${socket.id} ts=${Date.now()}`);
       console.log("[StudentLayout] Socket disconnected — will re-emit join on reconnect");
     };
 
     const onConnect = () => {
+      console.log(`[DEBUG] [student StudentLayout] socket connect event fired — socket.id=${socket.id} hadRealDisconnectRef=${hadRealDisconnectRef.current} currentSessionId=${joinedSessionRef.current?.id} ts=${Date.now()}`);
       // Only re-emit if we had a real prior disconnect AND are in an active session.
       if (!hadRealDisconnectRef.current) return;
       hadRealDisconnectRef.current = false;
@@ -328,6 +331,7 @@ export function StudentLayout() {
       const currentSession = joinedSessionRef.current;
       if (!currentSession) return;
 
+      console.log(`[DEBUG] [student StudentLayout Effect 2] EMITTING student:join_session (reconnect) — session_id=${currentSession.id} socket.id=${socket.id} ts=${Date.now()}`);
       console.log(`[StudentLayout] Emitting student:join_session for session ${currentSession.id} (reconnect)`);
       socket.emit("student:join_session", { session_id: currentSession.id });
       // Update the guard so Effect 1 doesn't double-emit on the next render.

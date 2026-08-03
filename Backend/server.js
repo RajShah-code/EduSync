@@ -399,6 +399,7 @@ io.on('connection', (socket) => {
   //   and waits. The teacher then approves or denies via teacher:approve_rejoin /
   //   teacher:deny_rejoin.
   socket.on('student:join_session', (payload) => {
+    console.log(`[DEBUG] [server student:join_session] ENTER — socket.id=${socket.id} role=${role} payload=${JSON.stringify(payload)} userId=${userId} ts=${Date.now()}`);
     if (role !== 'student') return;
     const { session_id } = payload;
     const key = `${userId}:${session_id}`;
@@ -415,6 +416,7 @@ io.on('connection', (socket) => {
     // Treat it as a no-op: re-send the session-state snapshot so their UI is
     // fresh, but do NOT increment rejoinCounts or touch disconnectedStudents.
     if (activeStudentSessions.has(activeKey)) {
+      console.log(`[DEBUG] [server student:join_session] IDEMPOTENCY GUARD TRIPPED — student ${userId} already active in session ${session_id} activeKey=${activeKey} ts=${Date.now()}`);
       console.log(`[Rejoin] duplicate join_session ignored — student ${userId} already active in session ${session_id}`);
       const state = sessionStates.get(session_id);
       if (state) {
@@ -443,7 +445,9 @@ io.on('connection', (socket) => {
     // duplicate emit from the frontend while still connected is handled above
     // by the idempotency guard and never reaches this point.
     const wasDisconnected = disconnectedStudents.has(key);
+    console.log(`[DEBUG] [server student:join_session] CHECK REJOIN GATE — key=${key} wasDisconnected=${wasDisconnected} joinCount=${joinCount} disconnectedStudentsKeys=[${Array.from(disconnectedStudents.keys()).join(',')}] ts=${Date.now()}`);
     if (wasDisconnected) {
+      console.log(`[DEBUG] [server student:join_session] BRANCH: REJOIN (wasDisconnected=true) — student_id=${userId} session_id=${session_id} teacherSocketId=${teacherSockets.get(session_id)} ts=${Date.now()}`);
       // Consume the disconnect record. A third attempt will still be gated
       // because the disconnect handler will have written a new record when
       // the student disconnects again.
@@ -452,6 +456,7 @@ io.on('connection', (socket) => {
 
       const teacherSocketId = teacherSockets.get(session_id);
       if (teacherSocketId) {
+        console.log(`[DEBUG] [server student:join_session] REJOIN PENDING — emitting teacher:rejoin_request to teacher_session:${session_id} and student:rejoin_pending to socket ${socket.id} (student_id=${userId}, rejoin_count=${joinCount}) ts=${Date.now()}`);
         // Notify the teacher — they see an Allow/Deny toast with the attempt count
         io.to(`teacher_session:${session_id}`).emit('teacher:rejoin_request', {
           session_id,
@@ -462,6 +467,7 @@ io.on('connection', (socket) => {
         // Tell the student to show the "waiting for approval" overlay with count
         socket.emit('student:rejoin_pending', { session_id, rejoin_count: joinCount });
       } else {
+        console.log(`[DEBUG] [server student:join_session] REJOIN FALLBACK (teacher missing) — student_id=${userId} session_id=${session_id} ts=${Date.now()}`);
         // Teacher is no longer connected (session probably ended between
         // the student's disconnect and reconnect). Fall through to normal
         // join so the student lands on a normal "session ended" state.
@@ -510,6 +516,7 @@ io.on('connection', (socket) => {
     }
 
     // ── Normal first-join path ───────────────────────────────────────────
+    console.log(`[DEBUG] [server student:join_session] BRANCH: FRESH JOIN (wasDisconnected=false) — student_id=${userId} session_id=${session_id} socket_id=${socket.id} ts=${Date.now()}`);
     socket._sessionId = session_id;
     socket.join(`session:${session_id}`);
     activeStudentSessions.add(activeKey);
@@ -780,9 +787,11 @@ io.on('connection', (socket) => {
   // after the teacher navigates to a sibling route (e.g. Task Assignment) and
   // its local connectedStudents state was wiped on unmount.
   socket.on('teacher:request_roster', ({ session_id }) => {
+    console.log(`[DEBUG] [server teacher:request_roster] ENTER — session_id=${session_id} teacher_socket.id=${socket.id} role=${role} ts=${Date.now()}`);
     if (role !== 'teacher' || !session_id) return;
     console.log(`[Socket] teacher:request_roster received for session ${session_id}`);
     const room = io.sockets.adapter.rooms.get(`session:${session_id}`);
+    console.log(`[DEBUG] [server teacher:request_roster] room session:${session_id} exists=${!!room} size=${room ? room.size : 0} members=[${room ? Array.from(room).join(',') : ''}] ts=${Date.now()}`);
     const students = [];
     if (room) {
       for (const socketId of room) {
@@ -796,6 +805,7 @@ io.on('connection', (socket) => {
         }
       }
     }
+    console.log(`[DEBUG] [server teacher:request_roster] RESULT — sending teacher:roster_snapshot with ${students.length} student(s): ${JSON.stringify(students)} (pendingRejoins keys=[${Array.from(pendingRejoins.keys()).join(',')}]) ts=${Date.now()}`);
     console.log(`[Socket] Sending teacher:roster_snapshot with ${students.length} students`);
     socket.emit('teacher:roster_snapshot', { session_id, students });
   });
@@ -942,9 +952,12 @@ io.on('connection', (socket) => {
   // auto-joining. student:left is still emitted so the teacher's connected-student
   // list and WebRTC peer connections are cleaned up immediately.
   socket.on('disconnect', () => {
+    console.log(`[DEBUG] [server disconnect] ENTER — role=${role} socket.id=${socket.id} userId=${userId} socket._sessionId=${socket._sessionId} teacherConnected=${teacherSockets.has(socket._sessionId)} ts=${Date.now()}`);
     if (role === 'student' && socket._sessionId) {
       const key = `${userId}:${socket._sessionId}`;
       const activeKey = `${socket._sessionId}:${userId}`;
+
+      console.log(`[DEBUG] [server disconnect student] student_id=${userId} session_id=${socket._sessionId} key=${key} — activeStudentSessions before delete: ${activeStudentSessions.has(activeKey)}, disconnectedStudents before set: ${disconnectedStudents.has(key)}`);
 
       // Remove from active-session tracking so a subsequent join_session
       // is not treated as a duplicate no-op.
@@ -959,6 +972,9 @@ io.on('connection', (socket) => {
           session_id: socket._sessionId,
           disconnected_at: Date.now(),
         });
+        console.log(`[DEBUG] [server disconnect student] wrote to disconnectedStudents key=${key} ts=${Date.now()}`);
+      } else {
+        console.log(`[DEBUG] [server disconnect student] teacher missing, skipped writing to disconnectedStudents for key=${key} ts=${Date.now()}`);
       }
 
       // Update attendance state on disconnect
@@ -983,6 +999,7 @@ io.on('connection', (socket) => {
 
       // io.to() is used here (not socket.to()) because the socket has already
       // left all rooms by the time the disconnect event fires.
+      console.log(`[DEBUG] [server disconnect student] emitting student:left to session:${socket._sessionId} for student_id=${userId} socket_id=${socket.id} ts=${Date.now()}`);
       io.to(`session:${socket._sessionId}`).emit('student:left', {
         student_id: userId,
         socket_id: socket.id,

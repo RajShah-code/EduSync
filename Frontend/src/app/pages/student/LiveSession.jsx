@@ -65,6 +65,7 @@ ${code}
 // Module-level singleton prevents re-loading when the component re-mounts.
 // Only triggers when student selects Python and clicks Run for the first time.
 let _studentPyodideLoadPromise = null;
+let studentDebugSeq = 0;
 
 async function loadStudentPyodide() {
   if (_studentPyodideLoadPromise) return _studentPyodideLoadPromise;
@@ -293,12 +294,17 @@ export function LiveSession() {
     // share mid-session). Uses Perfect Negotiation rollback so this handler is safe
     // to call in any RTCPeerConnection signaling state.
     const handleOffer = async ({ sdp, session_id, teacher_socket_id }) => {
-      // DIAG-LOG-5: fires when any webrtc:offer arrives, before any guard clauses
-      console.log(`[DIAG] student: webrtc:offer handler FIRED — session_id=${session_id} teacher_socket_id=${teacher_socket_id} ts=${Date.now()}`);
+      const offerSeq = ++studentDebugSeq;
       const currentSessionId = joinedSession?.id;
       if (currentSessionId && session_id !== currentSessionId) return;
-      const pcState = peerConnectionRef.current ? peerConnectionRef.current.signalingState : 'stable';
-      console.log(`[WEBRTC-DEBUG] student: offer received, teacherId=${teacher_socket_id} signalingState=${pcState} ts=${Date.now()}`);
+
+      const pcAtMomentOfferProcessed = peerConnectionRef.current
+        ? `STALE OBJECT (connState=${peerConnectionRef.current.connectionState}, sigState=${peerConnectionRef.current.signalingState}, iceState=${peerConnectionRef.current.iceConnectionState})`
+        : "NULL";
+
+      console.log(
+        `[DEBUG] student recv webrtc:offer: seq=#${offerSeq} | session_id=${session_id} | teacher_socket_id=${teacher_socket_id} | peerConnectionRef at moment offer processed=${pcAtMomentOfferProcessed} | ts=${Date.now()}`
+      );
 
       try {
         teacherSocketIdRef.current = teacher_socket_id;
@@ -319,8 +325,9 @@ export function LiveSession() {
           console.log(`[WEBRTC-DEBUG] student: new RTCPeerConnection created, teacherId=${teacher_socket_id} ts=${Date.now()}`);
 
           pc.ontrack = (event) => {
-            console.log(`[WEBRTC-DEBUG] student: ontrack fired, kind=${event.track.kind} teacherId=${teacher_socket_id} ts=${Date.now()}`);
-            console.log("[WebRTC Diagnosis] event.streams length:", event.streams.length);
+            console.log(
+              `[DEBUG] student ontrack firing: trackKind=${event.track.kind} | trackId=${event.track.id} | trackEnabled=${event.track.enabled} | trackReadyState=${event.track.readyState} | streamsLen=${event.streams.length} | ts=${Date.now()}`
+            );
             if (event.streams[0]) {
               console.log("[WebRTC Diagnosis] event.streams[0] tracks:", event.streams[0].getTracks().map(t => ({ id: t.id, kind: t.kind })));
             } else {
@@ -358,6 +365,10 @@ export function LiveSession() {
 
           pc.onicecandidate = (event) => {
             if (event.candidate && teacherSocketIdRef.current) {
+              const candSeq = ++studentDebugSeq;
+              console.log(
+                `[DEBUG] student send webrtc:ice-candidate: seq=#${candSeq} | target=${teacherSocketIdRef.current} | candidateType=${event.candidate.type} | ts=${Date.now()}`
+              );
               socket.emit('webrtc:ice-candidate', {
                 target_socket_id: teacherSocketIdRef.current,
                 candidate: event.candidate,
@@ -367,7 +378,9 @@ export function LiveSession() {
           };
 
           pc.oniceconnectionstatechange = () => {
-            console.log(`[WebRTC] ICE state=${pc.iceConnectionState}`);
+            console.log(
+              `[DEBUG] student ICE connection state change: iceConnectionState=${pc.iceConnectionState} | connectionState=${pc.connectionState} | signalingState=${pc.signalingState} | ts=${Date.now()}`
+            );
           };
 
           pc.onconnectionstatechange = () => {
@@ -379,12 +392,38 @@ export function LiveSession() {
         // before applying the incoming remote offer. This prevents glare.
         setBroadcastStatus('connecting');
         if (pc.signalingState !== 'stable') {
-          await Promise.all([
-            pc.setLocalDescription({ type: 'rollback' }),
-            pc.setRemoteDescription(new RTCSessionDescription(sdp)),
-          ]);
+          console.log(
+            `[DEBUG-RACE] student handleOffer: offer arrived when PC signalingState='${pc.signalingState}' (NON-STABLE — triggering rollback path) ts=${Date.now()}`
+          );
+          try {
+            await Promise.all([
+              pc.setLocalDescription({ type: 'rollback' }),
+              pc.setRemoteDescription(new RTCSessionDescription(sdp)),
+            ]);
+            console.log(
+              `[DEBUG-RACE] student handleOffer: rollback + setRemoteDescription Promise.all RESOLVED successfully ts=${Date.now()}`
+            );
+          } catch (rollbackErr) {
+            console.error(
+              `[DEBUG-RACE] student handleOffer: rollback + setRemoteDescription Promise.all THREW ERROR: ${rollbackErr?.message || rollbackErr} ts=${Date.now()}`
+            );
+            throw rollbackErr;
+          }
         } else {
-          await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+          console.log(
+            `[DEBUG-RACE] student handleOffer: offer arrived when PC signalingState='stable' ts=${Date.now()}`
+          );
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            console.log(
+              `[DEBUG-RACE] student handleOffer: setRemoteDescription RESOLVED successfully ts=${Date.now()}`
+            );
+          } catch (srdErr) {
+            console.error(
+              `[DEBUG-RACE] student handleOffer: setRemoteDescription THREW ERROR: ${srdErr?.message || srdErr} ts=${Date.now()}`
+            );
+            throw srdErr;
+          }
         }
 
         // Drain buffered ICE candidates that arrived before setRemoteDescription
@@ -396,13 +435,20 @@ export function LiveSession() {
 
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+
+        const answerSeq = ++studentDebugSeq;
+        console.log(
+          `[DEBUG] student send webrtc:answer: seq=#${answerSeq} | teacherId=${teacher_socket_id} | sdpType=${pc.localDescription.type} | ts=${Date.now()}`
+        );
         socket.emit('webrtc:answer', {
           teacher_socket_id,
           sdp: pc.localDescription,
           session_id,
         });
-        console.log(`[WEBRTC-DEBUG] student: answer sent to teacherId=${teacher_socket_id} ts=${Date.now()}`);
       } catch (err) {
+        console.error(
+          `[DEBUG-RACE] student handleOffer: CATCH BLOCK FIRED — err=${err?.message || err} | cleaning up PC and setting status to 'waiting' ts=${Date.now()}`
+        );
         cleanupPeerConnection();
         setBroadcastStatus('waiting');
       }
@@ -411,6 +457,10 @@ export function LiveSession() {
     // ── webrtc:ice-candidate ──────────────────────────────────────────────────
     // Buffer if remote description not yet set (race between offer and candidates).
     const handleIceCandidate = async ({ candidate }) => {
+      const iceRecvSeq = ++studentDebugSeq;
+      console.log(
+        `[DEBUG] student recv webrtc:ice-candidate: seq=#${iceRecvSeq} | candidateType=${candidate?.type} | buffered=${!peerConnectionRef.current?.remoteDescription?.type} | ts=${Date.now()}`
+      );
       try {
         if (!candidate) return;
         const pc = peerConnectionRef.current;
@@ -429,11 +479,24 @@ export function LiveSession() {
     const handleBroadcastEnded = ({ session_id }) => {
       const currentSessionId = joinedSession?.id;
       if (currentSessionId && session_id !== currentSessionId) return;
-      console.log(`[WEBRTC-DEBUG] student: handleBroadcastEnded invoked, session_id=${session_id} ts=${Date.now()}`);
-      // STEP 2 FIX: tear down the stale RTCPeerConnection so the next broadcast
-      // cycle starts from a clean state. cleanupPeerConnection() explicitly nulls
-      // peerConnectionRef.current, stops video tracks, and clears ICE buffers.
+
+      const endSeq = ++studentDebugSeq;
+      const pcBefore = peerConnectionRef.current;
+      const beforeState = pcBefore
+        ? `NOT NULL (connState=${pcBefore.connectionState}, sigState=${pcBefore.signalingState}, iceState=${pcBefore.iceConnectionState})`
+        : "NULL";
+      console.log(
+        `[DEBUG] student recv webrtc:broadcast_ended BEFORE cleanup: seq=#${endSeq} | session_id=${session_id} | peerConnectionRef=${beforeState} | ts=${Date.now()}`
+      );
+
       cleanupPeerConnection();
+
+      const pcAfter = peerConnectionRef.current;
+      const afterState = pcAfter ? "NOT NULL" : "NULL";
+      console.log(
+        `[DEBUG] student recv webrtc:broadcast_ended AFTER cleanup: seq=#${endSeq} | peerConnectionRef=${afterState} | ts=${Date.now()}`
+      );
+
       setBroadcastStatus('ended');
     };
 

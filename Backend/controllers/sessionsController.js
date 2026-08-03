@@ -103,7 +103,7 @@ const getActiveSessions = async (req, res) => {
       const mappings = await sql`
         SELECT session_id, class_id 
         FROM session_classes
-        WHERE session_id IN (${sessionIds});
+        WHERE session_id = ANY(${sessionIds});
       `;
       sessions = sessions.map(s => {
         const cids = mappings.filter(m => m.session_id === s.id).map(m => m.class_id);

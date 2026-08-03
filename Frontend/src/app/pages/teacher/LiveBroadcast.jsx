@@ -125,6 +125,7 @@ ${code}
 // singleton promise so the runtime is only downloaded once per page session, and only
 // when a user first selects Python and clicks Run (not on page load).
 let _pyodideLoadPromise = null;
+let teacherDebugSeq = 0;
 
 async function loadPyodideFromPublic() {
   if (_pyodideLoadPromise) return _pyodideLoadPromise;
@@ -256,6 +257,11 @@ export function LiveBroadcast() {
   const stopNowRef = useRef(null);        // always points to latest handleStopBroadcastNow
   const pyodideRef = useRef(null);        // holds the loaded Pyodide instance
 
+  // DISCONNECTED_GRACE_MS: Grace period for a PC in 'disconnected' state before evicting
+  // and proactively creating a fresh PC + sending a new offer.
+  const DISCONNECTED_GRACE_MS = 4000;
+  const disconnectGraceTimersRef = useRef(new Map()); // Map<studentSocketId, timeoutId>
+
   // leftTimersRef: Map<student_id, timeoutId> for the 5s "LEFT" removal timers.
   // When a student disconnects, we set their tile to LEFT status and start a 5s
   // timer to remove them. If they rejoin before it fires, the timer is cancelled.
@@ -342,13 +348,18 @@ export function LiveBroadcast() {
       }
 
       if (!pc) {
+        const alreadyExists = peerConnectionsRef.current.has(studentSocketId);
+        const existingPcState = alreadyExists ? peerConnectionsRef.current.get(studentSocketId)?.connectionState : null;
+        console.log(`[DEBUG] teacher stale-entry check before set: targetStudentId=${studentSocketId} | alreadyExists=${alreadyExists} | existingPcState=${existingPcState} | Map size=${peerConnectionsRef.current.size} | Map keys=[${Array.from(peerConnectionsRef.current.keys()).join(', ')}] | ts=${Date.now()}`);
+
         pc = new RTCPeerConnection(ICE_CONFIG);
         peerConnectionsRef.current.set(studentSocketId, pc);
         console.log(`[WEBRTC-DEBUG] teacher: new RTCPeerConnection for ${studentSocketId}, Map size=${peerConnectionsRef.current.size} ts=${Date.now()}`);
 
         pc.onicecandidate = (event) => {
           if (event.candidate) {
-            console.log(`[WEBRTC-DEBUG] teacher: ICE candidate generated for ${studentSocketId} ts=${Date.now()}`);
+            const iceSeq = ++teacherDebugSeq;
+            console.log(`[DEBUG] teacher send webrtc:ice-candidate: seq=#${iceSeq} | target=${studentSocketId} | candidateType=${event.candidate.type} | candidate=${event.candidate.candidate} | ts=${Date.now()}`);
             socket.emit("webrtc:ice-candidate", {
               target_socket_id: studentSocketId,
               candidate: event.candidate,
@@ -360,15 +371,45 @@ export function LiveBroadcast() {
         pc.onconnectionstatechange = () => {
           const state = pc.connectionState;
           console.log(`[WEBRTC-DEBUG] teacher: PC state → ${state} for ${studentSocketId} ts=${Date.now()}`);
-          if (state === "failed") {
-            // ROSTER FIX: do NOT touch connectedStudents here.
-            // A WebRTC PC timeout ('failed' via ICE) is NOT the same as the
-            // student leaving the session — their socket connection may still
-            // be fully alive (e.g. they navigated to a task page).
-            // Roster membership is the sole responsibility of the socket-level
-            // handlers: student:joined (add) and student:left (remove).
-            // Removing the student here would cause them to be skipped when
-            // handleStartScreenShare iterates connectedStudents for fresh offers.
+          
+          if (state === "connected") {
+            if (disconnectGraceTimersRef.current.has(studentSocketId)) {
+              clearTimeout(disconnectGraceTimersRef.current.get(studentSocketId));
+              disconnectGraceTimersRef.current.delete(studentSocketId);
+              console.log(`[DEBUG] teacher grace timer CLEARED due to recovery for student_socket_id=${studentSocketId} ts=${Date.now()}`);
+            }
+          } else if (state === "disconnected") {
+            if (!disconnectGraceTimersRef.current.has(studentSocketId)) {
+              console.log(`[DEBUG] teacher grace timer STARTED (DISCONNECTED_GRACE_MS=${DISCONNECTED_GRACE_MS}ms) for student_socket_id=${studentSocketId} ts=${Date.now()}`);
+              const timerId = setTimeout(async () => {
+                disconnectGraceTimersRef.current.delete(studentSocketId);
+                const currentPc = peerConnectionsRef.current.get(studentSocketId);
+                if (currentPc && (currentPc.connectionState === 'disconnected' || currentPc.connectionState === 'failed')) {
+                  console.log(`[DEBUG] teacher grace timer FIRED for student_socket_id=${studentSocketId} — evicting stale PC (state=${currentPc.connectionState}) and triggering proactive re-offer ts=${Date.now()}`);
+                  currentPc.close();
+                  peerConnectionsRef.current.delete(studentSocketId);
+
+                  if (screenStreamRef.current) {
+                    const student = connectedStudentsRef.current.find(s => s.socket_id === studentSocketId);
+                    if (student) {
+                      try {
+                        console.log(`[DEBUG] teacher proactively calling createPeerConnectionForStudent for ${studentSocketId} ts=${Date.now()}`);
+                        await createPeerConnectionForStudent(student.socket_id, student.student_id, student.student_name);
+                        console.log(`[DEBUG] teacher proactive fresh PC created & offer sent for ${studentSocketId} ts=${Date.now()}`);
+                      } catch (err) {
+                        console.error(`[WebRTC] Proactive re-offer failed for ${studentSocketId}:`, err);
+                      }
+                    }
+                  }
+                }
+              }, DISCONNECTED_GRACE_MS);
+              disconnectGraceTimersRef.current.set(studentSocketId, timerId);
+            }
+          } else if (state === "failed") {
+            if (disconnectGraceTimersRef.current.has(studentSocketId)) {
+              clearTimeout(disconnectGraceTimersRef.current.get(studentSocketId));
+              disconnectGraceTimersRef.current.delete(studentSocketId);
+            }
             const rosterBefore = connectedStudentsRef.current.length;
             pc.close();
             peerConnectionsRef.current.delete(studentSocketId);
@@ -389,7 +430,9 @@ export function LiveBroadcast() {
             const offer = await pc.createOffer();
             if (pc.signalingState !== "stable") return;
             await pc.setLocalDescription(offer);
-            console.log(`[WEBRTC-DEBUG] teacher: offer created for ${studentSocketId} ts=${Date.now()}`);
+            const offerSeq = ++teacherDebugSeq;
+            console.log(`[DEBUG] teacher offer created: seq=#${offerSeq} | targetStudentId=${studentSocketId} | Map size=${peerConnectionsRef.current.size} | Map keys=[${Array.from(peerConnectionsRef.current.keys()).join(', ')}] | ts=${Date.now()}`);
+            console.log(`[DEBUG] teacher send webrtc:offer: seq=#${offerSeq} | target=${studentSocketId} | sdpType=${pc.localDescription.type} | ts=${Date.now()}`);
             socket.emit("webrtc:offer", {
               target_socket_id: studentSocketId,
               sdp: pc.localDescription,
@@ -458,14 +501,18 @@ export function LiveBroadcast() {
     if (socket && sessionInfoRef.current) {
       // Only emit broadcast_ended if there was an active screen share
       if (screenStreamRef.current) {
+        console.log(`[DEBUG] teacher broadcast_ended emit (handleStopBroadcastNow): student IDs in Map=[${Array.from(peerConnectionsRef.current.keys()).join(', ')}], Map size before=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
         socket.emit("webrtc:broadcast_ended", { session_id: sessionInfoRef.current.id });
       }
       socket.emit("teacher:end_session", { session_id: sessionInfoRef.current.id });
     }
 
     // Close all peer connections
+    const clearedKeys = Array.from(peerConnectionsRef.current.keys());
+    console.log(`[DEBUG] teacher clearing peerConnectionsRef (handleStopBroadcastNow): student IDs cleared=[${clearedKeys.join(', ')}], Map size before=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
     peerConnectionsRef.current.forEach((pc) => pc.close());
     peerConnectionsRef.current.clear();
+    console.log(`[DEBUG] teacher peerConnectionsRef cleared (handleStopBroadcastNow): Map size after=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
 
     // Stop screen capture tracks
     if (screenStreamRef.current) {
@@ -514,6 +561,9 @@ export function LiveBroadcast() {
     // Cancel any pending LEFT-state removal timers
     leftTimersRef.current.forEach((timerId) => clearTimeout(timerId));
     leftTimersRef.current.clear();
+    // Cancel any pending disconnect grace timers
+    disconnectGraceTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+    disconnectGraceTimersRef.current.clear();
   }
 
   // Always point stopNowRef to the latest closure so once-wired onended
@@ -579,7 +629,8 @@ export function LiveBroadcast() {
       };
 
       const handleWebRTCAnswer = async ({ sdp, student_socket_id }) => {
-        console.log(`[WebRTC] Answer received from ${student_socket_id}`);
+        const ansSeq = ++teacherDebugSeq;
+        console.log(`[DEBUG] teacher recv webrtc:answer: seq=#${ansSeq} | from=${student_socket_id} | ts=${Date.now()}`);
         try {
           const pc = peerConnectionsRef.current.get(student_socket_id);
           if (!pc) return;
@@ -590,7 +641,8 @@ export function LiveBroadcast() {
       };
 
       const handleWebRTCIceCandidate = async ({ candidate, from_socket_id }) => {
-        console.log(`[WebRTC] ICE candidate received from ${from_socket_id}:`, candidate?.type);
+        const iceSeq = ++teacherDebugSeq;
+        console.log(`[DEBUG] teacher recv webrtc:ice-candidate: seq=#${iceSeq} | from=${from_socket_id} | candidateType=${candidate?.type} | ts=${Date.now()}`);
         try {
           const pc = peerConnectionsRef.current.get(from_socket_id);
           if (!pc || !candidate) return;
@@ -601,6 +653,11 @@ export function LiveBroadcast() {
       };
 
       const handleStudentLeft = ({ socket_id, student_id }) => {
+        console.log(`[DEBUG] [teacher handleStudentLeft] RECEIVED student:left — socket_id=${socket_id} student_id=${student_id} ts=${Date.now()}`);
+        if (disconnectGraceTimersRef.current.has(socket_id)) {
+          clearTimeout(disconnectGraceTimersRef.current.get(socket_id));
+          disconnectGraceTimersRef.current.delete(socket_id);
+        }
         // Close and remove the WebRTC peer connection immediately
         const pc = peerConnectionsRef.current.get(socket_id);
         if (pc) {
@@ -650,6 +707,7 @@ export function LiveBroadcast() {
       };
 
       const handleRejoinRequest = ({ session_id, student_id, student_name, rejoin_count }) => {
+        console.log(`[DEBUG] [teacher handleRejoinRequest] FIRED teacher:rejoin_request — session_id=${session_id} student_id=${student_id} student_name=${student_name} rejoin_count=${rejoin_count} ts=${Date.now()}`);
         toast(`${student_name} wants to rejoin`, {
           description: `Attempt #${rejoin_count ?? '?'} — this student was previously in your session.`,
           duration: Infinity,
@@ -760,6 +818,8 @@ export function LiveBroadcast() {
     return () => {
       clearInterval(intervalId);
       cleanup();
+      disconnectGraceTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+      disconnectGraceTimersRef.current.clear();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -774,6 +834,7 @@ export function LiveBroadcast() {
     };
 
     const handleRosterSnapshot = ({ session_id, students }) => {
+      console.log(`[DEBUG] [teacher handleRosterSnapshot] RECEIVED teacher:roster_snapshot — session_id=${session_id} targetSessionId=${sessionInfo?.id} rawStudentsPayload=${JSON.stringify(students)} studentCount=${students?.length} ts=${Date.now()}`);
       if (session_id !== sessionInfo.id) return;
       console.log(`[WEBRTC-DEBUG] teacher: roster_snapshot received, ${students.length} student(s) ts=${Date.now()}`);
       
@@ -826,14 +887,19 @@ export function LiveBroadcast() {
       }
 
       clearTimeout(editorSyncTimerRef.current);
+
+      const clearedKeys = Array.from(peerConnectionsRef.current.keys());
+      console.log(`[DEBUG] teacher clearing peerConnectionsRef (unmount): student IDs cleared=[${clearedKeys.join(', ')}], Map size before=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
       peerConnectionsRef.current.forEach((pc) => pc.close());
       peerConnectionsRef.current.clear();
+      console.log(`[DEBUG] teacher peerConnectionsRef cleared (unmount): Map size after=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
 
       // Tell students the broadcast ended so their PC is cleanly torn down,
       // rather than left to time out silently — this was previously missing,
       // causing stale student-side PCs after any navigation away from this page.
       const socket = getSocket();
       if (socket && sessionInfoRef.current && screenStreamRef.current) {
+        console.log(`[DEBUG] teacher broadcast_ended emit (unmount): student IDs in Map=[${clearedKeys.join(', ')}], Map size=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
         console.log(`[WEBRTC-DEBUG] teacher: LiveBroadcast unmounting with active stream, emitting webrtc:broadcast_ended for session=${sessionInfoRef.current.id}`);
         socket.emit("webrtc:broadcast_ended", { session_id: sessionInfoRef.current.id });
       }
@@ -1098,6 +1164,17 @@ export function LiveBroadcast() {
   //   3. Students who join AFTER this point are handled by handleStudentJoined →
   //      createPeerConnectionForStudent (which checks screenStreamRef.current).
   const handleStartScreenShare = async () => {
+    console.log(
+      `[DEBUG-RACE] teacher handleStartScreenShare ENTER — Map size=${peerConnectionsRef.current.size} | PCs:`,
+      Array.from(peerConnectionsRef.current.entries()).map(([sockId, pc]) => ({
+        socket_id: sockId,
+        signalingState: pc.signalingState,
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+      })),
+      `ts=${Date.now()}`
+    );
+    console.log(`[DEBUG] teacher start/restart toggle (handleStartScreenShare): student IDs in Map=[${Array.from(peerConnectionsRef.current.keys()).join(', ')}], Map size=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
     // DIAG-LOG-1: dump full roster at the very start, before any other logic
     console.log(
       `[DIAG] handleStartScreenShare ENTER — roster (connectedStudentsRef.current):`,
@@ -1286,6 +1363,16 @@ export function LiveBroadcast() {
   // Stops tracks and resets screen share state WITHOUT ending the session.
   // Called by the "Stop Screen Share" button and by screenTrack.onended.
   const handleStopScreenShareInternal = () => {
+    console.log(
+      `[DEBUG-RACE] teacher handleStopScreenShareInternal ENTER — Map size=${peerConnectionsRef.current.size} | PCs:`,
+      Array.from(peerConnectionsRef.current.entries()).map(([sockId, pc]) => ({
+        socket_id: sockId,
+        signalingState: pc.signalingState,
+        connectionState: pc.connectionState,
+        iceConnectionState: pc.iceConnectionState,
+      })),
+      `ts=${Date.now()}`
+    );
     if (screenTrackRef.current) {
       screenTrackRef.current.enabled = false;
     }
@@ -1324,6 +1411,7 @@ export function LiveBroadcast() {
 
     const socket = getSocket();
     if (socket && sessionInfoRef.current) {
+      console.log(`[DEBUG] teacher broadcast_ended emit (handleStopScreenShareInternal): student IDs in Map=[${Array.from(peerConnectionsRef.current.keys()).join(', ')}], Map size=${peerConnectionsRef.current.size}, ts=${Date.now()}`);
       socket.emit("webrtc:broadcast_ended", { session_id: sessionInfoRef.current.id });
     }
     setIsScreenSharing(false);
