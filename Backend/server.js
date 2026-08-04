@@ -241,7 +241,8 @@ io.on('connection', (socket) => {
   // no longer get the rejoin-approval flow (session is gone).
   socket.on('teacher:end_session', async (payload) => {
     if (role !== 'teacher') return;
-    const sid = payload.session_id;
+    const sid = parseInt(payload?.session_id, 10);
+    if (isNaN(sid)) return;
 
     let targetClassIds = [];
     try {
@@ -1027,7 +1028,9 @@ io.on('connection', (socket) => {
       }
       sessionStates.delete(sid);
       sessionModes.delete(sid);
-      sessionAttendance.delete(sid);
+      // sessionAttendance is intentionally NOT deleted on socket disconnect
+      // so student attendance tracking survives teacher refreshes/reconnects
+      // until teacher:end_session or POST /sessions/end is executed.
     }
     // ── Phase 10: Exam socket cleanup ─────────────────────────────────────────
     // Remove the student's socket entry on disconnect to prevent stale map entries.

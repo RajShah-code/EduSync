@@ -58,8 +58,25 @@ export function StudentLayout() {
 
   // All running sessions (global)
   const [activeSessions, setActiveSessions] = useState([]);
-  // The specific session this student has joined
-  const [joinedSession, setJoinedSession] = useState(null);
+  // The specific session this student has joined — persisted in sessionStorage
+  const [joinedSession, setJoinedSessionState] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem("edusync_joined_session");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const setJoinedSession = (session) => {
+    if (session) {
+      sessionStorage.setItem("edusync_joined_session", JSON.stringify(session));
+    } else {
+      sessionStorage.removeItem("edusync_joined_session");
+    }
+    setJoinedSessionState(session);
+  };
+
   // The session the student clicked "Join" on — passed to modal
   const [selectedSession, setSelectedSession] = useState(null);
 
@@ -264,85 +281,59 @@ export function StudentLayout() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Ref: tracks the last session ID for which we emitted student:join_session.
-  // Prevents the session-join effect from re-emitting when unrelated state
-  // (e.g. rejoinStatus) changes cause a re-render, even if joinedSession?.id
-  // hasn't changed.
-  const lastEmittedSessionIdRef = useRef(null);
-
-  // Ref: set to true when the socket fires a real 'disconnect' event.
-  // The reconnect handler reads this flag and only re-emits if a genuine
-  // disconnect actually occurred — never as a side-effect of rejoinStatus.
-  const hadRealDisconnectRef = useRef(false);
-
-  // ── Effect 1: Emit student:join_session exactly once per new session ──────
-  // Keyed ONLY on joinedSession?.id. rejoinStatus is intentionally absent from
-  // the dependency array — it is only read for UI display, never to re-trigger
-  // the join emit.
+  // Sync joinedSession from location.state if navigating directly into live session
   useEffect(() => {
-    const socket = getSocket();
+    if (location.state?.session && (!joinedSession || joinedSession.id !== location.state.session.id)) {
+      setJoinedSession(location.state.session);
+      setHasJoinedSession(true);
+    }
+  }, [location.state?.session]);
 
-    // If the student left/was kicked, clear cache and reset the emit guard.
+  // Ref: tracks socket.id + session.id for which student:join_session was emitted
+  const lastEmittedKeyRef = useRef(null);
+
+  // Helper function to reliably emit student:join_session
+  const emitJoinSession = (session) => {
+    const socket = getSocket();
+    if (!socket || !socket.connected || !session?.id) return;
+    const key = `${socket.id}:${session.id}`;
+    if (lastEmittedKeyRef.current === key) return;
+
+    console.log(`[DEBUG] [student StudentLayout] EMITTING student:join_session — session_id=${session.id} socket.id=${socket.id} ts=${Date.now()}`);
+    console.log(`[StudentLayout] Emitting student:join_session for session ${session.id}`);
+    socket.emit("student:join_session", { session_id: session.id });
+    lastEmittedKeyRef.current = key;
+  };
+
+  // ── Effect 1: Emit student:join_session whenever joinedSession is set/changed ──
+  useEffect(() => {
     if (!joinedSession) {
       setSessionStateCache(null);
-      lastEmittedSessionIdRef.current = null;
+      lastEmittedKeyRef.current = null;
       return;
     }
-
-    if (!socket) return;
-
-    // Guard: only emit once per session ID, not on every re-render.
-    if (lastEmittedSessionIdRef.current === joinedSession.id) return;
-
-    if (socket.connected) {
-      console.log(`[DEBUG] [student StudentLayout Effect 1] EMITTING student:join_session — session_id=${joinedSession.id} socket.id=${socket.id} lastEmittedRef=${lastEmittedSessionIdRef.current} ts=${Date.now()}`);
-      console.log(`[StudentLayout] Emitting student:join_session for session ${joinedSession.id}`);
-      socket.emit("student:join_session", { session_id: joinedSession.id });
-      lastEmittedSessionIdRef.current = joinedSession.id;
-    }
-    // If not yet connected, Effect 2's connect handler will emit once the
-    // socket connects and hadRealDisconnectRef is NOT set (first connect).
-    // We set hadRealDisconnectRef = false here so the reconnect effect knows
-    // the next 'connect' is a fresh initial connection, not a re-connect.
-    hadRealDisconnectRef.current = false;
+    emitJoinSession(joinedSession);
   }, [joinedSession?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect 2: Re-emit ONLY on a genuine socket-level reconnect ────────────
-  // Mount-once (empty dep array). Uses refs to read latest values without
-  // needing them in the dependency array, so this effect is never re-run due
-  // to state changes. rejoinStatus is not referenced here at all.
+  // ── Effect 2: Emit on socket connect/reconnect whenever a joinedSession exists ──
   useEffect(() => {
     const socket = getSocket();
     if (!socket) return;
 
-    const onDisconnect = () => {
-      // Record that a real transport-level disconnect happened.
-      hadRealDisconnectRef.current = true;
-      console.log(`[DEBUG] [student StudentLayout] socket disconnect event fired — socket.id=${socket.id} ts=${Date.now()}`);
-      console.log("[StudentLayout] Socket disconnected — will re-emit join on reconnect");
-    };
-
     const onConnect = () => {
-      console.log(`[DEBUG] [student StudentLayout] socket connect event fired — socket.id=${socket.id} hadRealDisconnectRef=${hadRealDisconnectRef.current} currentSessionId=${joinedSessionRef.current?.id} ts=${Date.now()}`);
-      // Only re-emit if we had a real prior disconnect AND are in an active session.
-      if (!hadRealDisconnectRef.current) return;
-      hadRealDisconnectRef.current = false;
-
-      const currentSession = joinedSessionRef.current;
-      if (!currentSession) return;
-
-      console.log(`[DEBUG] [student StudentLayout Effect 2] EMITTING student:join_session (reconnect) — session_id=${currentSession.id} socket.id=${socket.id} ts=${Date.now()}`);
-      console.log(`[StudentLayout] Emitting student:join_session for session ${currentSession.id} (reconnect)`);
-      socket.emit("student:join_session", { session_id: currentSession.id });
-      // Update the guard so Effect 1 doesn't double-emit on the next render.
-      lastEmittedSessionIdRef.current = currentSession.id;
+      console.log(`[DEBUG] [student StudentLayout] socket connect event fired — socket.id=${socket.id} currentSessionId=${joinedSessionRef.current?.id} ts=${Date.now()}`);
+      if (joinedSessionRef.current) {
+        emitJoinSession(joinedSessionRef.current);
+      }
     };
 
-    socket.on("disconnect", onDisconnect);
+    if (socket.connected && joinedSessionRef.current) {
+      emitJoinSession(joinedSessionRef.current);
+    }
+
     socket.on("connect", onConnect);
 
     return () => {
-      socket.off("disconnect", onDisconnect);
       socket.off("connect", onConnect);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

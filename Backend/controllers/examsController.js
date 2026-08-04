@@ -436,7 +436,12 @@ const submitExam = async (req, res) => {
 
     // Upsert each answer and auto-score MCQ
     for (const ans of answers) {
-      const questionId = parseInt(ans.questionId);
+      const qIdRaw = ans.questionId ?? ans.question_id;
+      const questionId = parseInt(qIdRaw, 10);
+      if (isNaN(questionId)) continue;
+
+      const selOpt = ans.selectedOption !== undefined ? ans.selectedOption : ans.selected_option;
+      const codeAns = ans.codeAnswer !== undefined ? ans.codeAnswer : ans.code_answer;
 
       // Fetch question to check type, correct_option, and max_score
       const [question] = await sql`
@@ -445,9 +450,10 @@ const submitExam = async (req, res) => {
       if (!question) continue;
 
       let score = null;
-      if (question.type === 'mcq' && ans.selectedOption !== undefined && ans.selectedOption !== null) {
+      if (question.type === 'mcq' && selOpt !== undefined && selOpt !== null) {
+        const parsedOpt = parseInt(selOpt, 10);
         // Auto-score: max_score for correct, 0 for incorrect
-        score = parseInt(ans.selectedOption) === question.correct_option ? parseFloat(question.max_score || 1) : 0;
+        score = (!isNaN(parsedOpt) && parsedOpt === question.correct_option) ? parseFloat(question.max_score || 1) : 0;
       }
 
       await sql`
@@ -455,8 +461,8 @@ const submitExam = async (req, res) => {
         VALUES (
           ${attempt.id},
           ${questionId},
-          ${question.type === 'mcq' ? (ans.selectedOption ?? null) : null},
-          ${question.type === 'code' ? (ans.codeAnswer ?? null) : null},
+          ${question.type === 'mcq' ? (selOpt !== undefined && selOpt !== null ? parseInt(selOpt, 10) : null) : null},
+          ${question.type === 'code' ? (codeAns ?? null) : null},
           ${score}
         )
         ON CONFLICT (exam_attempt_id, question_id)

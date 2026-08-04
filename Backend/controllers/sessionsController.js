@@ -66,11 +66,76 @@ const endSession = async (req, res) => {
       UPDATE sessions
       SET ended_at = NOW()
       WHERE teacher_id = ${teacher_id} AND ended_at IS NULL
-      RETURNING id
+      RETURNING id, started_at, ended_at
     `;
 
     if (!session) {
       return res.status(404).json({ message: 'No active session found' });
+    }
+
+    const sid = parseInt(session.id, 10);
+    const sessionAttendance = req.app.get('sessionAttendance');
+
+    console.log(`[DEBUG endSession Controller] sid=${sid} (type=${typeof sid}) sessionAttendance keys=[${Array.from(sessionAttendance ? sessionAttendance.keys() : []).map(k => `${k}:${typeof k}`).join(', ')}]`);
+
+    if (sessionAttendance && (sessionAttendance.has(sid) || sessionAttendance.has(String(sid)))) {
+      const studentsMap = sessionAttendance.get(sid) || sessionAttendance.get(String(sid));
+      console.log(`[DEBUG endSession Controller] Found studentsMap with ${studentsMap.size} student(s)`);
+      const session_started = new Date(session.started_at);
+      const session_ended = new Date(session.ended_at);
+      const session_total_duration_seconds = Math.max(1, Math.round((session_ended - session_started) / 1000));
+
+      for (const [studentId, studentState] of studentsMap.entries()) {
+        const finalized_left_at = studentState.left_at ? new Date(studentState.left_at) : new Date(session_ended);
+        const joined_at_date = new Date(studentState.joined_at);
+
+        if (studentState.last_fullscreen_exit) {
+          const duration_seconds = Math.max(0, Math.round((session_ended.getTime() - new Date(studentState.last_fullscreen_exit).getTime()) / 1000));
+          studentState.fullscreen_exit_log.push({
+            exited_at: studentState.last_fullscreen_exit,
+            returned_at: session_ended.getTime(),
+            duration_seconds,
+          });
+          studentState.fullscreen_exit_count += 1;
+          studentState.last_fullscreen_exit = null;
+        }
+
+        const total_outside_seconds = studentState.fullscreen_exit_log.reduce((acc, log) => acc + (log.duration_seconds || 0), 0);
+        const total_in_session_seconds = Math.max(0, Math.round((finalized_left_at - joined_at_date) / 1000));
+        const total_present_seconds = Math.max(0, total_in_session_seconds - total_outside_seconds);
+        const presence_percentage = Math.min(1.0, total_present_seconds / session_total_duration_seconds);
+
+        let status = 'absent';
+        let teacher_decision = null;
+        if (presence_percentage >= 0.9 && studentState.fullscreen_exit_count <= 1) {
+          status = 'present';
+          teacher_decision = 'approved';
+        }
+
+        try {
+          await sql`
+            INSERT INTO attendance (
+              session_id, student_id, joined_at, left_at, total_present_seconds,
+              fullscreen_exit_count, fullscreen_exit_log, presence_percentage, status, teacher_decision
+            ) VALUES (
+              ${sid}, ${studentId}, ${studentState.joined_at}, ${finalized_left_at}, ${total_present_seconds},
+              ${studentState.fullscreen_exit_count}, ${JSON.stringify(studentState.fullscreen_exit_log)},
+              ${presence_percentage}, ${status}, ${teacher_decision}
+            )
+            ON CONFLICT (session_id, student_id) DO UPDATE SET
+              joined_at = EXCLUDED.joined_at,
+              left_at = EXCLUDED.left_at,
+              total_present_seconds = EXCLUDED.total_present_seconds,
+              fullscreen_exit_count = EXCLUDED.fullscreen_exit_count,
+              fullscreen_exit_log = EXCLUDED.fullscreen_exit_log,
+              presence_percentage = EXCLUDED.presence_percentage,
+              status = EXCLUDED.status,
+              teacher_decision = EXCLUDED.teacher_decision
+          `;
+        } catch (saveErr) {
+          console.error('[endSession Controller] Failed to save attendance:', saveErr);
+        }
+      }
     }
 
     res.json({ message: 'Session ended' });
