@@ -1,3 +1,4 @@
+// DEPRECATED: Superseded by Backend/config/dbSetup.js (runs automatically on server boot). Kept for reference only.
 const sql = require('../config/db');
 
 const init = async () => {

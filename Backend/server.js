@@ -27,9 +27,13 @@ const dbSetup = require('./config/dbSetup');
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
+  : '*';
+
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: allowedOrigins.length === 1 && allowedOrigins[0] === '*' ? '*' : (allowedOrigins.length ? allowedOrigins : '*'),
     methods: ['GET', 'POST'],
   },
 });
