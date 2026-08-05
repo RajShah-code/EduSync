@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
+const { BrevoClient } = require('@getbrevo/brevo');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const protect = require('../middleware/authMiddleware');
@@ -128,27 +128,16 @@ router.post('/email-zip', protect(['student']), async (req, res) => {
     });
   }
 
-  // 5. Nodemailer Gmail SMTP Send (Download Link Body, No Attachment)
+  // 5. Brevo Transactional Email Send (Download Link Body, No Attachment)
   try {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
+    const brevoApiKey = process.env.BREVO_API_KEY;
 
-    if (!smtpUser || !smtpPass) {
-      console.error('[DEBUG] SMTP configuration missing (SMTP_USER or SMTP_PASS not set).');
+    if (!brevoApiKey) {
+      console.error('[DEBUG] Brevo configuration missing (BREVO_API_KEY not set).');
       return res.status(500).json({ message: 'Email service is not configured on the server.' });
     }
 
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465, // true for 465, false for 587 (STARTTLS)
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
+    const brevoClient = new BrevoClient({ apiKey: brevoApiKey });
 
     const formattedDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
@@ -158,16 +147,19 @@ router.post('/email-zip', protect(['student']), async (req, res) => {
 
     const mailBodyText = `Hello,\n\nPlease find the download link for the zipped folder requested by ${studentName}.\n\nYour files are ready: ${downloadUrl}\nThis link expires in 48 hours.\n\nDate: ${formattedDate}\nSize: ${sizeInMB} MB\n\nBest regards,\nEduSync Platform`;
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM || `EduSync <${smtpUser}>`,
-      to: recipientEmail.trim(),
-      subject: `EduSync Folder Download - ${studentName} (${formattedDate})`,
-      text: mailBodyText,
-    };
+    console.log(`[DEBUG] Initiating Brevo API send to recipient: ${recipientEmail.trim()}`);
+    const startTime = Date.now();
 
-    console.log(`[DEBUG] Initiating SMTP send to recipient: ${recipientEmail.trim()}`);
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`[DEBUG] SMTP send success. MessageId: ${info.messageId}`);
+    const response = await brevoClient.transactionalEmails.sendTransacEmail({
+      sender: { name: 'EduSync', email: 'edusync.platform@gmail.com' },
+      to: [{ email: recipientEmail.trim() }],
+      subject: `EduSync Folder Download - ${studentName} (${formattedDate})`,
+      textContent: mailBodyText,
+    });
+
+    const durationMs = Date.now() - startTime;
+    const messageId = response.data?.messageId || response.messageId || 'sent';
+    console.log(`[DEBUG] Brevo API send success in ${durationMs}ms. MessageId: ${messageId}`);
 
     // Record this send attempt for rate limiting only on confirmed successful send
     userTimestamps.push(now);
@@ -175,16 +167,16 @@ router.post('/email-zip', protect(['student']), async (req, res) => {
 
     return res.status(200).json({
       message: 'Folder uploaded and email download link sent successfully!',
-      messageId: info.messageId,
+      messageId: messageId,
       recipient: recipientEmail.trim(),
     });
   } catch (err) {
-    const fullErrStr = err.response ? `${err.message} (Response: ${err.response})` : err.message;
-    console.error(`[DEBUG] SMTP send failure for recipient ${recipientEmail}:`, fullErrStr);
+    const fullErrStr = err.body ? `${err.message} (Body: ${JSON.stringify(err.body)})` : err.message;
+    console.error(`[DEBUG] Brevo API send failure for recipient ${recipientEmail}:`, fullErrStr);
     return res.status(500).json({
       message: `Failed to send email: ${fullErrStr}`,
       error: err.message,
-      responseDetails: err.response || null,
+      responseDetails: err.body || null,
     });
   }
 });
