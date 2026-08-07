@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "react-router";
+import { useParams, useNavigate } from "react-router";
 import { getSocket } from "../../store/socket";
 import { useFocusGuard } from "../../hooks/useFocusGuard";
 import { Timer } from "../../components/Timer";
@@ -74,6 +74,7 @@ ${code}
 
 export function ExamScreen() {
   const { examId } = useParams();
+  const navigate = useNavigate();
 
   const [phase, setPhase] = useState("waiting");
 
@@ -240,6 +241,8 @@ export function ExamScreen() {
             title: data.title,
           });
           setPhase("in_progress");
+        } else if (res.status === 403 && data.message === "Exam already submitted") {
+          setPhase("submitted");
         }
       } catch (err) {
         console.error("[ExamScreen] Failed to recover active attempt:", err);
@@ -455,8 +458,13 @@ export function ExamScreen() {
       });
       if (res.ok) {
         setPhase("submitted");
+        toast.success("Exam submitted successfully!");
         // Exit fullscreen gracefully
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        setTimeout(() => {
+          console.log("[EXAM-DEBUG] navigating to /student");
+          navigate("/student");
+        }, 1500);
       } else {
         const data = await res.json();
         toast.error(data.message || "Submission failed");

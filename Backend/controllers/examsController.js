@@ -366,6 +366,9 @@ const getMyQuestions = async (req, res) => {
     if (attempt.status === 'locked') {
       return res.status(403).json({ message: 'Exam is locked for this student' });
     }
+    if (attempt.status === 'submitted') {
+      return res.status(403).json({ message: 'Exam already submitted' });
+    }
 
     // Fetch only this student's assigned set — never expose other sets
     const questions = await sql`

@@ -1,7 +1,9 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, session, desktopCapturer } = require("electron");
 const path = require("path");
 const http = require("http");
 const serveHandler = require("serve-handler");
+
+app.commandLine.appendSwitch('remote-debugging-port', '9222');
 
 let server = null;
 
@@ -30,6 +32,7 @@ function startStaticServer() {
 
 async function createWindow() {
   const win = new BrowserWindow({
+    title: "EduSync",
     width: 1280,
     height: 800,
     minWidth: 1280,
@@ -38,6 +41,10 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
+  });
+
+  win.on('page-title-updated', (event) => {
+    event.preventDefault();
   });
 
   const isDev = !app.isPackaged && process.env.NODE_ENV !== "production";
@@ -53,6 +60,12 @@ async function createWindow() {
 }
 
 app.whenReady().then(() => {
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ["screen"] }).then((sources) => {
+      callback({ video: sources[0], audio: "loopback" });
+    });
+  });
+
   createWindow();
 
   app.on("activate", () => {
