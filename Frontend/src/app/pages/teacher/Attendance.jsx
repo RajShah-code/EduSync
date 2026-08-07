@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../components/StatusBadge";
 import {
@@ -33,7 +34,7 @@ export function Attendance() {
     const fetchSessions = async () => {
       try {
         const token = localStorage.getItem("edusync_token");
-        const res = await fetch("http://localhost:3000/sessions/my-sessions", {
+        const res = await fetch(`${API_BASE_URL}/sessions/my-sessions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -57,7 +58,7 @@ export function Attendance() {
     const fetchAttendance = async () => {
       try {
         const token = localStorage.getItem("edusync_token");
-        const res = await fetch(`http://localhost:3000/attendance/session/${selectedSessionId}`, {
+        const res = await fetch(`${API_BASE_URL}/attendance/session/${selectedSessionId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -75,7 +76,7 @@ export function Attendance() {
     setActionLoading(attendanceId);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/attendance/${attendanceId}/decide`, {
+      const res = await fetch(`${API_BASE_URL}/attendance/${attendanceId}/decide`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

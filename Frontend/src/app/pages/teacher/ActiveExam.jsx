@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { getSocket } from "../../store/socket";
@@ -32,10 +33,10 @@ export function ActiveExam() {
   const fetchExamData = async () => {
     try {
       const [examRes, resultsRes] = await Promise.all([
-        fetch(`http://localhost:3000/exams/${examId}`, {
+        fetch(`${API_BASE_URL}/exams/${examId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`http://localhost:3000/exams/${examId}/results`, {
+        fetch(`${API_BASE_URL}/exams/${examId}/results`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -131,7 +132,7 @@ export function ActiveExam() {
     if (!window.confirm("End the exam for all students now? This cannot be undone.")) return;
     setEnding(true);
     try {
-      const res = await fetch(`http://localhost:3000/exams/${examId}/end`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/end`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

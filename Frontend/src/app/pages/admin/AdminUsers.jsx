@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { 
   Search, 
@@ -64,7 +65,7 @@ export function AdminUsers() {
       const token = localStorage.getItem("edusync_token");
       
       // Fetch classes
-      const classesRes = await fetch("http://localhost:3000/classes", {
+      const classesRes = await fetch(`${API_BASE_URL}/classes`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const classesData = await classesRes.json();
@@ -78,7 +79,7 @@ export function AdminUsers() {
         class_id: classFilter,
         search: searchQuery
       });
-      const usersRes = await fetch(`http://localhost:3000/admin/users?${queryParams.toString()}`, {
+      const usersRes = await fetch(`${API_BASE_URL}/admin/users?${queryParams.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const usersData = await usersRes.json();
@@ -100,7 +101,7 @@ export function AdminUsers() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/admin/users", {
+      const res = await fetch(`${API_BASE_URL}/admin/users`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +165,7 @@ export function AdminUsers() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/admin/users/${selectedUser.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -204,7 +205,7 @@ export function AdminUsers() {
     e.preventDefault();
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/admin/users/${selectedUser.id}/reset-password`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -245,7 +246,7 @@ export function AdminUsers() {
   const handleDeleteSubmit = async () => {
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/admin/users/${selectedUser.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });

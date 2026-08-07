@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -49,7 +50,7 @@ export function TaskProgress() {
     if (!sessionInfo) return;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/session/${sessionInfo.id}`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/session/${sessionInfo.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -78,7 +79,7 @@ export function TaskProgress() {
     if (!sessionInfo) return;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/sessions/${sessionInfo.id}/students`, {
+      const res = await fetch(`${API_BASE_URL}/sessions/${sessionInfo.id}/students`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -96,7 +97,7 @@ export function TaskProgress() {
     setLoading(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/${taskId}/progress`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/progress`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -115,7 +116,7 @@ export function TaskProgress() {
     if (!sessionInfo) return;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/doubts/session/${sessionInfo.id}`, {
+      const res = await fetch(`${API_BASE_URL}/doubts/session/${sessionInfo.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -227,7 +228,7 @@ export function TaskProgress() {
     const minutes = extensionMinutes[taskId] || 5;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/${taskId}/extend`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/extend`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -255,7 +256,7 @@ export function TaskProgress() {
   const handleMoveOnTask = async (taskId) => {
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/${taskId}/move_on`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/move_on`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -289,7 +290,7 @@ export function TaskProgress() {
     setResolving(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/doubts/${selectedDoubt.id}/resolve`, {
+      const res = await fetch(`${API_BASE_URL}/doubts/${selectedDoubt.id}/resolve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

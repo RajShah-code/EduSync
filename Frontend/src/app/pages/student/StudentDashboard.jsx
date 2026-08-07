@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -26,7 +27,7 @@ export function StudentDashboard() {
       try {
         const token = localStorage.getItem("edusync_token");
         if (!token) return;
-        const res = await fetch("http://localhost:3000/exams/available", {
+        const res = await fetch(`${API_BASE_URL}/exams/available`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -85,7 +86,7 @@ export function StudentDashboard() {
         const studentId = payload.id;
         if (!studentId) return;
 
-        const res = await fetch(`http://localhost:3000/attendance/student/${studentId}`, {
+        const res = await fetch(`${API_BASE_URL}/attendance/student/${studentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -143,7 +144,7 @@ export function StudentDashboard() {
   const handleJoinExam = async (examId) => {
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/exams/${examId}/join`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/join`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -157,7 +158,7 @@ export function StudentDashboard() {
       // Refresh available exams
       try {
         const token = localStorage.getItem("edusync_token");
-        const refreshRes = await fetch("http://localhost:3000/exams/available", {
+        const refreshRes = await fetch(`${API_BASE_URL}/exams/available`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (refreshRes.ok) {

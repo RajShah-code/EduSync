@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail, Settings } from "lucide-react";
@@ -39,7 +40,7 @@ export function StudentLayout() {
       try {
         const token = localStorage.getItem("edusync_token");
         if (!token) return;
-        const res = await fetch("http://localhost:3000/exams/available", {
+        const res = await fetch(`${API_BASE_URL}/exams/available`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -149,7 +150,7 @@ export function StudentLayout() {
     const fetchOnce = async () => {
       try {
         const token = localStorage.getItem("edusync_token");
-        const res = await fetch("http://localhost:3000/sessions/active", {
+        const res = await fetch(`${API_BASE_URL}/sessions/active`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -362,7 +363,7 @@ export function StudentLayout() {
 
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/sessions/join", {
+      const res = await fetch(`${API_BASE_URL}/sessions/join`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

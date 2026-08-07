@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import Editor from "@monaco-editor/react";
@@ -198,7 +199,7 @@ export function LiveBroadcast() {
     const fetchClasses = async () => {
       try {
         const token = localStorage.getItem("edusync_token");
-        const res = await fetch("http://localhost:3000/classes", {
+        const res = await fetch(`${API_BASE_URL}/classes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -484,7 +485,7 @@ export function LiveBroadcast() {
     // If the REST call fails, the DB session stays open; abort and let the teacher retry.
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/sessions/end", {
+      const res = await fetch(`${API_BASE_URL}/sessions/end`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -936,7 +937,7 @@ export function LiveBroadcast() {
       // NO screen capture here. Screen sharing is triggered separately via the
       // "Start Screen Share" button AFTER the session is live.
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/sessions/start", {
+      const res = await fetch(`${API_BASE_URL}/sessions/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

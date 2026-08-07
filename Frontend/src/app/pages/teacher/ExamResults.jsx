@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -26,7 +27,7 @@ export function ExamResults() {
 
   const fetchResults = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/exams/${examId}/results`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/results`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -48,7 +49,7 @@ export function ExamResults() {
     if (score === undefined || score === "") return;
     setSavingScore(answerId);
     try {
-      const res = await fetch(`http://localhost:3000/exams/${examId}/answers/${answerId}/score`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/answers/${answerId}/score`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ score: parseFloat(score) }),

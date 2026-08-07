@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { StudentTile } from "../../components/StudentTile";
@@ -32,7 +33,7 @@ export function StudentMonitor() {
       setLoading(true);
       try {
         const token = localStorage.getItem("edusync_token");
-        const res = await fetch(`http://localhost:3000/sessions/${sessionInfo.id}/students`, {
+        const res = await fetch(`${API_BASE_URL}/sessions/${sessionInfo.id}/students`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {

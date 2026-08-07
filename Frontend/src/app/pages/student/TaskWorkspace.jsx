@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { useOutletContext, useParams, useNavigate } from "react-router";
 import { CodeEditor } from "./CodeEditor";
@@ -28,7 +29,7 @@ export function TaskWorkspace() {
     if (!joinedSession) return;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/session/${joinedSession.id}`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/session/${joinedSession.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -107,7 +108,7 @@ export function TaskWorkspace() {
   const fetchDoubtStatus = async (taskId) => {
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/doubts/student/task/${taskId}`, {
+      const res = await fetch(`${API_BASE_URL}/doubts/student/task/${taskId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -228,7 +229,7 @@ export function TaskWorkspace() {
     if (codeVal === lastSavedCodeRef.current) return;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/${taskId}/autosave`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/autosave`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -256,7 +257,7 @@ export function TaskWorkspace() {
     if (!activeTaskId) return;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/${activeTaskId}/submit`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/${activeTaskId}/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -282,7 +283,7 @@ export function TaskWorkspace() {
     if (!activeTaskId) return;
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/doubts/raise", {
+      const res = await fetch(`${API_BASE_URL}/doubts/raise`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

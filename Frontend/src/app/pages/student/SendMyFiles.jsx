@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
 import {
@@ -272,7 +273,7 @@ export function SendMyFiles() {
     const token = localStorage.getItem("edusync_token");
     const xhr = new XMLHttpRequest();
 
-    xhr.open("POST", "http://localhost:3000/files/email-zip", true);
+    xhr.open("POST", `${API_BASE_URL}/files/email-zip`, true);
     xhr.setRequestHeader("Content-Type", "application/json");
     // Ensure Authorization JWT token header is attached
     if (token) {

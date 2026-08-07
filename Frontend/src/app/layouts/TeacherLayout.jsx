@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
@@ -150,7 +151,7 @@ export function TeacherLayout() {
   useEffect(() => {
     const token = localStorage.getItem("edusync_token");
     if (!token) return;
-    fetch("http://localhost:3000/sessions/my-active", {
+    fetch(`${API_BASE_URL}/sessions/my-active`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -230,7 +231,7 @@ export function TeacherLayout() {
   const handleDecideException = async (attendanceId, decision) => {
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/attendance/${attendanceId}/decide`, {
+      const res = await fetch(`${API_BASE_URL}/attendance/${attendanceId}/decide`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

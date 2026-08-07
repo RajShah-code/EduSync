@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { Plus, Edit2, X, Check, BookOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -15,7 +16,7 @@ export function AdminClasses() {
     setLoading(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/classes", {
+      const res = await fetch(`${API_BASE_URL}/classes`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -41,7 +42,7 @@ export function AdminClasses() {
 
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/classes", {
+      const res = await fetch(`${API_BASE_URL}/classes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +80,7 @@ export function AdminClasses() {
 
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/classes/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/classes/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../components/ui/card";
@@ -22,7 +23,7 @@ export function StudentSettings() {
       try {
         const token = localStorage.getItem("edusync_token");
         if (!token) return;
-        const res = await fetch("http://localhost:3000/users/me", {
+        const res = await fetch(`${API_BASE_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -50,7 +51,7 @@ export function StudentSettings() {
     setSavingProfile(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/users/me", {
+      const res = await fetch(`${API_BASE_URL}/users/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -89,7 +90,7 @@ export function StudentSettings() {
     setSavingPassword(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/users/me/password", {
+      const res = await fetch(`${API_BASE_URL}/users/me/password`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

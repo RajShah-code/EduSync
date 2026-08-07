@@ -1,3 +1,4 @@
+import { SOCKET_URL } from "../config/api.js";
 import { io } from 'socket.io-client';
 
 // Singleton socket instance — created once, reused everywhere
@@ -9,7 +10,7 @@ let socket = null;
 export function initSocket(token) {
   if (socket && socket.connected) return socket;
 
-  socket = io('http://localhost:3000', {
+  socket = io(SOCKET_URL, {
     auth: { token },
     autoConnect: true,
     reconnection: true,

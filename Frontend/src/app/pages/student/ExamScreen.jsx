@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router";
 import { getSocket } from "../../store/socket";
@@ -148,7 +149,7 @@ export function ExamScreen() {
       postingViolationRef.current = true;
 
       try {
-        const res = await fetch(`http://localhost:3000/exams/${examId}/violation`, {
+        const res = await fetch(`${API_BASE_URL}/exams/${examId}/violation`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ violation_type: violationType }),
@@ -213,7 +214,7 @@ export function ExamScreen() {
     const checkActiveAttempt = async () => {
       setLoadingQuestions(true);
       try {
-        const res = await fetch(`http://localhost:3000/exams/${examId}/my-questions`, {
+        const res = await fetch(`${API_BASE_URL}/exams/${examId}/my-questions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -274,7 +275,7 @@ export function ExamScreen() {
       // Fetch questions
       setLoadingQuestions(true);
       try {
-        const res = await fetch(`http://localhost:3000/exams/${payload.examId}/my-questions`, {
+        const res = await fetch(`${API_BASE_URL}/exams/${payload.examId}/my-questions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -447,7 +448,7 @@ export function ExamScreen() {
     }));
 
     try {
-      const res = await fetch(`http://localhost:3000/exams/${examId}/submit`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ answers }),

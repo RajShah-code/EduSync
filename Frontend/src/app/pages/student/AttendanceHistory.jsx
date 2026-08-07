@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Button } from "../../components/ui/button";
@@ -20,7 +21,7 @@ export function AttendanceHistory() {
         const studentId = payload.id;
         if (!studentId) return;
 
-        const res = await fetch(`http://localhost:3000/attendance/student/${studentId}`, {
+        const res = await fetch(`${API_BASE_URL}/attendance/student/${studentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {

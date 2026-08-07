@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useOutletContext, useNavigate } from "react-router";
 import { Button } from "../../components/ui/button";
@@ -73,7 +74,7 @@ export function ExamCreation() {
     const fetchClasses = async () => {
       try {
         const token = localStorage.getItem("edusync_token");
-        const res = await fetch("http://localhost:3000/classes", {
+        const res = await fetch(`${API_BASE_URL}/classes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -95,7 +96,7 @@ export function ExamCreation() {
     setLoadingExams(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/exams/my-exams", {
+      const res = await fetch(`${API_BASE_URL}/exams/my-exams`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -118,7 +119,7 @@ export function ExamCreation() {
   const handleManageExam = async (exam) => {
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/exams/${exam.id}`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${exam.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -181,7 +182,7 @@ export function ExamCreation() {
     setSaving(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch("http://localhost:3000/exams/create", {
+      const res = await fetch(`${API_BASE_URL}/exams/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -212,7 +213,7 @@ export function ExamCreation() {
     setSaving(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/exams/${examId}/open`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/open`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -247,7 +248,7 @@ export function ExamCreation() {
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(
-        `http://localhost:3000/exams/${examId}/sets/${activeSet}/questions`,
+        `${API_BASE_URL}/exams/${examId}/sets/${activeSet}/questions`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -282,7 +283,7 @@ export function ExamCreation() {
     setSaving(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/exams/${examId}/start`, {
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/start`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });

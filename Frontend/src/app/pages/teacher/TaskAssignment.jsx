@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router";
 import { Button } from "../../components/ui/button";
@@ -34,7 +35,7 @@ export function TaskAssignment() {
     setLoadingTasks(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/tasks/session/${sessionInfo.id}`, {
+      const res = await fetch(`${API_BASE_URL}/tasks/session/${sessionInfo.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -78,7 +79,7 @@ export function TaskAssignment() {
         ? formData.timeLimitMinutes * 60 
         : null;
 
-      const res = await fetch("http://localhost:3000/tasks/create", {
+      const res = await fetch(`${API_BASE_URL}/tasks/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

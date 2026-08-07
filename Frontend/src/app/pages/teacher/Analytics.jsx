@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useCallback } from "react";
 import {
   LineChart,
@@ -25,7 +26,7 @@ export function Analytics() {
     const fetchClasses = async () => {
       try {
         const token = localStorage.getItem("edusync_token");
-        const res = await fetch("http://localhost:3000/classes", {
+        const res = await fetch(`${API_BASE_URL}/classes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -51,7 +52,7 @@ export function Analytics() {
     if (!silent) setFetchingClass(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const res = await fetch(`http://localhost:3000/analytics/class/${classId}`, {
+      const res = await fetch(`${API_BASE_URL}/analytics/class/${classId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
