@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 // GET /users/me
 const getMe = async (req, res) => {
     try {
-        const [user] = await sql`SELECT id, name, email, role, class_id, roll_no FROM users WHERE id = ${req.user.id}`;
+        const [user] = await sql`SELECT id, name, email, role, class_id, roll_no, has_seen_tour FROM users WHERE id = ${req.user.id}`;
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -27,7 +27,7 @@ const updateName = async (req, res) => {
             UPDATE users 
             SET name = ${trimmedName} 
             WHERE id = ${req.user.id} 
-            RETURNING id, name, email, role
+            RETURNING id, name, email, role, class_id, roll_no, has_seen_tour
         `;
         
         if (!updatedUser) {
@@ -35,6 +35,26 @@ const updateName = async (req, res) => {
         }
 
         res.json(updatedUser);
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
+// PUT /users/me/tour-complete
+const completeTour = async (req, res) => {
+    try {
+        const [updatedUser] = await sql`
+            UPDATE users
+            SET has_seen_tour = true
+            WHERE id = ${req.user.id}
+            RETURNING id, name, email, role, class_id, roll_no, has_seen_tour
+        `;
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({ message: 'Tour completed', user: updatedUser });
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
     }
@@ -75,5 +95,6 @@ const changePassword = async (req, res) => {
 module.exports = {
     getMe,
     updateName,
+    completeTour,
     changePassword
 };

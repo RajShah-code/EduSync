@@ -34,7 +34,8 @@ const login = async (req, res) => {
                 email: user.email, 
                 role: user.role,
                 class_id: user.class_id || null,
-                roll_no: user.roll_no || null
+                roll_no: user.roll_no || null,
+                has_seen_tour: user.has_seen_tour ?? false
             } 
         });
     } catch (err) {

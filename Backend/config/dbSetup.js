@@ -26,7 +26,8 @@ const setup = async () => {
         role VARCHAR(50) NOT NULL CHECK (role IN ('teacher', 'student', 'admin')),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         class_id INTEGER REFERENCES classes(id) ON DELETE SET NULL,
-        roll_no VARCHAR(50)
+        roll_no VARCHAR(50),
+        has_seen_tour BOOLEAN DEFAULT false
       );
     `;
     await sql`
@@ -121,6 +122,10 @@ const setup = async () => {
     await sql`
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS roll_no VARCHAR(50);
+    `;
+    await sql`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS has_seen_tour BOOLEAN DEFAULT false;
     `;
     
     // Update users_role_check constraint to allow 'admin'

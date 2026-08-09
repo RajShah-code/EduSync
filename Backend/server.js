@@ -104,6 +104,11 @@ const disconnectedStudents = new Map();
 const pendingRejoins = new Map();
 const rejoinCounts = new Map();
 const sessionStates = new Map(); // Map<session_id, { mode: 'editor'|'screen', code: string, language: string }>
+
+const getSessionState = (id) => {
+  if (id === undefined || id === null) return null;
+  return sessionStates.get(id) || sessionStates.get(Number(id)) || sessionStates.get(String(id));
+};
 const sessionModes = new Map(); // Map<session_id, 'editor'|'screen_share'>
 const sessionAttendance = new Map(); // Map<session_id, Map<student_id, studentSessionState>>
 // examStudentSockets: Map<student_id, socket_id>
@@ -424,7 +429,7 @@ io.on('connection', (socket) => {
     if (activeStudentSessions.has(activeKey)) {
       console.log(`[DEBUG] [server student:join_session] IDEMPOTENCY GUARD TRIPPED — student ${userId} already active in session ${session_id} activeKey=${activeKey} ts=${Date.now()}`);
       console.log(`[Rejoin] duplicate join_session ignored — student ${userId} already active in session ${session_id}`);
-      const state = sessionStates.get(session_id);
+      const state = getSessionState(session_id);
       if (state) {
         socket.emit('student:session_state', {
           session_id,
@@ -433,6 +438,8 @@ io.on('connection', (socket) => {
           language: state.language,
           output: state.output,
           currentMode: sessionModes.get(session_id) || 'editor',
+          whiteboardStrokes: state.whiteboardStrokes || [],
+          whiteboardBgColor: state.whiteboardBgColor || '#111118',
         });
       }
       return;
@@ -552,7 +559,7 @@ io.on('connection', (socket) => {
 
     // Send current session state snapshot directly to the joining student so they
     // immediately render the correct mode and see the teacher's current code.
-    const state = sessionStates.get(session_id);
+    const state = getSessionState(session_id);
     if (state) {
       socket.emit('student:session_state', {
         session_id,
@@ -561,6 +568,8 @@ io.on('connection', (socket) => {
         language: state.language,
         output: state.output,
         currentMode: sessionModes.get(session_id) || 'editor',
+        whiteboardStrokes: state.whiteboardStrokes || [],
+        whiteboardBgColor: state.whiteboardBgColor || '#111118',
       });
     }
 
@@ -579,7 +588,7 @@ io.on('connection', (socket) => {
   socket.on('student:request_session_state', ({ session_id }) => {
     if (!session_id) return;
 
-    const state = sessionStates.get(session_id);
+    const state = getSessionState(session_id);
     if (state) {
       socket.emit('student:session_state', {
         session_id,
@@ -588,6 +597,8 @@ io.on('connection', (socket) => {
         language: state.language,
         output: state.output,
         currentMode: sessionModes.get(session_id) || 'editor',
+        whiteboardStrokes: state.whiteboardStrokes || [],
+        whiteboardBgColor: state.whiteboardBgColor || '#111118',
       });
     }
 
@@ -669,6 +680,8 @@ io.on('connection', (socket) => {
             language: state.language,
             output: state.output,
             currentMode: sessionModes.get(session_id) || 'editor',
+            whiteboardStrokes: state.whiteboardStrokes || [],
+            whiteboardBgColor: state.whiteboardBgColor || '#111118',
           });
         }
         emitStudentStatusUpdate(session_id);
@@ -871,6 +884,42 @@ io.on('connection', (socket) => {
       socket.to(`session:${sessionId}`).emit('teacher:code_output', { sessionId, output });
     } catch (err) {
       console.error('[Socket] teacher:code_output relay error:', err);
+    }
+  });
+
+  socket.on('teacher:whiteboard_stroke', (payload) => {
+    try {
+      if (role !== 'teacher') return;
+      const { sessionId, stroke, bgColor } = payload;
+      console.log(`[PIPELINE 2 SERVER RECEIVE] teacher:whiteboard_stroke received | senderSocketId=${socket.id} | senderRole=${role} | sessionId=${sessionId} | strokePhase=${stroke?.phase}`);
+      const prev = getSessionState(sessionId);
+      if (prev) {
+        if (!prev.whiteboardStrokes) prev.whiteboardStrokes = [];
+        if (stroke && stroke.phase === 'end') {
+          prev.whiteboardStrokes.push(stroke);
+        }
+        if (bgColor) prev.whiteboardBgColor = bgColor;
+      }
+      const targetRoom = `session:${sessionId}`;
+      const roomSockets = io.sockets.adapter.rooms.get(targetRoom);
+      console.log(`[PIPELINE 3 SERVER BROADCAST] emitting teacher:whiteboard_stroke to room [${targetRoom}] | targetSocketsCount=${roomSockets ? roomSockets.size : 0}`);
+      socket.to(targetRoom).emit('teacher:whiteboard_stroke', payload);
+    } catch (err) {
+      console.error('[Socket] teacher:whiteboard_stroke relay error:', err);
+    }
+  });
+
+  socket.on('teacher:whiteboard_clear', (payload) => {
+    try {
+      if (role !== 'teacher') return;
+      const { sessionId } = payload;
+      const prev = getSessionState(sessionId);
+      if (prev) {
+        prev.whiteboardStrokes = [];
+      }
+      socket.to(`session:${sessionId}`).emit('teacher:whiteboard_clear', payload);
+    } catch (err) {
+      console.error('[Socket] teacher:whiteboard_clear relay error:', err);
     }
   });
 
