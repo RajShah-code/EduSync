@@ -21,6 +21,7 @@ const filesRoutes = require('./routes/filesRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const timetableRoutes = require('./routes/timetableRoutes');
+const { initReminderCron } = require('./jobs/reminderCron');
 const { invalidateAnalyticsCache } = require('./controllers/analyticsController');
 const protect = require('./middleware/authMiddleware');
 const dbSetup = require('./config/dbSetup');
@@ -1113,6 +1114,7 @@ app.set('examStudentSockets', examStudentSockets);
 
 dbSetup()
   .then(() => {
+    initReminderCron();
     server.listen(PORT, () => {
       console.log(`EduSync backend running on port ${PORT}`);
     });

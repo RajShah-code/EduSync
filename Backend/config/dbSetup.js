@@ -70,10 +70,15 @@ const setup = async () => {
         class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
         reminder_enabled BOOLEAN DEFAULT false,
         reminder_delay_minutes INTEGER DEFAULT NULL,
+        last_triggered_date DATE DEFAULT NULL,
+        last_reminder_sent_date DATE DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `;
+    // Additive column migrations for existing instances
+    await sql`ALTER TABLE timetable_entries ADD COLUMN IF NOT EXISTS last_triggered_date DATE DEFAULT NULL;`;
+    await sql`ALTER TABLE timetable_entries ADD COLUMN IF NOT EXISTS last_reminder_sent_date DATE DEFAULT NULL;`;
     await sql`
       CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,

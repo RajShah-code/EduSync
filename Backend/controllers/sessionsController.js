@@ -51,6 +51,27 @@ const startSession = async (req, res) => {
       `;
     }
 
+    // Step 2: Mark matching timetable entry as started today
+    try {
+      const now = new Date();
+      const jsDay = now.getDay();
+      const currentDayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Mon..6=Sun
+      const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+      const targetClassIds = class_ids.map(Number);
+
+      await sql`
+        UPDATE timetable_entries
+        SET last_triggered_date = CURRENT_DATE
+        WHERE teacher_id = ${teacher_id}
+          AND day_of_week = ${currentDayOfWeek}
+          AND start_time <= ${currentHHMM}::time
+          AND end_time >= ${currentHHMM}::time
+          AND class_id = ANY(${targetClassIds});
+      `;
+    } catch (tErr) {
+      console.error('[SessionsController] Failed to mark timetable entry as started:', tErr.message);
+    }
+
     res.status(201).json({ session: { ...session, class_ids: class_ids.map(Number) } });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
