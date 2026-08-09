@@ -1,6 +1,8 @@
 # Dependency directories
 **/node_modules/
 node_modules/
+dist-electron/
+dist/
 
 # Environment files
 .env
