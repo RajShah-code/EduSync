@@ -20,6 +20,7 @@ const examsRoutes = require('./routes/examsRoutes');
 const filesRoutes = require('./routes/filesRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
+const timetableRoutes = require('./routes/timetableRoutes');
 const { invalidateAnalyticsCache } = require('./controllers/analyticsController');
 const protect = require('./middleware/authMiddleware');
 const dbSetup = require('./config/dbSetup');
@@ -49,12 +50,151 @@ app.use('/auth', authRoutes);
 app.use('/users', protect(), usersRoutes);
 app.use('/sessions', sessionRoutes);
 app.use('/attendance', attendanceRoutes);
+
+// ── TEMPORARY DIAGNOSTIC ENDPOINT — REMOVE AFTER SMTP TEST ────────────────
+// Allows Raj to test SMTP connectivity on deployed Render backend via HTTP request:
+// GET /admin/test-smtp?secret=<DIAGNOSTIC_SECRET>
+app.get('/admin/test-smtp', async (req, res) => {
+  const diagnosticSecret = process.env.DIAGNOSTIC_SECRET;
+  const providedSecret = req.query.secret || req.headers['x-diagnostic-secret'];
+
+  if (!diagnosticSecret || providedSecret !== diagnosticSecret) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized: Invalid or missing DIAGNOSTIC_SECRET',
+    });
+  }
+
+  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const smtpPort = Number(process.env.SMTP_PORT) || 587;
+  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_SMTP_APP_PASSWORD;
+  const smtpFrom = process.env.SMTP_FROM || (smtpUser ? `"EduSync" <${smtpUser}>` : undefined);
+
+  if (!smtpUser || !smtpPass) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing SMTP_USER or SMTP_PASS environment variables on server.',
+      envCheck: {
+        SMTP_HOST: smtpHost,
+        SMTP_PORT: smtpPort,
+        SMTP_USER: smtpUser ? `Configured (${smtpUser})` : 'MISSING',
+        SMTP_PASS: smtpPass ? 'Configured' : 'MISSING',
+        SMTP_FROM: smtpFrom || 'MISSING',
+      },
+      note: 'Raj must set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and SMTP_FROM in Render dashboard.',
+    });
+  }
+
+  let nodemailer;
+  try {
+    nodemailer = require('nodemailer');
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Nodemailer package is not loaded on server.',
+      error: err.message,
+    });
+  }
+
+  const recipient = req.query.recipient || smtpUser;
+  const startTime = Date.now();
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465, // STARTTLS for 587, SSL for 465
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
+
+    const verifyStart = Date.now();
+    await transporter.verify();
+    const verifyDurationMs = Date.now() - verifyStart;
+
+    const mailOptions = {
+      from: smtpFrom,
+      to: recipient,
+      subject: 'EduSync SMTP Isolation Test — Render Connection Success',
+      text: `Hello,\n\nThis is an automated SMTP test sent from deployed Render backend.\nTimestamp: ${new Date().toISOString()}\nVerify Duration: ${verifyDurationMs}ms\n\nIf you received this email, SMTP over port ${smtpPort} is working on Render!`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; background: #111118; color: #f0f0f5; border-radius: 8px;">
+          <h2 style="color: #10b981; margin-top: 0;">✅ EduSync SMTP Diagnostic Test Passed</h2>
+          <p>SMTP server (${smtpHost}:${smtpPort}) successfully connected and delivered this test email from Render.</p>
+          <ul>
+            <li><strong>Sender:</strong> ${smtpFrom}</li>
+            <li><strong>Recipient:</strong> ${recipient}</li>
+            <li><strong>Timestamp:</strong> ${new Date().toISOString()}</li>
+            <li><strong>Handshake Time:</strong> ${verifyDurationMs}ms</li>
+          </ul>
+        </div>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    const totalDurationMs = Date.now() - startTime;
+
+    return res.json({
+      success: true,
+      message: 'SMTP Isolation Test Passed! Email sent successfully.',
+      timestamp: new Date().toISOString(),
+      recipient,
+      configUsed: {
+        host: smtpHost,
+        port: smtpPort,
+        user: smtpUser,
+        from: smtpFrom,
+      },
+      timing: {
+        verifyDurationMs,
+        totalDurationMs,
+      },
+      smtpDetails: {
+        messageId: info.messageId,
+        response: info.response,
+      },
+    });
+  } catch (err) {
+    const totalDurationMs = Date.now() - startTime;
+    let diagnosis = 'Unknown error occurred';
+
+    if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKETTIMEDOUT' || err.code === 'ECONNREFUSED') {
+      diagnosis = `Render network / port restriction detected: Port ${smtpPort} outbound connections to ${smtpHost} are timed out or blocked.`;
+    } else if (err.code === 'EAUTH' || (err.response && err.response.includes('535'))) {
+      diagnosis = 'Authentication failed: Check SMTP_USER and SMTP_PASS. Verify that a 16-char Gmail App Password is used.';
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'SMTP Isolation Test Failed.',
+      timestamp: new Date().toISOString(),
+      timing: {
+        totalDurationMs,
+      },
+      error: {
+        code: err.code || 'UNKNOWN',
+        command: err.command || null,
+        message: err.message,
+        response: err.response || null,
+      },
+      diagnosis,
+    });
+  }
+});
+
 app.use('/classes', protect(), classesRoutes);
 app.use('/admin', protect(['admin']), adminRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/doubts', doubtsRoutes);
 app.use('/exams', examsRoutes);
 app.use('/analytics', protect(['teacher']), analyticsRoutes);
+app.use('/timetable', timetableRoutes);
 
 
 app.get('/', (req, res) => { res.send('EduSync backend running'); });

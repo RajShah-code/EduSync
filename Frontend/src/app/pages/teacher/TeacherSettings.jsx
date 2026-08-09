@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router";
-import { User, Key, HelpCircle } from "lucide-react";
+import { User, Key, HelpCircle, Calendar } from "lucide-react";
 
 export function TeacherSettings() {
   const navigate = useNavigate();
@@ -226,7 +226,32 @@ export function TeacherSettings() {
         </CardContent>
       </Card>
 
-      {/* Section 3: App Tour */}
+      {/* Section 3: Timetable Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Calendar className="h-5 w-5 text-emerald-400" /> Weekly Timetable
+          </CardTitle>
+          <CardDescription>
+            Configure or edit your recurring weekly teaching timetable and email reminder preferences.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-4">
+            Use the conversational setup wizard to customize your day-by-day class schedule and automated broadcast reminders.
+          </p>
+          <Button
+            type="button"
+            onClick={() => navigate("/teacher/timetable")}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+          >
+            <Calendar className="h-4 w-4" />
+            Edit Timetable Wizard
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Section 4: App Tour */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">

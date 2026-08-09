@@ -25,6 +25,7 @@ import { Attendance } from "./pages/teacher/Attendance";
 import { Analytics } from "./pages/teacher/Analytics";
 import { SessionRecording } from "./pages/teacher/SessionRecording";
 import { TeacherSettings } from "./pages/teacher/TeacherSettings";
+import { TimetableSetup } from "./pages/teacher/TimetableSetup";
 import { TeacherLayout } from "./layouts/TeacherLayout";
 
 // Student Pages
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
       { path: "analytics", Component: Analytics },
       { path: "recordings", Component: SessionRecording },
       { path: "settings", Component: TeacherSettings },
+      { path: "timetable", Component: TimetableSetup },
     ],
   },
   // Student Routes

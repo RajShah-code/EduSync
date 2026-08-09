@@ -60,6 +60,21 @@ const setup = async () => {
       );
     `;
     await sql`
+      CREATE TABLE IF NOT EXISTS timetable_entries (
+        id SERIAL PRIMARY KEY,
+        teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        subject TEXT NOT NULL,
+        class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+        reminder_enabled BOOLEAN DEFAULT false,
+        reminder_delay_minutes INTEGER DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await sql`
       CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
         session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
