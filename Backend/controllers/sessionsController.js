@@ -15,6 +15,7 @@
 
 const sql = require('../config/db');
 const bcrypt = require('bcryptjs');
+const { getISTNow } = require('../utils/istTime');
 
 // POST /sessions/start — teacher only
 const startSession = async (req, res) => {
@@ -53,15 +54,15 @@ const startSession = async (req, res) => {
 
     // Step 2: Mark matching timetable entry as started today
     try {
-      const now = new Date();
-      const jsDay = now.getDay();
-      const currentDayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Mon..6=Sun
-      const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
+      const istNow = getISTNow();
+      const currentDayOfWeek = istNow.dayOfWeek; // 0=Mon..6=Sun
+      const currentHHMM = istNow.timeString;
+      const todayStr = istNow.dateString;
       const targetClassIds = class_ids.map(Number);
 
       await sql`
         UPDATE timetable_entries
-        SET last_triggered_date = CURRENT_DATE
+        SET last_triggered_date = ${todayStr}::date
         WHERE teacher_id = ${teacher_id}
           AND day_of_week = ${currentDayOfWeek}
           AND start_time <= ${currentHHMM}::time

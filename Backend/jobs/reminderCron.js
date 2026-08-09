@@ -1,4 +1,5 @@
 const sql = require('../config/db');
+const { getISTNow } = require('../utils/istTime');
 
 let cron;
 try {
@@ -26,20 +27,17 @@ function timeToMinutes(timeStr) {
 }
 
 /**
- * Executes a single reminder check tick
+ * Executes a single reminder check tick using IST timezone calculations
  */
 async function checkLateLectureReminders() {
   runCounter += 1;
   const isHeartbeat = runCounter % 10 === 0 || runCounter === 1;
 
   try {
-    const now = new Date();
-    const jsDay = now.getDay();
-    const currentDayOfWeek = jsDay === 0 ? 6 : jsDay - 1; // 0=Monday..6=Sunday
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    // Format today date string YYYY-MM-DD
-    const todayStr = now.toISOString().split('T')[0];
+    const istNow = getISTNow();
+    const currentDayOfWeek = istNow.dayOfWeek; // 0=Monday..6=Sunday
+    const currentMinutes = istNow.totalMinutes;
+    const todayStr = istNow.dateString; // 'YYYY-MM-DD' in IST
 
     // Fetch candidate timetable entries for today
     const candidates = await sql`
@@ -66,7 +64,7 @@ async function checkLateLectureReminders() {
     `;
 
     if (isHeartbeat) {
-      console.log(`[ReminderCron] Tick #${runCounter} (${new Date().toISOString()}): Checked ${candidates.length} active entry candidate(s) for day ${currentDayOfWeek}.`);
+      console.log(`[ReminderCron] Tick #${runCounter} (${istNow.dateString} ${istNow.timeString} IST): Checked ${candidates.length} active entry candidate(s) for day ${currentDayOfWeek}.`);
     }
 
     let remindersSent = 0;
@@ -87,12 +85,12 @@ async function checkLateLectureReminders() {
         continue;
       }
 
-      // Skip 3: Teacher already started session today
+      // Skip 3: Teacher already started session today (IST date string comparison)
       if (entry.last_triggered_date === todayStr) {
         continue;
       }
 
-      // Skip 4: Reminder already sent once today
+      // Skip 4: Reminder already sent once today (IST date string comparison)
       if (entry.last_reminder_sent_date === todayStr) {
         continue;
       }
@@ -131,10 +129,10 @@ async function checkLateLectureReminders() {
         }
       }
 
-      // Mark last_reminder_sent_date to today to prevent duplicate reminders
+      // Mark last_reminder_sent_date to IST date to prevent duplicate reminders
       await sql`
         UPDATE timetable_entries
-        SET last_reminder_sent_date = CURRENT_DATE
+        SET last_reminder_sent_date = ${todayStr}::date
         WHERE id = ${entry.id};
       `;
 
@@ -158,7 +156,7 @@ function initReminderCron() {
     return;
   }
 
-  console.log('[ReminderCron] Initializing 1-minute automated reminder cron job...');
+  console.log('[ReminderCron] Initializing 1-minute automated reminder cron job (Asia/Kolkata IST)...');
   cron.schedule('* * * * *', checkLateLectureReminders);
 }
 
