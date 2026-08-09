@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useRef, useEffect } from "react";
-import { useOutletContext } from "react-router";
+import { useOutletContext, useLocation } from "react-router";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { Button } from "../../components/ui/button";
@@ -950,6 +950,26 @@ export function LiveBroadcast() {
       }
     };
   }, []);
+
+  const location = useLocation();
+
+  // Auto-open and pre-fill broadcast modal when navigated from Today's Schedule "Start Now" button
+  useEffect(() => {
+    if (location.state?.autoOpenModal) {
+      setFormData({
+        lectureName: location.state.prefillSubject ? `${location.state.prefillSubject} Lecture` : "",
+        subject: location.state.prefillSubject || "",
+        password: "",
+        labRoom: "LAB 301",
+      });
+      if (location.state.prefillClassIds) {
+        setSelectedClassIds(location.state.prefillClassIds);
+      }
+      setShowPassword(false);
+      setModalError("");
+      setShowSetupModal(true);
+    }
+  }, [location.state]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 

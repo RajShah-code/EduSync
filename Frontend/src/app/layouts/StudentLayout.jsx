@@ -21,7 +21,6 @@ import { Toaster, toast } from "sonner";
 const navigation = [
   { name: "Dashboard", href: "/student", icon: Home },
   { name: "Live Sessions", href: "/student/sessions", icon: Radio, dataTour: "student-sessions" },
-  { name: "My Files", href: "/student/files", icon: FolderOpen, dataTour: "student-files" },
   { name: "Email My Folder", href: "/student/email-folder", icon: Mail },
   { name: "Attendance", href: "/student/attendance", icon: CalendarCheck },
   { name: "Settings", href: "/student/settings", icon: Settings, dataTour: "student-settings" },

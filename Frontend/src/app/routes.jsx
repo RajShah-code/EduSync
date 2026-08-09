@@ -35,7 +35,6 @@ import { CodeEditor } from "./pages/student/CodeEditor";
 import { TaskWorkspace } from "./pages/student/TaskWorkspace";
 import { ExamScreen } from "./pages/student/ExamScreen";
 import { ExamLocked } from "./pages/student/ExamLocked";
-import { MyFiles } from "./pages/student/MyFiles";
 import { SendMyFiles } from "./pages/student/SendMyFiles";
 import { AttendanceHistory } from "./pages/student/AttendanceHistory";
 import { SessionList } from "./pages/student/SessionList";
@@ -95,7 +94,6 @@ export const router = createBrowserRouter([
       { path: "task/:taskId", Component: TaskWorkspace },
       { path: "exam/:examId", Component: ExamScreen },
       { path: "exam/:examId/locked", Component: ExamLocked },
-      { path: "files", Component: MyFiles },
       { path: "email-folder", Component: SendMyFiles },
       { path: "attendance", Component: AttendanceHistory },
       { path: "settings", Component: StudentSettings },
