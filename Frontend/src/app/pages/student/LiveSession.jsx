@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Monitor, MonitorStop, Loader2, Play, Mic, Maximize2, AlertTriangle } from "lucide-react";
 import { useLocation, useOutletContext, useNavigate } from "react-router";
 import Editor from "@monaco-editor/react";
+import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { sessionStore } from "../../store/sessionStore";
 import { getSocket } from "../../store/socket";
 import { useFocusGuard } from "../../hooks/useFocusGuard";
@@ -20,6 +21,7 @@ const LANGUAGES = [
   { id: "html", label: "HTML" },
   { id: "css", label: "CSS" },
   { id: "plaintext", label: "Plain Text" },
+  { id: "whiteboard", label: "Whiteboard" },
 ];
 
 // ─── Helpers (identical to LiveBroadcast.jsx — each side runs independently) ──
@@ -179,6 +181,9 @@ export function LiveSession() {
 
   // ── Editor refs ─────────────────────────────────────────────────────────────
   const pyodideRef = useRef(null);
+  const studentWhiteboardRef = useRef(null);
+  const studentWhiteboardStrokesRef = useRef([]);
+  const studentWhiteboardBgColorRef = useRef("#111118");
   const lastTeacherCodeRef = useRef(""); // last code received from teacher:sync
   const lastTeacherLanguageRef = useRef("javascript");
   const hasDivergedRef = useRef(false);  // true when student has edited away from teacher's code
@@ -541,14 +546,42 @@ export function LiveSession() {
       setMirroredOutput(output);
     };
 
+    // ── teacher:whiteboard_stroke ──────────────────────────────────────────────
+    const handleTeacherWhiteboardStroke = ({ sessionId, stroke, bgColor }) => {
+      const currentSessionId = joinedSession?.id;
+      if (currentSessionId && String(sessionId) !== String(currentSessionId)) return;
+
+      if (stroke && stroke.phase === "end") {
+        studentWhiteboardStrokesRef.current.push(stroke);
+      }
+      if (bgColor) {
+        studentWhiteboardBgColorRef.current = bgColor;
+      }
+
+      if (studentWhiteboardRef.current) {
+        studentWhiteboardRef.current.applyRemoteStroke(stroke);
+      }
+    };
+
+    // ── teacher:whiteboard_clear ───────────────────────────────────────────────
+    const handleTeacherWhiteboardClear = ({ sessionId }) => {
+      const currentSessionId = joinedSession?.id;
+      if (currentSessionId && String(sessionId) !== String(currentSessionId)) return;
+
+      studentWhiteboardStrokesRef.current = [];
+      if (studentWhiteboardRef.current) {
+        studentWhiteboardRef.current.applyRemoteClear();
+      }
+    };
+
     // ── student:session_state ─────────────────────────────────────────────────
     // Sent by server immediately after join or rejoin-approval so the student
     // sees the current mode and code without waiting for the next editor:sync.
     const handleSessionState = (payload) => {
       console.log("[WebRTC Diagnosis] student:session_state received, payload:", JSON.stringify(payload));
-      const { session_id, mode, code, language, output, currentMode } = payload;
+      const { session_id, mode, code, language, output, currentMode, whiteboardStrokes, whiteboardBgColor } = payload;
       const currentSessionId = joinedSession?.id;
-      if (currentSessionId && session_id !== currentSessionId) return;
+      if (currentSessionId && String(session_id) !== String(currentSessionId)) return;
 
       const activeM = currentMode || mode;
       console.log(`[WebRTC Diagnosis] student:session_state setting activeMode to: ${activeM}`);
@@ -563,6 +596,20 @@ export function LiveSession() {
         setMirroredOutput(output);
       } else {
         setMirroredOutput({ outputMode: "none", iframeSrcdoc: "", consoleLines: [], textOutput: "" });
+      }
+
+      if (whiteboardStrokes) {
+        studentWhiteboardStrokesRef.current = [...whiteboardStrokes];
+      }
+      if (whiteboardBgColor) {
+        studentWhiteboardBgColorRef.current = whiteboardBgColor;
+      }
+
+      if (studentWhiteboardRef.current) {
+        studentWhiteboardRef.current.loadSnapshot(
+          studentWhiteboardStrokesRef.current,
+          studentWhiteboardBgColorRef.current
+        );
       }
 
       if (!editingEnabled) {
@@ -581,6 +628,8 @@ export function LiveSession() {
     socket.on("teacher:mode_changed", handleTeacherModeChanged);
     socket.on('teacher:code_changed', handleTeacherCodeChanged);
     socket.on('teacher:code_output', handleTeacherCodeOutput);
+    socket.on('teacher:whiteboard_stroke', handleTeacherWhiteboardStroke);
+    socket.on('teacher:whiteboard_clear', handleTeacherWhiteboardClear);
     socket.on('student:session_state', handleSessionState);
 
     // ── Request session-state snapshot AFTER all listeners are registered ──────
@@ -1032,29 +1081,51 @@ export function LiveSession() {
                     )}
                   </div>
 
-                  {/* Code display area */}
-                  <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-                    <Editor
-                      height="100%"
-                      language={editingEnabled ? studentLanguage : mirroredLanguage}
-                      theme="vs-dark"
-                      value={editingEnabled ? studentCode : mirroredCode}
-                      onChange={editingEnabled ? handleStudentEditorChange : undefined}
-                      options={{
-                        fontSize: 14,
-                        fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
-                        minimap: { enabled: false },
-                        wordWrap: "on",
-                        scrollBeyondLastLine: false,
-                        padding: { top: 12, bottom: 12 },
-                        lineNumbers: "on",
-                        renderLineHighlight: "line",
-                        tabSize: 2,
-                        automaticLayout: true,
-                        readOnly: !editingEnabled,
-                        domReadOnly: !editingEnabled,
+                  {/* Code display area — Whiteboard Canvas and Monaco Editor both permanently mounted, toggled via CSS display */}
+                  <div style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        display: (editingEnabled ? studentLanguage : mirroredLanguage) === "whiteboard" ? "block" : "none",
                       }}
-                    />
+                    >
+                      <WhiteboardCanvas
+                        ref={studentWhiteboardRef}
+                        readOnly={true}
+                        initialStrokes={[...studentWhiteboardStrokesRef.current]}
+                        initialBgColor={studentWhiteboardBgColorRef.current}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        display: (editingEnabled ? studentLanguage : mirroredLanguage) !== "whiteboard" ? "block" : "none",
+                      }}
+                    >
+                      <Editor
+                        height="100%"
+                        language={editingEnabled ? studentLanguage : mirroredLanguage}
+                        theme="vs-dark"
+                        value={editingEnabled ? studentCode : mirroredCode}
+                        onChange={editingEnabled ? handleStudentEditorChange : undefined}
+                        options={{
+                          fontSize: 14,
+                          fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
+                          minimap: { enabled: false },
+                          wordWrap: "on",
+                          scrollBeyondLastLine: false,
+                          padding: { top: 12, bottom: 12 },
+                          lineNumbers: "on",
+                          renderLineHighlight: "line",
+                          tabSize: 2,
+                          automaticLayout: true,
+                          readOnly: !editingEnabled,
+                          domReadOnly: !editingEnabled,
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {/* Output panel — local workspace output (if editingEnabled) */}

@@ -20,11 +20,11 @@ import { Toaster, toast } from "sonner";
 
 const navigation = [
   { name: "Dashboard", href: "/student", icon: Home },
-  { name: "Live Sessions", href: "/student/sessions", icon: Radio },
-  { name: "My Files", href: "/student/files", icon: FolderOpen },
+  { name: "Live Sessions", href: "/student/sessions", icon: Radio, dataTour: "student-sessions" },
+  { name: "My Files", href: "/student/files", icon: FolderOpen, dataTour: "student-files" },
   { name: "Email My Folder", href: "/student/email-folder", icon: Mail },
   { name: "Attendance", href: "/student/attendance", icon: CalendarCheck },
-  { name: "Settings", href: "/student/settings", icon: Settings },
+  { name: "Settings", href: "/student/settings", icon: Settings, dataTour: "student-settings" },
 ];
 
 
@@ -81,7 +81,13 @@ export function StudentLayout() {
   // The session the student clicked "Join" on — passed to modal
   const [selectedSession, setSelectedSession] = useState(null);
 
-  const [hasJoinedSession, setHasJoinedSession] = useState(false);
+  const [hasJoinedSession, setHasJoinedSession] = useState(() => {
+    try {
+      return !!sessionStorage.getItem("edusync_joined_session");
+    } catch {
+      return false;
+    }
+  });
   const [wasKicked, setWasKicked] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [password, setPassword] = useState("");
@@ -306,38 +312,42 @@ export function StudentLayout() {
     lastEmittedKeyRef.current = key;
   };
 
-  // ── Effect 1: Emit student:join_session whenever joinedSession is set/changed ──
+  // ── Emit student:join_session and maintain reconnect listener for active session ──
   useEffect(() => {
     if (!joinedSession) {
       setSessionStateCache(null);
       lastEmittedKeyRef.current = null;
       return;
     }
-    emitJoinSession(joinedSession);
-  }, [joinedSession?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Effect 2: Emit on socket connect/reconnect whenever a joinedSession exists ──
-  useEffect(() => {
     const socket = getSocket();
-    if (!socket) return;
 
-    const onConnect = () => {
-      console.log(`[DEBUG] [student StudentLayout] socket connect event fired — socket.id=${socket.id} currentSessionId=${joinedSessionRef.current?.id} ts=${Date.now()}`);
-      if (joinedSessionRef.current) {
-        emitJoinSession(joinedSessionRef.current);
+    const handleConnect = () => {
+      const s = getSocket();
+      console.log(`[DEBUG] [student StudentLayout] socket connect event fired — socket.id=${s?.id} currentSessionId=${joinedSessionRef.current?.id} ts=${Date.now()}`);
+      if (joinedSessionRef.current && s) {
+        lastEmittedKeyRef.current = null; // Reset cached key so new socket.id re-emits student:join_session
+        const key = `${s.id}:${joinedSessionRef.current.id}`;
+        console.log(`[DEBUG] [student StudentLayout] RE-EMITTING student:join_session on reconnect — session_id=${joinedSessionRef.current.id} socket.id=${s.id} ts=${Date.now()}`);
+        s.emit("student:join_session", { session_id: joinedSessionRef.current.id });
+        lastEmittedKeyRef.current = key;
       }
     };
 
-    if (socket.connected && joinedSessionRef.current) {
-      emitJoinSession(joinedSessionRef.current);
+    if (socket) {
+      if (socket.connected && joinedSessionRef.current) {
+        emitJoinSession(joinedSessionRef.current);
+      }
+      socket.on("connect", handleConnect);
     }
 
-    socket.on("connect", onConnect);
-
     return () => {
-      socket.off("connect", onConnect);
+      const s = getSocket();
+      if (s) {
+        s.off("connect", handleConnect);
+      }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [joinedSession?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close join modal if selectedSession disappears (e.g. session ended while modal open)
   useEffect(() => {
@@ -605,6 +615,7 @@ export function StudentLayout() {
               <Link
                 key={item.name}
                 to={item.href}
+                data-tour={item.dataTour}
                 className={cn(
                   "flex items-center gap-3 py-2 mb-0.5",
                   isActive ? "nav-active" : "nav-inactive",

@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { useNavigate, useOutletContext } from "react-router";
+import { useNavigate, useLocation, useOutletContext } from "react-router";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Button } from "../../components/ui/button";
 import { Timer } from "../../components/Timer";
@@ -8,6 +8,8 @@ import { Code, FileText, Clock, Calendar, WifiOff } from "lucide-react";
 import { cn } from "../../components/ui/utils";
 import { getSocket } from "../../store/socket";
 import { toast } from "sonner";
+import { AppTour } from "../../components/AppTour";
+import { studentTourSteps } from "../../tours/studentTourSteps";
 
 // Mock data cleared - empty states shown
 const mockActiveTask = null;
@@ -16,11 +18,30 @@ const mockUpcomingExam = null;
 
 export function StudentDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setShowJoinModal, hasJoinedSession, activeSessions, joinedSession, wasKicked, setWasKicked } = useOutletContext();
 
   const [attendance, setAttendance] = useState([]);
   const [totalLectures, setTotalLectures] = useState(0);
   const [exams, setExams] = useState([]);
+
+  const [runTour, setRunTour] = useState(false);
+  const [isManualReplay, setIsManualReplay] = useState(false);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("edusync_user");
+    const user = userStr ? JSON.parse(userStr) : {};
+
+    if (location.state?.startTour) {
+      setIsManualReplay(true);
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    } else if (user.has_seen_tour !== true) {
+      setIsManualReplay(false);
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchAvailableExams = async () => {
@@ -222,7 +243,7 @@ export function StudentDashboard() {
 
       {/* Active Task */}
       {mockActiveTask ? (
-        <div className="p-6 bg-bg-surface border border-border rounded-lg">
+        <div data-tour="student-tasks" className="p-6 bg-bg-surface border border-border rounded-lg">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
@@ -253,7 +274,7 @@ export function StudentDashboard() {
           </div>
         </div>
       ) : (
-        <div className="p-8 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3">
+        <div data-tour="student-tasks" className="p-8 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3">
           <Code className="w-12 h-12 text-text-muted" />
           <h3 className="text-base font-medium text-text-primary">
             No active task assigned
@@ -318,7 +339,7 @@ export function StudentDashboard() {
         {/* Right Column */}
         <div className="space-y-6">
           {/* Attendance Summary */}
-          <div className="bg-bg-surface border border-border rounded-lg p-6">
+          <div data-tour="student-attendance" className="bg-bg-surface border border-border rounded-lg p-6">
             <div className="flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5 text-accent-warning" />
               <h2 className="text-lg font-semibold text-text-primary">
@@ -360,7 +381,7 @@ export function StudentDashboard() {
 
           {/* Available Exams */}
           {exams.length > 0 ? (
-            <div className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
+            <div data-tour="student-exams" className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-5 h-5 text-accent-info" />
                 <h2 className="text-lg font-semibold text-text-primary">
@@ -412,7 +433,7 @@ export function StudentDashboard() {
               </div>
             </div>
           ) : (
-            <div className="p-6 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3">
+            <div data-tour="student-exams" className="p-6 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3">
               <Clock className="w-12 h-12 text-text-muted" />
               <h3 className="text-base font-medium text-text-primary">
                 No active/upcoming exams
@@ -424,6 +445,13 @@ export function StudentDashboard() {
           )}
         </div>
       </div>
+
+      <AppTour
+        steps={studentTourSteps}
+        run={runTour}
+        isManualReplay={isManualReplay}
+        onFinish={() => setRunTour(false)}
+      />
     </div>
   );
 }

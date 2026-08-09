@@ -2,6 +2,7 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import Editor from "@monaco-editor/react";
+import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { Button } from "../../components/ui/button";
 import { StatusBadge } from "../../components/StatusBadge";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
@@ -58,6 +59,7 @@ const LANGUAGES = [
   { id: "html", label: "HTML" },
   { id: "css", label: "CSS" },
   { id: "plaintext", label: "Plain Text" },
+  { id: "whiteboard", label: "Whiteboard" },
 ];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -179,6 +181,10 @@ export function LiveBroadcast() {
     editorLiveStatus,
     setEditorLiveStatus,
   } = useOutletContext();
+
+  const whiteboardRef = useRef(null);
+  const teacherWhiteboardStrokesRef = useRef([]);
+  const teacherWhiteboardBgColorRef = useRef("#111118");
 
   // ── Modal / form state ──────────────────────────────────────────────────────
   const [showSetupModal, setShowSetupModal] = useState(false);
@@ -768,7 +774,34 @@ export function LiveBroadcast() {
         }
       };
 
+      const emitStartSessionPayload = (s, session) => {
+        if (!s || !session?.id) return;
+        s.emit("teacher:start_session", {
+          session: {
+            id: session.id,
+            lecture_name: session.lecture_name,
+            subject: session.subject,
+            lab_room: session.lab_room,
+            started_at: session.started_at,
+            class_ids: session.class_ids,
+          },
+          language: editorLanguageRef.current || "javascript",
+          code: editorCodeRef.current || "",
+          whiteboardStrokes: [...teacherWhiteboardStrokesRef.current],
+          whiteboardBgColor: teacherWhiteboardBgColorRef.current || "#111118",
+        });
+      };
+
+      const handleTeacherConnect = () => {
+        if (sessionInfoRef.current) {
+          console.log(`[DEBUG] [teacher LiveBroadcast] socket connect event fired — socket.id=${socket.id} session_id=${sessionInfoRef.current.id} ts=${Date.now()}`);
+          emitStartSessionPayload(socket, sessionInfoRef.current);
+          socket.emit("teacher:request_roster", { session_id: sessionInfoRef.current.id });
+        }
+      };
+
       console.log(`[STUDENT-COUNT-DEBUG] listeners registered on socket id=${socket.id}, connected=${socket.connected}`);
+      socket.on("connect", handleTeacherConnect);
       socket.on("student:joined", handleStudentJoined);
       socket.on("webrtc:answer", handleWebRTCAnswer);
       socket.on("webrtc:ice-candidate", handleWebRTCIceCandidate);
@@ -778,6 +811,7 @@ export function LiveBroadcast() {
       socket.on("teacher:resend_offer_to_student", handleResendOfferToStudent);
 
       return () => {
+        socket.off("connect", handleTeacherConnect);
         socket.off("student:joined", handleStudentJoined);
         socket.off("webrtc:answer", handleWebRTCAnswer);
         socket.off("webrtc:ice-candidate", handleWebRTCIceCandidate);
@@ -982,6 +1016,10 @@ export function LiveBroadcast() {
             started_at: data.session.started_at,
             class_ids: data.session.class_ids,
           },
+          language: editorLanguageRef.current || "javascript",
+          code: editorCodeRef.current || "",
+          whiteboardStrokes: [...teacherWhiteboardStrokesRef.current],
+          whiteboardBgColor: teacherWhiteboardBgColorRef.current || "#111118",
         });
         // Emit initial mode so students render the correct view immediately
         // (defaults to 'editor' — teacher switches to screen share manually)
@@ -1529,6 +1567,78 @@ export function LiveBroadcast() {
     }
   };
 
+  const handleWhiteboardStroke = (stroke) => {
+    if (stroke && stroke.phase === "end") {
+      teacherWhiteboardStrokesRef.current.push(stroke);
+    }
+    const currentBg = whiteboardRef.current?.getBgColor?.() || teacherWhiteboardBgColorRef.current;
+    teacherWhiteboardBgColorRef.current = currentBg;
+
+    const socket = getSocket();
+    if (socket && sessionInfoRef.current) {
+      socket.emit("teacher:whiteboard_stroke", {
+        sessionId: sessionInfoRef.current.id,
+        stroke,
+        bgColor: currentBg,
+      });
+    }
+  };
+
+  const handleWhiteboardClear = () => {
+    teacherWhiteboardStrokesRef.current = [];
+    const socket = getSocket();
+    if (socket && sessionInfoRef.current) {
+      socket.emit("teacher:whiteboard_clear", {
+        sessionId: sessionInfoRef.current.id,
+      });
+    }
+  };
+
+  const handleSaveWhiteboard = async () => {
+    if (!whiteboardRef.current) return;
+    try {
+      const blob = await whiteboardRef.current.getCanvasBlob();
+      if (!blob) {
+        toast.error("Whiteboard image data unavailable");
+        return;
+      }
+
+      const supportsFileSystemAccess = typeof window.showSaveFilePicker === "function";
+      const filename = `whiteboard-${Date.now()}.png`;
+
+      if (supportsFileSystemAccess) {
+        try {
+          const fileHandle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{ description: "PNG Image", accept: { "image/png": [".png"] } }],
+          });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          toast.success("Whiteboard image saved successfully");
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") return;
+          console.warn("showSaveFilePicker failed, falling back to download link", err);
+        }
+      }
+
+      // Fallback download link for browsers without File System Access API
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Whiteboard image downloaded");
+    } catch (err) {
+      console.error("Failed to save whiteboard image:", err);
+      toast.error("Failed to save whiteboard image: " + err.message);
+    }
+  };
+
   // ── Run code ────────────────────────────────────────────────────────────────
   // All execution is entirely client-side. Running code is never synced to
   // anyone — it's completely local to the teacher's browser.
@@ -1823,49 +1933,83 @@ export function LiveBroadcast() {
                     </button>
                   )}
 
-                  {/* Run button */}
-                  {editorLanguage !== "plaintext" && (
+                  {/* Run / Save button */}
+                  {editorLanguage === "whiteboard" ? (
                     <button
-                      onClick={handleRunCode}
-                      disabled={pyodideLoading}
-                      className="h-7 px-3 text-xs font-medium bg-accent-info hover:bg-accent-info/90 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                      onClick={handleSaveWhiteboard}
+                      className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded transition-colors flex items-center gap-1.5"
                     >
-                      {pyodideLoading ? (
-                        <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          Loading…
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-3 h-3" />
-                          Run
-                        </>
-                      )}
+                      <Download className="w-3.5 h-3.5" />
+                      Save
                     </button>
+                  ) : (
+                    editorLanguage !== "plaintext" && (
+                      <button
+                        onClick={handleRunCode}
+                        disabled={pyodideLoading}
+                        className="h-7 px-3 text-xs font-medium bg-accent-info hover:bg-accent-info/90 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                      >
+                        {pyodideLoading ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Loading…
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3 h-3" />
+                            Run
+                          </>
+                        )}
+                      </button>
+                    )
                   )}
                 </div>
 
-                {/* Monaco Editor — flex-1 so it fills all remaining height */}
-                <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-                  <Editor
-                    height="100%"
-                    language={editorLanguage === "plaintext" ? "plaintext" : editorLanguage}
-                    theme="vs-dark"
-                    value={editorCode}
-                    onChange={handleEditorChange}
-                    options={{
-                      fontSize: 14,
-                      fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
-                      minimap: { enabled: false },
-                      wordWrap: "on",
-                      scrollBeyondLastLine: false,
-                      padding: { top: 12, bottom: 12 },
-                      lineNumbers: "on",
-                      renderLineHighlight: "line",
-                      tabSize: 2,
-                      automaticLayout: true,
+                {/* Main Editor Slot — Whiteboard Canvas and Monaco Editor both permanently mounted, toggled via CSS display */}
+                <div style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      display: editorLanguage === "whiteboard" ? "block" : "none",
                     }}
-                  />
+                  >
+                    <WhiteboardCanvas
+                      ref={whiteboardRef}
+                      readOnly={false}
+                      initialStrokes={[...teacherWhiteboardStrokesRef.current]}
+                      initialBgColor={teacherWhiteboardBgColorRef.current}
+                      onStrokeEmit={handleWhiteboardStroke}
+                      onClearEmit={handleWhiteboardClear}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: "100%",
+                      display: editorLanguage !== "whiteboard" ? "block" : "none",
+                    }}
+                  >
+                    <Editor
+                      height="100%"
+                      language={editorLanguage === "plaintext" ? "plaintext" : editorLanguage}
+                      theme="vs-dark"
+                      value={editorCode}
+                      onChange={handleEditorChange}
+                      options={{
+                        fontSize: 14,
+                        fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
+                        minimap: { enabled: false },
+                        wordWrap: "on",
+                        scrollBeyondLastLine: false,
+                        padding: { top: 12, bottom: 12 },
+                        lineNumbers: "on",
+                        renderLineHighlight: "line",
+                        tabSize: 2,
+                        automaticLayout: true,
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Output panel — shown after Run is clicked */}

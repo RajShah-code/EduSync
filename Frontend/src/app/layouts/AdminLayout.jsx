@@ -6,7 +6,7 @@ import { Toaster } from "sonner";
 
 const navigation = [
   { name: "Users", href: "/admin/users", icon: Users },
-  { name: "Classes", href: "/admin/classes", icon: Layers },
+  { name: "Classes", href: "/admin/classes", icon: Layers, dataTour: "admin-classes" },
 ];
 
 export function AdminLayout() {
@@ -103,6 +103,7 @@ export function AdminLayout() {
               <Link
                 key={item.name}
                 to={item.href}
+                data-tour={item.dataTour}
                 className={cn(
                   "flex items-center gap-3 py-2 rounded-lg text-sm mb-0.5 px-3 transition-colors",
                   isActive 

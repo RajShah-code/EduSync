@@ -22,14 +22,14 @@ import { Toaster } from "sonner";
 
 const navigation = [
   { name: "Dashboard", href: "/teacher", icon: LayoutDashboard },
-  { name: "Broadcast", href: "/teacher/broadcast", icon: Radio },
-  { name: "Monitor", href: "/teacher/monitor", icon: Monitor },
-  { name: "Tasks", href: "/teacher/task/assign", icon: ClipboardList },
-  { name: "Exams", href: "/teacher/exam/create", icon: FileText },
+  { name: "Broadcast", href: "/teacher/broadcast", icon: Radio, dataTour: "teacher-broadcast" },
+  { name: "Monitor", href: "/teacher/monitor", icon: Monitor, dataTour: "teacher-monitor" },
+  { name: "Tasks", href: "/teacher/task/assign", icon: ClipboardList, dataTour: "teacher-task" },
+  { name: "Exams", href: "/teacher/exam/create", icon: FileText, dataTour: "teacher-exam" },
   { name: "Attendance", href: "/teacher/attendance", icon: CalendarCheck },
   { name: "Analytics", href: "/teacher/analytics", icon: BarChart3 },
   { name: "Recordings", href: "/teacher/recordings", icon: Video },
-  { name: "Settings", href: "/teacher/settings", icon: Settings },
+  { name: "Settings", href: "/teacher/settings", icon: Settings, dataTour: "teacher-settings" },
 ];
 
 export function TeacherLayout() {
@@ -322,6 +322,7 @@ export function TeacherLayout() {
               <Link
                 key={item.name}
                 to={item.href}
+                data-tour={item.dataTour}
                 className={cn(
                   "flex items-center gap-3 py-2 rounded-lg text-sm mb-0.5",
                   isActive ? "nav-active" : "nav-inactive",

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router";
 import { 
   Search, 
   UserPlus, 
@@ -10,14 +11,41 @@ import {
   Check, 
   Copy,
   AlertTriangle,
-  UserCheck
+  UserCheck,
+  HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { AppTour } from "../../components/AppTour";
+import { adminTourSteps } from "../../tours/adminTourSteps";
 
 export function AdminUsers() {
+  const location = useLocation();
   const [users, setUsers] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [runTour, setRunTour] = useState(false);
+  const [isManualReplay, setIsManualReplay] = useState(false);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("edusync_user");
+    const user = userStr ? JSON.parse(userStr) : {};
+
+    if (location.state?.startTour) {
+      setIsManualReplay(true);
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    } else if (user.has_seen_tour !== true) {
+      setIsManualReplay(false);
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
+
+  const handleRestartTour = () => {
+    setIsManualReplay(true);
+    setRunTour(true);
+  };
 
   // Filters state
   const [roleFilter, setRoleFilter] = useState("all");
@@ -283,17 +311,29 @@ export function AdminUsers() {
             Provision and manage credentials for teachers and students
           </p>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="btn-press flex items-center justify-center gap-2 bg-accent-info hover:bg-accent-info/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Provision User</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            data-tour="admin-restart-tour"
+            onClick={handleRestartTour}
+            className="btn-press flex items-center justify-center gap-2 bg-bg-surface hover:bg-white/5 text-text-secondary hover:text-text-primary border border-border px-3.5 py-2 rounded-lg text-sm font-medium transition-all"
+            title="Restart App Tour"
+          >
+            <HelpCircle className="w-4 h-4 text-accent-info" />
+            <span>Restart Tour</span>
+          </button>
+          <button
+            data-tour="admin-provision"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="btn-press flex items-center justify-center gap-2 bg-accent-info hover:bg-accent-info/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Provision User</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-4 bg-bg-surface border border-border rounded-lg flex flex-col md:flex-row gap-4 items-center">
+      <div data-tour="admin-filters" className="p-4 bg-bg-surface border border-border rounded-lg flex flex-col md:flex-row gap-4 items-center">
         {/* Search */}
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -340,7 +380,7 @@ export function AdminUsers() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+      <div data-tour="admin-table" className="bg-bg-surface border border-border rounded-lg overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-sm text-text-muted">
             Fetching user directory...
@@ -798,6 +838,13 @@ export function AdminUsers() {
           </div>
         </div>
       )}
+
+      <AppTour
+        steps={adminTourSteps}
+        run={runTour}
+        isManualReplay={isManualReplay}
+        onFinish={() => setRunTour(false)}
+      />
     </div>
   );
 }

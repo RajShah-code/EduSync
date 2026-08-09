@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation, useOutletContext } from "react-router";
 import { Button } from "../../components/ui/button";
 import {
   Radio,
@@ -9,6 +10,8 @@ import {
   Square,
   LayoutDashboard,
 } from "lucide-react";
+import { AppTour } from "../../components/AppTour";
+import { teacherTourSteps } from "../../tours/teacherTourSteps";
 
 // Empty — will be populated from real sessions
 const mockStats = {
@@ -20,10 +23,26 @@ const mockStats = {
 
 const mockRecentActivity = [];
 
-import { useOutletContext } from "react-router";
-
 export function TeacherDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [runTour, setRunTour] = useState(false);
+  const [isManualReplay, setIsManualReplay] = useState(false);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem("edusync_user");
+    const user = userStr ? JSON.parse(userStr) : {};
+
+    if (location.state?.startTour) {
+      setIsManualReplay(true);
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    } else if (user.has_seen_tour !== true) {
+      setIsManualReplay(false);
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
   const {
     broadcastState,
     setBroadcastState,
@@ -58,7 +77,7 @@ export function TeacherDashboard() {
       </div>
 
       {/* Session Control */}
-      <div className="p-6 bg-bg-surface border border-border rounded-lg">
+      <div data-tour="teacher-session" className="p-6 bg-bg-surface border border-border rounded-lg">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-text-primary">
@@ -219,6 +238,13 @@ export function TeacherDashboard() {
           </div>
         )}
       </div>
+
+      <AppTour
+        steps={teacherTourSteps}
+        run={runTour}
+        isManualReplay={isManualReplay}
+        onFinish={() => setRunTour(false)}
+      />
     </div>
   );
 }

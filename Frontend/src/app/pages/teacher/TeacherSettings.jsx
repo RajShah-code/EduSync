@@ -5,9 +5,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../..
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { User, Key } from "lucide-react";
+import { useNavigate } from "react-router";
+import { User, Key, HelpCircle } from "lucide-react";
 
 export function TeacherSettings() {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
@@ -221,6 +223,32 @@ export function TeacherSettings() {
               {savingPassword ? "Updating..." : "Update Password"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Section 3: App Tour */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <HelpCircle className="h-5 w-5 text-primary" /> App Tour
+          </CardTitle>
+          <CardDescription>
+            Replay the guided feature tour for your role.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-4">
+            Need a refresher on how to navigate EduSync? Launch the interactive spotlight tour anytime.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/teacher", { state: { startTour: true } })}
+            className="flex items-center gap-2"
+          >
+            <HelpCircle className="h-4 w-4 text-accent-info" />
+            Restart Tour
+          </Button>
         </CardContent>
       </Card>
     </div>
