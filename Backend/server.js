@@ -222,15 +222,25 @@ io.on('connection', (socket) => {
     socket.join(`session:${payload.session.id}`);
     socket.join(`teacher_session:${payload.session.id}`);
     teacherSockets.set(payload.session.id, socket.id);
-    // Initialise session state snapshot. Default mode is 'editor' (teacher starts
-    // in editor mode; screen share is a separate explicit action).
-    sessionStates.set(payload.session.id, {
-      mode: 'editor',
-      code: '',
-      language: 'javascript',
-      output: { outputMode: 'none', textOutput: '', iframeSrcdoc: '', consoleLines: [] }
+    // Initialise session state snapshot preserving pre-start language and whiteboard strokes
+    const sessionId = payload.session.id;
+    const prev = sessionStates.get(sessionId);
+
+    const initialLanguage = payload.language || prev?.language || 'javascript';
+    const initialCode = payload.code !== undefined ? payload.code : (prev?.code || '');
+    const initialStrokes = payload.whiteboardStrokes || prev?.whiteboardStrokes || [];
+    const initialBgColor = payload.whiteboardBgColor || prev?.whiteboardBgColor || '#111118';
+    const initialOutput = prev?.output || { outputMode: 'none', textOutput: '', iframeSrcdoc: '', consoleLines: [] };
+
+    sessionStates.set(sessionId, {
+      mode: prev?.mode || 'editor',
+      code: initialCode,
+      language: initialLanguage,
+      output: initialOutput,
+      whiteboardStrokes: initialStrokes,
+      whiteboardBgColor: initialBgColor,
     });
-    sessionModes.set(payload.session.id, 'editor');
+    sessionModes.set(sessionId, prev?.mode || 'editor');
     
     const classIds = payload.session.class_ids;
     if (classIds && Array.isArray(classIds) && classIds.length > 0) {
@@ -891,7 +901,6 @@ io.on('connection', (socket) => {
     try {
       if (role !== 'teacher') return;
       const { sessionId, stroke, bgColor } = payload;
-      console.log(`[PIPELINE 2 SERVER RECEIVE] teacher:whiteboard_stroke received | senderSocketId=${socket.id} | senderRole=${role} | sessionId=${sessionId} | strokePhase=${stroke?.phase}`);
       const prev = getSessionState(sessionId);
       if (prev) {
         if (!prev.whiteboardStrokes) prev.whiteboardStrokes = [];
@@ -900,10 +909,7 @@ io.on('connection', (socket) => {
         }
         if (bgColor) prev.whiteboardBgColor = bgColor;
       }
-      const targetRoom = `session:${sessionId}`;
-      const roomSockets = io.sockets.adapter.rooms.get(targetRoom);
-      console.log(`[PIPELINE 3 SERVER BROADCAST] emitting teacher:whiteboard_stroke to room [${targetRoom}] | targetSocketsCount=${roomSockets ? roomSockets.size : 0}`);
-      socket.to(targetRoom).emit('teacher:whiteboard_stroke', payload);
+      socket.to(`session:${sessionId}`).emit('teacher:whiteboard_stroke', payload);
     } catch (err) {
       console.error('[Socket] teacher:whiteboard_stroke relay error:', err);
     }
