@@ -25,9 +25,9 @@
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.1",
-    "nodemon": "^3.1.14",
-    "nodemailer": "^6.9.16",
     "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.16",
+    "nodemon": "^3.1.14",
     "postgres": "^3.4.9",
     "socket.io": "^4.8.3"
   }

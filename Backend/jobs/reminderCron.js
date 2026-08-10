@@ -124,19 +124,19 @@ async function checkLateLectureReminders() {
           });
 
           console.log(`[ReminderCron] Brevo email sent successfully to ${teacherEmail} for entry #${entry.id}`);
+
+          // Mark last_reminder_sent_date to IST date ONLY upon successful email send
+          await sql`
+            UPDATE timetable_entries
+            SET last_reminder_sent_date = ${todayStr}::date
+            WHERE id = ${entry.id};
+          `;
+
+          remindersSent += 1;
         } catch (emailErr) {
           console.error(`[ReminderCron] Brevo email send failed for entry #${entry.id}:`, emailErr.message);
         }
       }
-
-      // Mark last_reminder_sent_date to IST date to prevent duplicate reminders
-      await sql`
-        UPDATE timetable_entries
-        SET last_reminder_sent_date = ${todayStr}::date
-        WHERE id = ${entry.id};
-      `;
-
-      remindersSent += 1;
     }
 
     if (remindersSent > 0) {
