@@ -43,4 +43,65 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { login };
+// Windows Auto-Login
+const windowsLogin = async (req, res) => {
+    const clientKeyHeader = req.headers['x-edusync-client-key'];
+    const expectedClientKey = process.env.WINDOWS_LOGIN_CLIENT_KEY;
+
+    if (!expectedClientKey || !clientKeyHeader || clientKeyHeader !== expectedClientKey) {
+        return res.status(401).json({ message: 'Unauthorized client' });
+    }
+
+    const { windows_username } = req.body;
+    if (!windows_username || typeof windows_username !== 'string' || !windows_username.trim()) {
+        return res.status(400).json({ message: 'Windows username is required' });
+    }
+
+    const match = windows_username.trim().match(/^([A-Za-z]+)(\d+)$/);
+    if (!match) {
+        return res.status(400).json({ message: 'Unrecognized username format' });
+    }
+
+    const prefix = match[1];
+    const rollStr = match[2];
+    const rollInt = parseInt(rollStr, 10);
+
+    try {
+        const [cls] = await sql`
+            SELECT id FROM classes WHERE LOWER(name) = LOWER(${prefix})
+        `;
+        if (!cls) {
+            return res.status(404).json({ message: 'No matching class' });
+        }
+
+        const [user] = await sql`
+            SELECT * FROM users 
+            WHERE class_id = ${cls.id} 
+              AND role = 'student' 
+              AND (
+                (roll_no ~ '^[0-9]+$' AND roll_no::integer = ${rollInt})
+                OR TRIM(roll_no) = ${rollStr}
+              )
+        `;
+        if (!user) {
+            return res.status(404).json({ message: 'No matching student' });
+        }
+
+        res.json({ 
+            token: generateToken(user), 
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                email: user.email, 
+                role: user.role,
+                class_id: user.class_id || null,
+                roll_no: user.roll_no || null,
+                has_seen_tour: user.has_seen_tour ?? false
+            } 
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
+module.exports = { login, windowsLogin };
