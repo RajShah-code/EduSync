@@ -147,6 +147,11 @@ const setup = async () => {
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS has_seen_tour BOOLEAN DEFAULT false;
     `;
+    // Note: UNIQUE constraint on windows_username is intentionally deferred to avoid blocking future admin bulk-import edge cases (e.g. temporary blank entries).
+    await sql`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS windows_username VARCHAR(255);
+    `;
     
     // Update users_role_check constraint to allow 'admin'
     await sql`
