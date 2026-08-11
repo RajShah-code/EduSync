@@ -1,4 +1,5 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Outlet } from "react-router";
+import { WindowsAutoLogin } from "./components/WindowsAutoLogin";
 
 // Landing
 import { LandingPage } from "./pages/LandingPage";
@@ -41,62 +42,76 @@ import { SessionList } from "./pages/student/SessionList";
 import { StudentSettings } from "./pages/student/StudentSettings";
 import { StudentLayout } from "./layouts/StudentLayout";
 
+function RootLayout() {
+  return (
+    <>
+      <WindowsAutoLogin />
+      <Outlet />
+    </>
+  );
+}
+
 export const router = createBrowserRouter([
   {
-    path: "/",
-    Component: LandingPage,
-  },
-  {
-    path: "/login",
-    Component: Login,
-  },
-  // Admin Routes
-  {
-    path: "/admin",
-    Component: AdminLayout,
+    element: <RootLayout />,
     children: [
-      { index: true, Component: AdminUsers },
-      { path: "users", Component: AdminUsers },
-      { path: "classes", Component: AdminClasses },
-    ],
-  },
-  // Teacher Routes
-  {
-    path: "/teacher",
-    Component: TeacherLayout,
-    children: [
-      { index: true, Component: TeacherDashboard },
-      { path: "broadcast", Component: LiveBroadcast },
-      { path: "monitor", Component: StudentMonitor },
-      { path: "task/assign", Component: TaskAssignment },
-      { path: "task/progress/:taskId", Component: TaskProgress },
-      { path: "task/review/:taskId", Component: SubmissionReview },
-      { path: "exam/create", Component: ExamCreation },
-      { path: "exam/active/:examId", Component: ActiveExam },
-      { path: "exam/results/:examId", Component: ExamResults },
-      { path: "attendance", Component: Attendance },
-      { path: "analytics", Component: Analytics },
-      { path: "recordings", Component: SessionRecording },
-      { path: "settings", Component: TeacherSettings },
-      { path: "timetable", Component: TimetableSetup },
-    ],
-  },
-  // Student Routes
-  {
-    path: "/student",
-    Component: StudentLayout,
-    children: [
-      { index: true, Component: StudentDashboard },
-      { path: "sessions", Component: SessionList },
-      { path: "live-session", Component: LiveSession },
-      { path: "session/:sessionId", Component: LiveSession },
-      { path: "tasks", Component: TaskWorkspace },
-      { path: "task/:taskId", Component: TaskWorkspace },
-      { path: "exam/:examId", Component: ExamScreen },
-      { path: "exam/:examId/locked", Component: ExamLocked },
-      { path: "email-folder", Component: SendMyFiles },
-      { path: "attendance", Component: AttendanceHistory },
-      { path: "settings", Component: StudentSettings },
+      {
+        path: "/",
+        Component: LandingPage,
+      },
+      {
+        path: "/login",
+        Component: Login,
+      },
+      // Admin Routes
+      {
+        path: "/admin",
+        Component: AdminLayout,
+        children: [
+          { index: true, Component: AdminUsers },
+          { path: "users", Component: AdminUsers },
+          { path: "classes", Component: AdminClasses },
+        ],
+      },
+      // Teacher Routes
+      {
+        path: "/teacher",
+        Component: TeacherLayout,
+        children: [
+          { index: true, Component: TeacherDashboard },
+          { path: "broadcast", Component: LiveBroadcast },
+          { path: "monitor", Component: StudentMonitor },
+          { path: "task/assign", Component: TaskAssignment },
+          { path: "task/progress/:taskId", Component: TaskProgress },
+          { path: "task/review/:taskId", Component: SubmissionReview },
+          { path: "exam/create", Component: ExamCreation },
+          { path: "exam/active/:examId", Component: ActiveExam },
+          { path: "exam/results/:examId", Component: ExamResults },
+          { path: "attendance", Component: Attendance },
+          { path: "analytics", Component: Analytics },
+          { path: "recordings", Component: SessionRecording },
+          { path: "settings", Component: TeacherSettings },
+          { path: "timetable", Component: TimetableSetup },
+        ],
+      },
+      // Student Routes
+      {
+        path: "/student",
+        Component: StudentLayout,
+        children: [
+          { index: true, Component: StudentDashboard },
+          { path: "sessions", Component: SessionList },
+          { path: "live-session", Component: LiveSession },
+          { path: "session/:sessionId", Component: LiveSession },
+          { path: "tasks", Component: TaskWorkspace },
+          { path: "task/:taskId", Component: TaskWorkspace },
+          { path: "exam/:examId", Component: ExamScreen },
+          { path: "exam/:examId/locked", Component: ExamLocked },
+          { path: "email-folder", Component: SendMyFiles },
+          { path: "attendance", Component: AttendanceHistory },
+          { path: "settings", Component: StudentSettings },
+        ],
+      },
     ],
   },
 ]);

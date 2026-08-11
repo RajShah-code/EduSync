@@ -29,7 +29,9 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "include": "electron/installer.nsh"
     }
   },
   "dependencies": {
