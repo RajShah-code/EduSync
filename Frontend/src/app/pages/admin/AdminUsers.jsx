@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router";
+import * as XLSX from "xlsx";
 import { 
   Search, 
   UserPlus, 
@@ -12,7 +13,10 @@ import {
   Copy,
   AlertTriangle,
   UserCheck,
-  HelpCircle
+  HelpCircle,
+  Upload,
+  Download,
+  FileSpreadsheet
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
@@ -57,9 +61,113 @@ export function AdminUsers() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
-  // Active user for editing/resetting/deleting
-  const [selectedUser, setSelectedUser] = useState(null);
+  // Bulk import state
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkResults, setBulkResults] = useState(null);
+
+  // Download template with Data and Instructions sheets
+  const handleDownloadTemplate = () => {
+    // Sheet 1: Data (Header Row)
+    const dataHeaders = [["name", "email", "role", "class", "roll_no", "windows_username", "password"]];
+    const dataSheet = XLSX.utils.aoa_to_sheet(dataHeaders);
+
+    // Sheet 2: Instructions
+    const instructionsContent = [
+      ["========================================================================================"],
+      ["                               EDUSYNC BULK USER IMPORT INSTRUCTIONS"],
+      ["========================================================================================"],
+      [""],
+      ["FIELD SPECIFICATIONS:"],
+      ["1. name (Required)"],
+      ["   - Full name of the user (e.g. \"John Doe\")."],
+      [""],
+      ["2. email (Required)"],
+      ["   - Unique email address used for login and notifications (e.g. \"student@domain.com\")."],
+      [""],
+      ["3. role (Required)"],
+      ["   - Must be exactly one of: \"admin\", \"teacher\", or \"student\" (lowercase only)."],
+      [""],
+      ["4. class (Required for Students only)"],
+      ["   - Required when role = student. Leave blank for teachers/admins."],
+      ["   - Must match an existing class name in EduSync (e.g. \"FYBCA\", \"SYBCA\", \"TYBCA\")."],
+      [""],
+      ["5. roll_no (Required for Students only)"],
+      ["   - Required when role = student. Leave blank for teachers/admins."],
+      ["   - Numeric roll number assigned to the student."],
+      [""],
+      ["6. windows_username (Optional)"],
+      ["   - Captured Windows username for auto-login (e.g. \"SYBCA48\" or \"jdoe\")."],
+      ["   - Leave blank if unknown; can be set or updated later."],
+      [""],
+      ["7. password (Optional)"],
+      ["   - Plaintext password. Leave blank to auto-generate:"],
+      ["     * Students: ClassName + RollNo (e.g. \"FYBCA48\")."],
+      ["     * Teachers/Admins: Name with no spaces, lowercase (e.g. \"johndoe\")."],
+      [""],
+      ["IMPORT RULES:"],
+      ["- Fill your user records in Sheet 1 (\"Data\")."],
+      ["- One row represents one user. Do not leave blank rows between entries."],
+      ["- Duplicate emails (already in EduSync or repeated within this file) will be skipped and reported as failed, without blocking valid rows in the batch."]
+    ];
+    const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionsContent);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, dataSheet, "Data");
+    XLSX.utils.book_append_sheet(workbook, instructionsSheet, "Instructions");
+
+    XLSX.writeFile(workbook, "EduSync_User_Import_Template.xlsx");
+  };
+
+  // Bulk upload handler
+  const handleBulkUpload = async (e) => {
+    e.preventDefault();
+    if (!bulkFile) {
+      toast.error("Please select an Excel file (.xlsx) to upload");
+      return;
+    }
+
+    setBulkUploading(true);
+    setBulkResults(null);
+
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const formData = new FormData();
+      formData.append("file", bulkFile);
+
+      const res = await fetch(`${API_BASE_URL}/admin/users/bulk-import`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.message || "Failed to process bulk import file");
+        return;
+      }
+
+      setBulkResults(data.results || []);
+      const createdCount = (data.results || []).filter((r) => r.status === "created").length;
+      const failedCount = (data.results || []).filter((r) => r.status === "failed").length;
+
+      if (createdCount > 0) {
+        toast.success(`Successfully imported ${createdCount} user(s)`);
+        fetchData();
+      }
+      if (failedCount > 0) {
+        toast.warning(`${failedCount} row(s) failed validation. See details below.`);
+      }
+    } catch {
+      toast.error("Network error during bulk import upload");
+    } finally {
+      setBulkUploading(false);
+    }
+  };
 
   // Success Modal for transient password display
   const [passwordDisplay, setPasswordDisplay] = useState(null); // { name, password, email }
@@ -320,6 +428,26 @@ export function AdminUsers() {
           >
             <HelpCircle className="w-4 h-4 text-accent-info" />
             <span>Restart Tour</span>
+          </button>
+          <button
+            onClick={handleDownloadTemplate}
+            className="btn-press flex items-center justify-center gap-2 bg-bg-surface hover:bg-white/5 text-text-secondary hover:text-text-primary border border-border px-3.5 py-2 rounded-lg text-sm font-medium transition-all"
+            title="Download Excel Import Template"
+          >
+            <Download className="w-4 h-4 text-accent-info" />
+            <span>Download Template</span>
+          </button>
+          <button
+            onClick={() => {
+              setBulkFile(null);
+              setBulkResults(null);
+              setIsBulkModalOpen(true);
+            }}
+            className="btn-press flex items-center justify-center gap-2 bg-bg-surface hover:bg-white/5 text-text-secondary hover:text-text-primary border border-border px-3.5 py-2 rounded-lg text-sm font-medium transition-all"
+            title="Bulk Import Users via Excel"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-accent-info" />
+            <span>Bulk Import</span>
           </button>
           <button
             data-tour="admin-provision"
@@ -835,6 +963,156 @@ export function AdminUsers() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+            <div className="p-5 border-b border-border flex items-center justify-between sticky top-0 bg-bg-surface z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-accent-info/10 border border-accent-info/20 rounded-lg">
+                  <FileSpreadsheet className="w-5 h-5 text-accent-info" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-text-primary">Bulk User Import</h2>
+                  <p className="text-xs text-text-secondary">Upload an Excel (.xlsx) file to create multiple users at once</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsBulkModalOpen(false)}
+                className="p-1 text-text-muted hover:text-text-primary rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleBulkUpload} className="p-6 space-y-5 flex-1">
+              <div className="p-4 bg-bg-base border border-border rounded-lg flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-text-primary">Don't have the template yet?</h4>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Download our 2-sheet Excel template containing empty headers and field instructions.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-text-primary border border-border rounded-lg text-xs font-medium flex items-center gap-1.5 shrink-0 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5 text-accent-info" />
+                  <span>Template</span>
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-2">
+                  Select Excel File (.xlsx)
+                </label>
+                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-accent-info/50 transition-colors bg-bg-base">
+                  <input
+                    type="file"
+                    accept=".xlsx"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setBulkFile(e.target.files[0]);
+                        setBulkResults(null);
+                      }
+                    }}
+                    className="hidden"
+                    id="bulk-excel-upload"
+                  />
+                  <label htmlFor="bulk-excel-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <Upload className="w-8 h-8 text-text-muted" />
+                    <span className="text-sm font-medium text-text-primary">
+                      {bulkFile ? bulkFile.name : "Click to browse or drop .xlsx file here"}
+                    </span>
+                    <span className="text-xs text-text-muted">
+                      {bulkFile ? `${(bulkFile.size / 1024).toFixed(1)} KB` : "Maximum file size: 5MB"}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsBulkModalOpen(false)}
+                  className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!bulkFile || bulkUploading}
+                  className="px-5 py-2 bg-accent-info hover:bg-accent-info/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all"
+                >
+                  {bulkUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Processing File...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      <span>Upload & Import Users</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Import Results Table */}
+              {bulkResults && bulkResults.length > 0 && (
+                <div className="mt-6 pt-5 border-t border-border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-text-primary">Import Summary</h3>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-accent-success font-medium">
+                        {bulkResults.filter((r) => r.status === "created").length} Created
+                      </span>
+                      <span className="text-accent-danger font-medium">
+                        {bulkResults.filter((r) => r.status === "failed").length} Failed
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="border border-border rounded-lg overflow-hidden max-h-60 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-bg-base text-text-secondary font-medium border-b border-border sticky top-0">
+                        <tr>
+                          <th className="p-2.5">Row #</th>
+                          <th className="p-2.5">Email</th>
+                          <th className="p-2.5">Status</th>
+                          <th className="p-2.5">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {bulkResults.map((res, idx) => (
+                          <tr key={idx} className="hover:bg-white/[0.02]">
+                            <td className="p-2.5 font-mono text-text-muted">Row {res.row}</td>
+                            <td className="p-2.5 font-mono text-text-primary">{res.email || "—"}</td>
+                            <td className="p-2.5">
+                              {res.status === "created" ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-success/10 text-accent-success border border-accent-success/20">
+                                  <Check className="w-3 h-3" /> Created
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-danger/10 text-accent-danger border border-accent-danger/20">
+                                  <X className="w-3 h-3" /> Failed
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-2.5 text-text-secondary">{res.reason || "User created successfully"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </form>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 const sql = require('../config/db');
 const bcrypt = require('bcryptjs');
+const XLSX = require('xlsx');
 
 // GET /admin/users — list all users (filterable by role/class, with name/email search)
 const getUsers = async (req, res) => {
@@ -233,9 +234,157 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// Bulk Import Users via Excel upload (.xlsx)
+const bulkImportUsers = async (req, res) => {
+  if (!req.file || !req.file.buffer) {
+    return res.status(400).json({ message: 'Excel file (.xlsx) is required' });
+  }
+
+  try {
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames.includes('Data') ? 'Data' : workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    if (!rawRows || rawRows.length === 0) {
+      return res.status(400).json({ message: 'Uploaded Excel file contains no data rows' });
+    }
+
+    const seenEmailsInBatch = new Set();
+    const results = [];
+    const validRoles = ['admin', 'teacher', 'student'];
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    for (let i = 0; i < rawRows.length; i++) {
+      const rowNum = i + 2; // Row 1 is header row in Excel
+      const rawRow = rawRows[i];
+
+      // Normalize row keys to lowercase trimmed strings
+      const row = {};
+      Object.keys(rawRow).forEach((key) => {
+        const cleanKey = key.trim().toLowerCase();
+        row[cleanKey] = String(rawRow[key]).trim();
+      });
+
+      const name = row.name || '';
+      const email = row.email || '';
+      const role = (row.role || '').toLowerCase();
+      const className = row.class || '';
+      const rollNo = row.roll_no || '';
+      const windowsUsername = row.windows_username || '';
+      const password = row.password || '';
+
+      // Skip completely empty rows
+      if (!name && !email && !role && !className && !rollNo && !windowsUsername && !password) {
+        continue;
+      }
+
+      // 1. Validate required fields
+      if (!name) {
+        results.push({ row: rowNum, status: 'failed', email: email || null, reason: 'Name is required' });
+        continue;
+      }
+      if (!email) {
+        results.push({ row: rowNum, status: 'failed', email: null, reason: 'Email is required' });
+        continue;
+      }
+      if (!emailPattern.test(email)) {
+        results.push({ row: rowNum, status: 'failed', email, reason: 'Please enter a valid email address (e.g. name@domain.com)' });
+        continue;
+      }
+      if (!role) {
+        results.push({ row: rowNum, status: 'failed', email, reason: 'Role is required' });
+        continue;
+      }
+      if (!validRoles.includes(role)) {
+        results.push({ row: rowNum, status: 'failed', email, reason: 'Invalid role. Must be admin, teacher, or student' });
+        continue;
+      }
+
+      // 2. Check for duplicate email within the same file batch
+      const emailLower = email.toLowerCase();
+      if (seenEmailsInBatch.has(emailLower)) {
+        results.push({ row: rowNum, status: 'failed', email, reason: 'Duplicate email in file' });
+        continue;
+      }
+
+      // 3. Check for duplicate email in database
+      const existingDb = await sql`SELECT id FROM users WHERE LOWER(email) = LOWER(${email})`;
+      if (existingDb.length > 0) {
+        results.push({ row: rowNum, status: 'failed', email, reason: 'Email/Username already exists' });
+        continue;
+      }
+
+      // 4. Role-specific validation & Class lookup
+      let targetClassId = null;
+      let targetRollNo = null;
+      let classRec = null;
+
+      if (role === 'student') {
+        if (!className) {
+          results.push({ row: rowNum, status: 'failed', email, reason: 'Class selection is required for students' });
+          continue;
+        }
+        if (!rollNo) {
+          results.push({ row: rowNum, status: 'failed', email, reason: 'Roll number is required for students' });
+          continue;
+        }
+
+        const [cls] = await sql`SELECT id, name FROM classes WHERE LOWER(name) = LOWER(${className})`;
+        if (!cls) {
+          results.push({ row: rowNum, status: 'failed', email, reason: 'Selected class does not exist' });
+          continue;
+        }
+        targetClassId = cls.id;
+        targetRollNo = rollNo;
+        classRec = cls;
+      }
+
+      // 5. Password generation logic (reusing exact createUser logic)
+      let plaintextPassword = '';
+      if (password && password !== '') {
+        plaintextPassword = password;
+      } else {
+        if (role === 'student') {
+          const paddedRoll = isNaN(Number(rollNo)) 
+            ? String(rollNo).trim() 
+            : String(Number(rollNo)).padStart(2, '0');
+          plaintextPassword = `${classRec.name}${paddedRoll}`;
+        } else {
+          plaintextPassword = name.toLowerCase().replace(/\s+/g, '');
+          if (plaintextPassword.length === 0) {
+            plaintextPassword = 'edusync123';
+          }
+        }
+      }
+
+      // 6. Insert new user into database
+      try {
+        const passwordHash = await bcrypt.hash(plaintextPassword, 10);
+        const targetWindowsUser = windowsUsername !== '' ? windowsUsername : null;
+
+        await sql`
+          INSERT INTO users (name, email, password_hash, role, class_id, roll_no, windows_username, created_at)
+          VALUES (${name}, ${email}, ${passwordHash}, ${role}, ${targetClassId}, ${targetRollNo}, ${targetWindowsUser}, NOW())
+        `;
+
+        seenEmailsInBatch.add(emailLower);
+        results.push({ row: rowNum, status: 'created', email });
+      } catch (err) {
+        results.push({ row: rowNum, status: 'failed', email, reason: err.message || 'Database error during insertion' });
+      }
+    }
+
+    res.json({ message: 'Bulk import complete', results });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to process Excel file', error: err.message });
+  }
+};
+
 module.exports = {
   getUsers,
   createUser,
+  bulkImportUsers,
   updateUser,
   resetUserPassword,
   deleteUser,
