@@ -1,5 +1,6 @@
 import { createBrowserRouter, Outlet } from "react-router";
 import { WindowsAutoLogin } from "./components/WindowsAutoLogin";
+import { SessionResume } from "./components/SessionResume";
 
 // Landing
 import { LandingPage } from "./pages/LandingPage";
@@ -46,6 +47,7 @@ function RootLayout() {
   return (
     <>
       <WindowsAutoLogin />
+      <SessionResume />
       <Outlet />
     </>
   );
