@@ -220,7 +220,7 @@ export function AdminUsers() {
       });
       const usersData = await usersRes.json();
       if (usersRes.ok) {
-        setUsers(usersData.users || []);
+        setUsers(Array.isArray(usersData) ? usersData : (usersData.users || []));
       }
     } catch (err) {
       toast.error("Failed to sync admin data");
@@ -286,12 +286,13 @@ export function AdminUsers() {
   };
 
   const handleEditOpen = (user) => {
+    if (!user) return;
     setSelectedUser(user);
     setEditForm({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      class_id: user.class_id || "",
+      name: user.name || "",
+      email: user.email || "",
+      role: user.role || "student",
+      class_id: user.class_id ? String(user.class_id) : "",
       roll_no: user.roll_no || "",
     });
     setIsEditModalOpen(true);
@@ -299,6 +300,7 @@ export function AdminUsers() {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedUser) return;
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}`, {
@@ -311,7 +313,7 @@ export function AdminUsers() {
           name: editForm.name,
           email: editForm.email,
           role: editForm.role,
-          class_id: editForm.role === "student" ? editForm.class_id : undefined,
+          class_id: editForm.role === "student" ? (editForm.class_id ? Number(editForm.class_id) : undefined) : undefined,
           roll_no: editForm.role === "student" ? editForm.roll_no : undefined,
         })
       });
@@ -332,6 +334,7 @@ export function AdminUsers() {
   };
 
   const handleResetOpen = (user) => {
+    if (!user) return;
     setSelectedUser(user);
     setResetPasswordForm({ new_password: "" });
     setIsResetModalOpen(true);
@@ -339,6 +342,7 @@ export function AdminUsers() {
 
   const handleResetSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedUser) return;
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}/reset-password`, {
@@ -375,11 +379,13 @@ export function AdminUsers() {
   };
 
   const handleDeleteOpen = (user) => {
+    if (!user) return;
     setSelectedUser(user);
     setIsDeleteModalOpen(true);
   };
 
   const handleDeleteSubmit = async () => {
+    if (!selectedUser) return;
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}`, {
@@ -518,10 +524,10 @@ export function AdminUsers() {
             No users found matching current filters
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border/80 text-[11px] font-semibold text-text-muted tracking-wider uppercase bg-white/[0.01]">
+              <thead className="sticky top-0 bg-bg-surface z-10">
+                <tr className="border-b border-border/80 text-[11px] font-semibold text-text-muted tracking-wider uppercase bg-bg-surface">
                   <th className="px-6 py-3.5">Name</th>
                   <th className="px-6 py-3.5">Email</th>
                   <th className="px-6 py-3.5">Role</th>
@@ -559,22 +565,25 @@ export function AdminUsers() {
                     <td className="px-6 py-4 text-sm text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
+                          type="button"
                           onClick={() => handleEditOpen(user)}
-                          className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-text-primary transition-colors"
+                          className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
                           title="Edit Details"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleResetOpen(user)}
-                          className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-warning transition-colors"
+                          className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-warning transition-colors cursor-pointer"
                           title="Reset Password"
                         >
                           <Key className="w-4 h-4" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDeleteOpen(user)}
-                          className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-critical transition-colors"
+                          className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-critical transition-colors cursor-pointer"
                           title="Delete User"
                         >
                           <Trash2 className="w-4 h-4" />

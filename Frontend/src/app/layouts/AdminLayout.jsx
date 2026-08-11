@@ -163,7 +163,7 @@ export function AdminLayout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-auto bg-bg-base">
+        <main className="flex-1 overflow-y-auto bg-bg-base">
           <Outlet />
         </main>
         <Toaster position="top-right" richColors />
