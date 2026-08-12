@@ -340,15 +340,44 @@ function parseDayOfWeek(rawDay) {
 }
 
 /**
- * Normalizes 12-hour (09:00 AM / 1:30 PM) or 24-hour (14:00 / 09:00) time strings
- * to a clean 24-hour "HH:MM" string. Returns null if invalid.
+ * Normalizes Excel time values to 24-hour "HH:MM" format.
+ * Handles:
+ * 1. Numbers / Numeric strings (Excel day fractions, e.g. 0.375 -> 09:00, 0.541666 -> 13:00)
+ * 2. Date objects / ISO Date strings
+ * 3. 12-hour strings ("09:00 AM", "1:30 PM")
+ * 4. 24-hour strings ("14:00", "09:00:00")
  */
-function normalizeTimeString(rawStr) {
-  if (!rawStr || typeof rawStr !== 'string') return null;
-  const str = rawStr.trim();
+function normalizeTimeString(rawVal) {
+  if (rawVal === undefined || rawVal === null) return null;
+
+  // 1. If JS Date object
+  if (rawVal instanceof Date) {
+    if (isNaN(rawVal.getTime())) return null;
+    const hh = String(rawVal.getHours()).padStart(2, '0');
+    const mm = String(rawVal.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  // 2. If Number or numeric string (Excel day fraction e.g. 0.375 or 0.5416666666666666)
+  if (typeof rawVal === 'number' || (!isNaN(Number(rawVal)) && String(rawVal).trim() !== '' && !String(rawVal).includes(':'))) {
+    const num = Number(rawVal);
+    if (num >= 0 && num <= 2) {
+      // Excel day fraction math: 1 day = 24 * 60 minutes = 1440 minutes
+      const totalMinutes = Math.round(num * 1440);
+      const hours = Math.floor(totalMinutes / 60) % 24;
+      const minutes = totalMinutes % 60;
+
+      const hh = String(hours).padStart(2, '0');
+      const mm = String(minutes).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+  }
+
+  // Convert to trimmed string for text parsing
+  const str = String(rawVal).trim();
   if (!str) return null;
 
-  // 1. Try matching 12-hour format with AM/PM (e.g. "9:00 AM", "09:00:00 AM", "1:30 PM", "12:15 PM")
+  // 3. Try matching 12-hour format with AM/PM (e.g. "9:00 AM", "09:00:00 AM", "1:30 PM", "12:15 PM")
   const twelverMatch = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)$/i);
   if (twelverMatch) {
     let hours = parseInt(twelverMatch[1], 10);
@@ -365,7 +394,7 @@ function normalizeTimeString(rawStr) {
     return `${hh}:${mm}`;
   }
 
-  // 2. Try matching 24-hour format (e.g. "09:00", "14:30", "9:00", "14:30:00")
+  // 4. Try matching 24-hour format (e.g. "09:00", "14:30", "9:00", "14:30:00")
   const twentyFourMatch = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
   if (twentyFourMatch) {
     const hours = parseInt(twentyFourMatch[1], 10);
@@ -376,6 +405,16 @@ function normalizeTimeString(rawStr) {
     const hh = String(hours).padStart(2, '0');
     const mm = String(minutes).padStart(2, '0');
     return `${hh}:${mm}`;
+  }
+
+  // 5. Try parsing ISO Date string (e.g. "1899-12-30T09:00:00.000Z")
+  if (str.includes('T')) {
+    const parsedDate = new Date(str);
+    if (!isNaN(parsedDate.getTime())) {
+      const hh = String(parsedDate.getUTCHours()).padStart(2, '0');
+      const mm = String(parsedDate.getUTCMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
   }
 
   return null;
@@ -390,7 +429,7 @@ const importTimetable = async (req, res) => {
   }
 
   try {
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
@@ -406,20 +445,21 @@ const importTimetable = async (req, res) => {
       const rowNum = i + 2; // Row 1 is header
       const rawRow = rawRows[i];
 
-      // Normalize keys
+      // Normalize keys while preserving raw cell values for time/number parsing
       const row = {};
       Object.keys(rawRow).forEach((k) => {
-        row[k.trim().toLowerCase()] = String(rawRow[k]).trim();
+        const val = rawRow[k];
+        row[k.trim().toLowerCase()] = (typeof val === 'string') ? val.trim() : val;
       });
 
       const dayVal = row['day'] || '';
-      const rawStartTime = row['start time'] || row['start_time'] || '';
-      const rawEndTime = row['end time'] || row['end_time'] || '';
-      const subject = row['subject'] || '';
-      const className = row['class'] || row['class_name'] || '';
-      const room = row['room'] || '';
-      const sessionTypeRaw = (row['session type'] || row['session_type'] || 'standard').toLowerCase();
-      const reminderEnabledRaw = (row['reminder enabled'] || row['reminder_enabled'] || '').toLowerCase();
+      const rawStartTime = row['start time'] !== undefined ? row['start time'] : (row['start_time'] || '');
+      const rawEndTime = row['end time'] !== undefined ? row['end time'] : (row['end_time'] || '');
+      const subject = String(row['subject'] || '').trim();
+      const className = String(row['class'] || row['class_name'] || '').trim();
+      const room = String(row['room'] || '').trim();
+      const sessionTypeRaw = String(row['session type'] || row['session_type'] || 'standard').trim().toLowerCase();
+      const reminderEnabledRaw = String(row['reminder enabled'] || row['reminder_enabled'] || '').trim().toLowerCase();
 
       // Skip empty row
       if (!dayVal && !rawStartTime && !rawEndTime && !subject && !className) {
