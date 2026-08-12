@@ -29,7 +29,7 @@ const getUsers = async (req, res) => {
 
 // POST /admin/users — create a new user (teacher or student)
 const createUser = async (req, res) => {
-  const { name, email, role, class_id, roll_no, password } = req.body;
+  const { name, email, role, class_id, roll_no, password, windows_username } = req.body;
 
   if (!name || !name.trim()) return res.status(400).json({ message: 'Name is required' });
   if (!email || !email.trim()) return res.status(400).json({ message: 'Email is required' });
@@ -82,11 +82,12 @@ const createUser = async (req, res) => {
     const passwordHash = await bcrypt.hash(plaintextPassword, 10);
     const targetClassId = role === 'student' ? class_id : null;
     const targetRollNo = role === 'student' ? String(roll_no).trim() : null;
+    const targetWindowsUser = windows_username && windows_username.trim() !== '' ? windows_username.trim() : null;
 
     const [newUser] = await sql`
-      INSERT INTO users (name, email, password_hash, role, class_id, roll_no, created_at)
-      VALUES (${name.trim()}, ${email.trim()}, ${passwordHash}, ${role}, ${targetClassId}, ${targetRollNo}, NOW())
-      RETURNING id, name, email, role, class_id, roll_no, created_at;
+      INSERT INTO users (name, email, password_hash, role, class_id, roll_no, windows_username, created_at)
+      VALUES (${name.trim()}, ${email.trim()}, ${passwordHash}, ${role}, ${targetClassId}, ${targetRollNo}, ${targetWindowsUser}, NOW())
+      RETURNING id, name, email, role, class_id, roll_no, windows_username, created_at;
     `;
 
     // Plaintext password is NEVER saved to any database column, printed in server console logs,
