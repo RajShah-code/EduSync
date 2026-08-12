@@ -68,6 +68,8 @@ const setup = async () => {
         end_time TIME NOT NULL,
         subject TEXT NOT NULL,
         class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+        room VARCHAR(255) DEFAULT NULL,
+        session_type VARCHAR(50) DEFAULT 'standard',
         reminder_enabled BOOLEAN DEFAULT false,
         reminder_delay_minutes INTEGER DEFAULT NULL,
         last_triggered_date DATE DEFAULT NULL,
@@ -77,8 +79,19 @@ const setup = async () => {
       );
     `;
     // Additive column migrations for existing instances
+    await sql`ALTER TABLE timetable_entries ADD COLUMN IF NOT EXISTS room VARCHAR(255) DEFAULT NULL;`;
+    await sql`ALTER TABLE timetable_entries ADD COLUMN IF NOT EXISTS session_type VARCHAR(50) DEFAULT 'standard';`;
     await sql`ALTER TABLE timetable_entries ADD COLUMN IF NOT EXISTS last_triggered_date DATE DEFAULT NULL;`;
     await sql`ALTER TABLE timetable_entries ADD COLUMN IF NOT EXISTS last_reminder_sent_date DATE DEFAULT NULL;`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS timetable_exceptions (
+        id SERIAL PRIMARY KEY,
+        teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        exception_date DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(teacher_id, exception_date)
+      );
+    `;
     await sql`
       CREATE TABLE IF NOT EXISTS tasks (
         id SERIAL PRIMARY KEY,
@@ -151,6 +164,10 @@ const setup = async () => {
     await sql`
       ALTER TABLE users 
       ADD COLUMN IF NOT EXISTS windows_username VARCHAR(255);
+    `;
+    await sql`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS default_reminder_delay_minutes INTEGER DEFAULT 5;
     `;
     
     // Update users_role_check constraint to allow 'admin'

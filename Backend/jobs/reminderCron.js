@@ -50,11 +50,11 @@ async function checkLateLectureReminders() {
         t.subject,
         t.class_id,
         t.reminder_enabled,
-        t.reminder_delay_minutes,
         t.last_triggered_date::text AS last_triggered_date,
         t.last_reminder_sent_date::text AS last_reminder_sent_date,
         u.email AS teacher_email,
         u.name AS teacher_name,
+        COALESCE(u.default_reminder_delay_minutes, 5) AS default_reminder_delay_minutes,
         c.name AS class_name
       FROM timetable_entries t
       JOIN users u ON u.id = t.teacher_id
@@ -67,12 +67,25 @@ async function checkLateLectureReminders() {
       console.log(`[ReminderCron] Tick #${runCounter} (${istNow.dateString} ${istNow.timeString} IST): Checked ${candidates.length} active entry candidate(s) for day ${currentDayOfWeek}.`);
     }
 
+    // Fetch exception teacher IDs for today (IST date)
+    const exceptionTeachers = await sql`
+      SELECT DISTINCT teacher_id FROM timetable_exceptions WHERE exception_date = ${todayStr}::date;
+    `;
+    const exceptionTeacherIds = new Set(exceptionTeachers.map((r) => r.teacher_id));
+
     let remindersSent = 0;
 
     for (const entry of candidates) {
+      // Skip if teacher has marked an exception for today
+      if (exceptionTeacherIds.has(entry.teacher_id)) {
+        if (isHeartbeat) {
+          console.log(`[ReminderCron] Reminder suppressed for teacher #${entry.teacher_id} (${entry.subject}) due to exception date ${todayStr}.`);
+        }
+        continue;
+      }
       const startMins = timeToMinutes(entry.start_time);
       const endMins = timeToMinutes(entry.end_time);
-      const delayMins = Number(entry.reminder_delay_minutes) || 0;
+      const delayMins = Number(entry.default_reminder_delay_minutes ?? 5);
       const reminderThresholdMins = startMins + delayMins;
 
       // Skip 1: Not late yet
