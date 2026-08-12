@@ -288,8 +288,8 @@ const downloadTimetableTemplate = async (req, res) => {
 
     const sampleRow = [
       'Monday',
-      '09:00',
-      '10:00',
+      '09:00 AM',
+      '10:00 AM',
       'Data Structures & Algorithms',
       'TYBCA',
       'Lab 3',
@@ -339,6 +339,48 @@ function parseDayOfWeek(rawDay) {
   return null;
 }
 
+/**
+ * Normalizes 12-hour (09:00 AM / 1:30 PM) or 24-hour (14:00 / 09:00) time strings
+ * to a clean 24-hour "HH:MM" string. Returns null if invalid.
+ */
+function normalizeTimeString(rawStr) {
+  if (!rawStr || typeof rawStr !== 'string') return null;
+  const str = rawStr.trim();
+  if (!str) return null;
+
+  // 1. Try matching 12-hour format with AM/PM (e.g. "9:00 AM", "09:00:00 AM", "1:30 PM", "12:15 PM")
+  const twelverMatch = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(am|pm)$/i);
+  if (twelverMatch) {
+    let hours = parseInt(twelverMatch[1], 10);
+    const minutes = parseInt(twelverMatch[2], 10);
+    const ampm = twelverMatch[3].toLowerCase();
+
+    if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) return null;
+
+    if (ampm === 'pm' && hours < 12) hours += 12;
+    if (ampm === 'am' && hours === 12) hours = 0;
+
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  // 2. Try matching 24-hour format (e.g. "09:00", "14:30", "9:00", "14:30:00")
+  const twentyFourMatch = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (twentyFourMatch) {
+    const hours = parseInt(twentyFourMatch[1], 10);
+    const minutes = parseInt(twentyFourMatch[2], 10);
+
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  return null;
+}
+
 // POST /timetable/import — bulk import timetable entries via Excel file upload
 const importTimetable = async (req, res) => {
   const teacherId = req.user.id;
@@ -371,8 +413,8 @@ const importTimetable = async (req, res) => {
       });
 
       const dayVal = row['day'] || '';
-      const startTime = row['start time'] || row['start_time'] || '';
-      const endTime = row['end time'] || row['end_time'] || '';
+      const rawStartTime = row['start time'] || row['start_time'] || '';
+      const rawEndTime = row['end time'] || row['end_time'] || '';
       const subject = row['subject'] || '';
       const className = row['class'] || row['class_name'] || '';
       const room = row['room'] || '';
@@ -380,7 +422,7 @@ const importTimetable = async (req, res) => {
       const reminderEnabledRaw = (row['reminder enabled'] || row['reminder_enabled'] || '').toLowerCase();
 
       // Skip empty row
-      if (!dayVal && !startTime && !endTime && !subject && !className) {
+      if (!dayVal && !rawStartTime && !rawEndTime && !subject && !className) {
         continue;
       }
 
@@ -391,17 +433,21 @@ const importTimetable = async (req, res) => {
         continue;
       }
 
-      // 2. Time validation
-      if (!startTime || !/^\d{1,2}:\d{2}(:\d{2})?$/.test(startTime)) {
-        results.push({ row: rowNum, status: 'failed', subject: subject || null, reason: 'Invalid or missing Start Time (expected format HH:MM)' });
+      // 2. Time validation & normalization (accepts 12-hr "09:00 AM" and 24-hr "14:00")
+      const startTime = normalizeTimeString(rawStartTime);
+      if (!startTime) {
+        results.push({ row: rowNum, status: 'failed', subject: subject || null, reason: `Invalid or missing Start Time '${rawStartTime}' (expected format HH:MM or HH:MM AM/PM)` });
         continue;
       }
-      if (!endTime || !/^\d{1,2}:\d{2}(:\d{2})?$/.test(endTime)) {
-        results.push({ row: rowNum, status: 'failed', subject: subject || null, reason: 'Invalid or missing End Time (expected format HH:MM)' });
+
+      const endTime = normalizeTimeString(rawEndTime);
+      if (!endTime) {
+        results.push({ row: rowNum, status: 'failed', subject: subject || null, reason: `Invalid or missing End Time '${rawEndTime}' (expected format HH:MM or HH:MM AM/PM)` });
         continue;
       }
+
       if (startTime >= endTime) {
-        results.push({ row: rowNum, status: 'failed', subject, reason: 'End time must be later than start time' });
+        results.push({ row: rowNum, status: 'failed', subject, reason: `End time (${endTime}) must be later than start time (${startTime})` });
         continue;
       }
 
@@ -425,8 +471,8 @@ const importTimetable = async (req, res) => {
         continue;
       }
 
-      // 5. Session type validation
-      const sessionType = sessionTypeRaw === 'lab' ? 'lab' : 'standard';
+      // 5. Session type validation (lab/practical -> lab, theory/standard -> standard)
+      const sessionType = (sessionTypeRaw === 'lab' || sessionTypeRaw === 'practical') ? 'lab' : 'standard';
 
       // 6. Reminder settings (per-lecture boolean flag)
       const isReminderOn = ['yes', 'true', '1'].includes(reminderEnabledRaw);
