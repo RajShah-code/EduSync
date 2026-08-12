@@ -57,6 +57,7 @@ export function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modals state
+  const [selectedUser, setSelectedUser] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -179,6 +180,7 @@ export function AdminUsers() {
     role: "student",
     class_id: "",
     roll_no: "",
+    windows_username: "",
     password: "",
   });
 
@@ -249,6 +251,7 @@ export function AdminUsers() {
           role: createForm.role,
           class_id: createForm.role === "student" ? createForm.class_id : undefined,
           roll_no: createForm.role === "student" ? createForm.roll_no : undefined,
+          windows_username: createForm.role === "student" ? (createForm.windows_username || undefined) : undefined,
           password: createForm.password || undefined
         })
       });
@@ -276,6 +279,7 @@ export function AdminUsers() {
         role: "student",
         class_id: "",
         roll_no: "",
+        windows_username: "",
         password: "",
       });
 
@@ -425,7 +429,7 @@ export function AdminUsers() {
             Provision and manage credentials for teachers and students
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div data-tour="admin-bulk" className="flex items-center gap-2">
           <button
             data-tour="admin-restart-tour"
             onClick={handleRestartTour}
@@ -668,32 +672,47 @@ export function AdminUsers() {
               </div>
 
               {createForm.role === "student" && (
-                <div className="grid grid-cols-2 gap-4 p-3 bg-bg-base rounded-lg border border-border/80">
-                  <div>
-                    <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Class</label>
-                    <select
-                      required
-                      value={createForm.class_id}
-                      onChange={(e) => setCreateForm({ ...createForm, class_id: e.target.value })}
-                      className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
-                    >
-                      <option value="">Select...</option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={cls.id}>
-                          {cls.name}
-                        </option>
-                      ))}
-                    </select>
+                <div className="space-y-3 p-3 bg-bg-base rounded-lg border border-border/80">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Class</label>
+                      <select
+                        required
+                        value={createForm.class_id}
+                        onChange={(e) => setCreateForm({ ...createForm, class_id: e.target.value })}
+                        className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
+                      >
+                        <option value="">Select...</option>
+                        {classes.map((cls) => (
+                          <option key={cls.id} value={cls.id}>
+                            {cls.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Roll No</label>
+                      <input
+                        type="text"
+                        required
+                        value={createForm.roll_no}
+                        onChange={(e) => setCreateForm({ ...createForm, roll_no: e.target.value })}
+                        placeholder="e.g. 05"
+                        className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Roll No</label>
+                    <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">
+                      Windows Username <span className="text-[10px] text-text-muted normal-case">(optional, auto-login)</span>
+                    </label>
                     <input
                       type="text"
-                      required
-                      value={createForm.roll_no}
-                      onChange={(e) => setCreateForm({ ...createForm, roll_no: e.target.value })}
-                      placeholder="e.g. 05"
+                      value={createForm.windows_username}
+                      onChange={(e) => setCreateForm({ ...createForm, windows_username: e.target.value })}
+                      placeholder="e.g. SYBCA48 or jdoe"
                       className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info"
                     />
                   </div>

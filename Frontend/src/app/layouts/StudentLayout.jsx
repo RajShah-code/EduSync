@@ -19,11 +19,11 @@ import { Label } from "../components/ui/label";
 import { Toaster, toast } from "sonner";
 
 const navigation = [
-  { name: "Dashboard", href: "/student", icon: Home },
-  { name: "Live Sessions", href: "/student/sessions", icon: Radio, dataTour: "student-sessions" },
-  { name: "Email My Folder", href: "/student/email-folder", icon: Mail },
-  { name: "Attendance", href: "/student/attendance", icon: CalendarCheck },
-  { name: "Settings", href: "/student/settings", icon: Settings, dataTour: "student-settings" },
+  { name: "Dashboard", href: "/student", icon: Home, dataTour: "student-dashboard-link" },
+  { name: "Live Sessions", href: "/student/sessions", icon: Radio, dataTour: "student-sessions-link" },
+  { name: "Email My Folder", href: "/student/email-folder", icon: Mail, dataTour: "student-email-folder-link" },
+  { name: "Attendance", href: "/student/attendance", icon: CalendarCheck, dataTour: "student-attendance-link" },
+  { name: "Settings", href: "/student/settings", icon: Settings, dataTour: "student-settings-link" },
 ];
 
 

@@ -902,6 +902,7 @@ export function ExamCreation() {
                   </Button>
                   {!examOpened ? (
                     <Button
+                      data-tour="teacher-open-exam"
                       onClick={handleOpenExam}
                       disabled={saving}
                       className="bg-accent-info hover:bg-accent-info/90 text-white"
@@ -917,6 +918,7 @@ export function ExamCreation() {
                     </span>
                   )}
                   <Button
+                    data-tour="teacher-start-exam-now"
                     onClick={handleStartExam}
                     disabled={saving}
                     className="bg-accent-success hover:bg-accent-success/90"

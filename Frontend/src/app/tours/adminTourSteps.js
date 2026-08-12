@@ -6,6 +6,12 @@ export const adminTourSteps = [
     placement: "bottom",
   },
   {
+    target: '[data-tour="admin-bulk"]',
+    title: "Bulk Import & Excel Template",
+    content: "Download our 2-sheet import template or batch-create student/teacher accounts via Excel upload.",
+    placement: "bottom",
+  },
+  {
     target: '[data-tour="admin-filters"]',
     title: "Search & Role Filtering",
     content: "Quickly locate users by name, email, role, or assigned class across the institution.",

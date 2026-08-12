@@ -1055,10 +1055,6 @@ export function LiveBroadcast() {
     }
   };
 
-  const handleTogglePause = () => {
-    if (broadcastState === "live") setBroadcastState("paused");
-    else if (broadcastState === "paused") setBroadcastState("live");
-  };
 
   const handleToggleRecording = async () => {
     if (recordingState === "off") {
@@ -1751,8 +1747,7 @@ export function LiveBroadcast() {
 
   // ─── Derived values ─────────────────────────────────────────────────────────
 
-  const isBroadcasting = broadcastState === "live" || broadcastState === "paused";
-  const isPaused = broadcastState === "paused";
+  const isBroadcasting = broadcastState === "live";
   const isRecording = recordingState === "recording";
   const isFormValid =
     formData.lectureName.trim() !== "" &&
@@ -1771,12 +1766,7 @@ export function LiveBroadcast() {
       {/* ── Top Bar ─────────────────────────────────────────────────────────── */}
       <div className="px-6 py-4 border-b border-border bg-bg-surface flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          {isBroadcasting && !isPaused && <StatusBadge status="live" />}
-          {isPaused && (
-            <span className="px-2 py-1 text-xs font-mono border border-accent-warning/20 bg-accent-warning/10 text-accent-warning rounded-sm">
-              ⏸ PAUSED
-            </span>
-          )}
+          {isBroadcasting && <StatusBadge status="live" />}
           {!isBroadcasting && (
             <span className="px-2 py-1 text-xs font-mono text-text-muted">
               Not Broadcasting
@@ -1857,7 +1847,7 @@ export function LiveBroadcast() {
             {/* ── SCREEN SHARE MODE ────────────────────────────────────────── */}
             {activeMode === "screen" && (
               <>
-                {isBroadcasting && !isPaused ? (
+                {isBroadcasting ? (
                   <>
                     <video
                       ref={previewVideoRef}
@@ -1870,13 +1860,6 @@ export function LiveBroadcast() {
                       <StatusBadge status="live" />
                     </div>
                   </>
-                ) : isPaused ? (
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                      <Pause className="w-16 h-16 text-accent-warning mx-auto mb-3" />
-                      <p className="text-text-secondary">Broadcast Paused</p>
-                    </div>
-                  </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
                     <div className="text-center">
@@ -1899,6 +1882,7 @@ export function LiveBroadcast() {
                 >
                   {/* Language selector */}
                   <select
+                    data-tour="broadcast-languages"
                     value={editorLanguage}
                     onChange={(e) => handleLanguageChange(e.target.value)}
                     className="h-7 px-2 bg-bg-surface border border-border rounded text-xs text-text-primary focus:outline-none focus:border-accent-info/50"
@@ -2093,6 +2077,7 @@ export function LiveBroadcast() {
           <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
             {!isBroadcasting ? (
               <Button
+                data-tour="teacher-broadcast-start"
                 onClick={handleOpenSetupModal}
                 className="bg-accent-success hover:bg-accent-success/90 text-white"
               >
@@ -2101,27 +2086,9 @@ export function LiveBroadcast() {
               </Button>
             ) : (
               <>
-                {/* Pause / Resume (broadcast-level) */}
-                <Button
-                  variant="outline"
-                  onClick={handleTogglePause}
-                  className="border-accent-warning text-accent-warning hover:bg-accent-warning/10"
-                >
-                  {isPaused ? (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Resume
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="w-4 h-4 mr-2" />
-                      Pause
-                    </>
-                  )}
-                </Button>
-
                 {/* Record */}
                 <Button
+                  data-tour="broadcast-record"
                   variant="outline"
                   onClick={handleToggleRecording}
                   className={
@@ -2178,6 +2145,7 @@ export function LiveBroadcast() {
 
                 {/* Screen Share toggle — shown when session is active */}
                 <Button
+                  data-tour="broadcast-screenshare"
                   variant="outline"
                   onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
                   className={

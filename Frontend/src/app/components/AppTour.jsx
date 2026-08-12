@@ -77,9 +77,13 @@ function CustomTooltip({
   );
 }
 
-export function AppTour({ steps, run, onFinish, isManualReplay = false }) {
+export function AppTour({ steps, run, onFinish, isManualReplay = false, stepIndex, callback }) {
   const handleJoyrideCallback = async (data) => {
     const { status, action } = data;
+
+    if (callback) {
+      callback(data);
+    }
 
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED || action === ACTIONS.CLOSE) {
       if (!isManualReplay) {
@@ -111,34 +115,55 @@ export function AppTour({ steps, run, onFinish, isManualReplay = false }) {
 
   if (!steps || steps.length === 0) return null;
 
-  return (
-    <Joyride
-      steps={steps}
-      run={run}
-      continuous={true}
-      showSkipButton={true}
-      disableOverlayClose={true}
-      disableScrolling={false}
-      disableScrollParentFix={true}
-      spotlightClicks={true}
-      tooltipComponent={CustomTooltip}
-      callback={handleJoyrideCallback}
-      styles={{
-        options: {
-          zIndex: 10000,
-          primaryColor: "#4F8EF7",
-          backgroundColor: "#111118",
-          textColor: "#F0F0F5",
-          overlayColor: "rgba(0, 0, 0, 0.75)",
-          spotlightShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px rgba(79, 142, 247, 0.5)",
-        },
-        spotlight: {
-          borderRadius: 8,
-        },
-      }}
-      floaterProps={{
-        disableAnimation: false,
-      }}
-    />
-  );
+  // Ensure disableBeacon is true for every step and build complete step list with welcome moment
+  const welcomeStep = {
+    target: "body",
+    placement: "center",
+    title: "Welcome to EduSync",
+    content: "Take a quick guided walkthrough to discover your workspace features and lab tools.",
+    disableBeacon: true,
+  };
+
+  const processedSteps = [
+    welcomeStep,
+    ...steps.map((s) => ({
+      ...s,
+      disableBeacon: true,
+    })),
+  ];
+
+  const joyrideProps = {
+    steps: processedSteps,
+    run,
+    continuous: true,
+    showSkipButton: true,
+    disableOverlayClose: true,
+    disableScrolling: false,
+    disableScrollParentFix: true,
+    spotlightClicks: true,
+    tooltipComponent: CustomTooltip,
+    callback: handleJoyrideCallback,
+    styles: {
+      options: {
+        zIndex: 10000,
+        primaryColor: "#4F8EF7",
+        backgroundColor: "#111118",
+        textColor: "#F0F0F5",
+        overlayColor: "rgba(0, 0, 0, 0.75)",
+        spotlightShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px rgba(79, 142, 247, 0.5)",
+      },
+      spotlight: {
+        borderRadius: 8,
+      },
+    },
+    floaterProps: {
+      disableAnimation: false,
+    },
+  };
+
+  if (typeof stepIndex === "number") {
+    joyrideProps.stepIndex = stepIndex;
+  }
+
+  return <Joyride {...joyrideProps} />;
 }

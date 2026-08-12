@@ -22,16 +22,16 @@ import { initSocket, getSocket, disconnectSocket } from "../store/socket";
 import { Toaster } from "sonner";
 
 const navigation = [
-  { name: "Dashboard", href: "/teacher", icon: LayoutDashboard },
-  { name: "Broadcast", href: "/teacher/broadcast", icon: Radio, dataTour: "teacher-broadcast" },
-  { name: "Monitor", href: "/teacher/monitor", icon: Monitor, dataTour: "teacher-monitor" },
-  { name: "Tasks", href: "/teacher/task/assign", icon: ClipboardList, dataTour: "teacher-task" },
-  { name: "Exams", href: "/teacher/exam/create", icon: FileText, dataTour: "teacher-exam" },
-  { name: "Timetable", href: "/teacher/timetable", icon: Calendar },
-  { name: "Attendance", href: "/teacher/attendance", icon: CalendarCheck },
-  { name: "Analytics", href: "/teacher/analytics", icon: BarChart3 },
-  { name: "Recordings", href: "/teacher/recordings", icon: Video },
-  { name: "Settings", href: "/teacher/settings", icon: Settings, dataTour: "teacher-settings" },
+  { name: "Dashboard", href: "/teacher", icon: LayoutDashboard, dataTour: "teacher-dashboard-link" },
+  { name: "Broadcast", href: "/teacher/broadcast", icon: Radio, dataTour: "teacher-broadcast-link" },
+  { name: "Monitor", href: "/teacher/monitor", icon: Monitor, dataTour: "teacher-monitor-link" },
+  { name: "Tasks", href: "/teacher/task/assign", icon: ClipboardList, dataTour: "teacher-task-link" },
+  { name: "Exams", href: "/teacher/exam/create", icon: FileText, dataTour: "teacher-exam-link" },
+  { name: "Timetable", href: "/teacher/timetable", icon: Calendar, dataTour: "teacher-timetable-link" },
+  { name: "Attendance", href: "/teacher/attendance", icon: CalendarCheck, dataTour: "teacher-attendance-link" },
+  { name: "Analytics", href: "/teacher/analytics", icon: BarChart3, dataTour: "teacher-analytics-link" },
+  { name: "Recordings", href: "/teacher/recordings", icon: Video, dataTour: "teacher-recordings-link" },
+  { name: "Settings", href: "/teacher/settings", icon: Settings, dataTour: "teacher-settings-link" },
 ];
 
 export function TeacherLayout() {

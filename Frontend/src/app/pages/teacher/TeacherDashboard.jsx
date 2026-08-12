@@ -233,7 +233,7 @@ export function TeacherDashboard() {
       </div>
 
       {/* TODAY'S SCHEDULE WIDGET (Replaces Quick Actions) */}
-      <div className="space-y-3">
+      <div data-tour="teacher-todays-schedule" className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
             <Calendar className="w-5 h-5 text-emerald-400" />

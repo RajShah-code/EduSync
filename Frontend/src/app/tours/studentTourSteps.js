@@ -1,38 +1,32 @@
 export const studentTourSteps = [
   {
-    target: '[data-tour="student-sessions"]',
-    title: "Live Broadcast Sessions",
-    content: "Welcome to EduSync! Check active lab sessions here and join broadcasts hosted by your instructor.",
-    placement: "bottom",
-  },
-  {
-    target: '[data-tour="student-tasks"]',
-    title: "Current Task Workspace",
-    content: "Access active programming assignments, run your code in real-time, and request teacher guidance.",
-    placement: "bottom",
-  },
-  {
-    target: '[data-tour="student-attendance"]',
-    title: "Attendance Tracker",
-    content: "View your presence percentage, total lectures attended, and official focus log records.",
-    placement: "bottom",
-  },
-  {
-    target: '[data-tour="student-exams"]',
-    title: "Exams & Waiting Room",
-    content: "Enter exam waiting rooms or launch active secure exams when initiated by your teacher.",
-    placement: "bottom",
-  },
-  {
-    target: '[data-tour="student-files"]',
-    title: "My Files & Email",
-    content: "Manage your saved laboratory code files and send folder backups directly to your email.",
+    target: '[data-tour="student-dashboard-link"]',
+    title: "Student Dashboard",
+    content: "Welcome to EduSync Student Portal! Monitor live lab broadcast availability, assigned coding tasks, and attendance stats.",
     placement: "right",
   },
   {
-    target: '[data-tour="student-settings"]',
+    target: '[data-tour="student-sessions-link"]',
+    title: "Live Broadcast Sessions",
+    content: "View active live broadcast sessions, enter session passwords, and join synchronized lab streams.",
+    placement: "right",
+  },
+  {
+    target: '[data-tour="student-email-folder-link"]',
+    title: "Email My Folder",
+    content: "Package your entire saved lab code directory into a zip archive and email it directly to yourself or your teacher.",
+    placement: "right",
+  },
+  {
+    target: '[data-tour="student-attendance-link"]',
+    title: "Attendance & Focus Records",
+    content: "Track your personal lecture attendance history, present percentages, and focus exit metrics.",
+    placement: "right",
+  },
+  {
+    target: '[data-tour="student-settings-link"]',
     title: "Settings & Tour Replay",
-    content: "Manage your profile preferences, update your password, or restart this tour anytime.",
+    content: "Update your student profile preferences, manage account credentials, or replay this tour anytime.",
     placement: "right",
   },
 ];
