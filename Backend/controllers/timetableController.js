@@ -272,10 +272,28 @@ const deleteTimetableEntry = async (req, res) => {
   }
 };
 
-// GET /timetable/template — download Excel template for timetable import
+// GET /timetable/template — download 2-sheet Excel template (Instructions + Data) for timetable import
 const downloadTimetableTemplate = async (req, res) => {
   try {
-    const headers = [
+    // ── Sheet 1: Instructions ──────────────────────────────────────────────
+    const instructionHeaders = ['Field Name', 'Rule & Format Instructions'];
+    const instructionRows = [
+      ['Day', 'Full weekday name — Monday, Tuesday, Wednesday, Thursday, Friday, or Saturday only (no Sunday).'],
+      ['Start Time / End Time', '24-hour format like 09:00, or 12-hour like 9:00 AM — both work. Avoid typing a plain number like "900".'],
+      ['Subject', 'The lecture name as students will see it, e.g. "Data Structures & Algorithms".'],
+      ['Class', 'Must exactly match an existing class already set up in EduSync (e.g. TYBCA) — check My Classes if unsure of the exact name.'],
+      ['Room', 'Optional, e.g. "Lab 3" or "Room 201". Leave blank if not applicable.'],
+      ['Session Type', 'Must be either "standard" or "lab" (standard = regular lecture, lab = practical session).'],
+      ['Reminder Enabled', 'Yes or No.'],
+      ['Important Note', 'Do not rename, remove, or reorder the columns on the Data sheet — the import only recognizes these exact column headers.'],
+    ];
+
+    const instructionsSheet = XLSX.utils.aoa_to_sheet([instructionHeaders, ...instructionRows]);
+    // Set column widths for readability on Instructions sheet
+    instructionsSheet['!cols'] = [{ wch: 22 }, { wch: 95 }];
+
+    // ── Sheet 2: Data ──────────────────────────────────────────────────────
+    const dataHeaders = [
       'Day',
       'Start Time',
       'End Time',
@@ -286,21 +304,29 @@ const downloadTimetableTemplate = async (req, res) => {
       'Reminder Enabled',
     ];
 
-    const sampleRow = [
-      'Monday',
-      '09:00 AM',
-      '10:00 AM',
-      'Data Structures & Algorithms',
-      'TYBCA',
-      'Lab 3',
-      'lab',
-      'Yes',
+    const sampleRows = [
+      ['Monday', '09:00', '10:00', 'Data Structures & Algorithms', 'TYBCA', 'Lab 3', 'lab', 'Yes'],
+      ['Monday', '10:15', '11:15', 'Database Management Systems', 'TYBCA', 'Room 201', 'standard', 'Yes'],
+      ['Tuesday', '11:00', '13:00', 'Full Stack Web Development', 'TYBCA', 'Lab 2', 'lab', 'Yes'],
+      ['Wednesday', '10:00', '12:00', 'Software Engineering', 'TYBCA', 'Room 203', 'standard', 'Yes'],
+      ['Saturday', '09:00', '10:30', 'Object Oriented Programming', 'TYBCA', 'Room 201', 'standard', 'Yes'],
     ];
 
-    const worksheetData = [headers, sampleRow];
-    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const dataSheet = XLSX.utils.aoa_to_sheet([dataHeaders, ...sampleRows]);
+    dataSheet['!cols'] = [
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 32 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 18 },
+    ];
+
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Timetable Template');
+    XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
+    XLSX.utils.book_append_sheet(workbook, dataSheet, 'Data');
 
     // Generate buffer
     const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
@@ -430,8 +456,14 @@ const importTimetable = async (req, res) => {
 
   try {
     const workbook = XLSX.read(req.file.buffer, { type: 'buffer', cellDates: true });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
+    
+    // Target 'Data' sheet if multi-sheet template, else fallback to non-Instructions sheet or first sheet
+    let targetSheetName = workbook.SheetNames.find((name) => name.trim().toLowerCase() === 'data');
+    if (!targetSheetName) {
+      targetSheetName = workbook.SheetNames.find((name) => name.trim().toLowerCase() !== 'instructions') || workbook.SheetNames[0];
+    }
+
+    const sheet = workbook.Sheets[targetSheetName];
     const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
     if (!rawRows || rawRows.length === 0) {
