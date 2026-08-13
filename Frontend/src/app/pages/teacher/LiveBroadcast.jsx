@@ -25,6 +25,7 @@ import {
   Loader2,
   TriangleAlert,
   Download,
+  Calendar,
 } from "lucide-react";
 import {
   Dialog,
@@ -200,6 +201,59 @@ export function LiveBroadcast() {
   const [startLoading, setStartLoading] = useState(false);
   const [classes, setClasses] = useState([]);
   const [selectedClassIds, setSelectedClassIds] = useState([]);
+
+  // ── Timetable & Schedule Auto-Detection ──────────────────────────────────────
+  const [timetableEntries, setTimetableEntries] = useState([]);
+
+  useEffect(() => {
+    const fetchTimetable = async () => {
+      try {
+        const token = localStorage.getItem("edusync_token");
+        if (!token) return;
+        const res = await fetch(`${API_BASE_URL}/timetable/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTimetableEntries(data.entries || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch timetable:", err);
+      }
+    };
+    fetchTimetable();
+  }, []);
+
+  const jsDay = new Date().getDay();
+  const currentDayOfWeek = jsDay === 0 ? 6 : jsDay - 1;
+
+  const parseTimeToMinutes = (timeStr) => {
+    if (!timeStr) return 0;
+    const [h, m] = timeStr.split(":").map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const currentLecture = timetableEntries.find((e) => {
+    if (Number(e.day_of_week) !== currentDayOfWeek) return false;
+    const startMin = parseTimeToMinutes(e.start_time);
+    const endMin = parseTimeToMinutes(e.end_time);
+    return currentMinutes >= startMin - 15 && currentMinutes <= endMin;
+  });
+
+  const handlePrefillScheduledLecture = (entry) => {
+    setFormData({
+      lectureName: `${entry.subject_name} Lecture`,
+      subject: entry.subject_name,
+      password: "",
+      labRoom: entry.room_number || "LAB 301",
+    });
+    setSelectedClassIds(entry.class_id ? [Number(entry.class_id)] : []);
+    setShowPassword(false);
+    setModalError("");
+    setShowSetupModal(true);
+  };
 
   useEffect(() => {
     const fetchClasses = async () => {
@@ -1763,80 +1817,84 @@ export function LiveBroadcast() {
   return (
     <div className="h-full flex flex-col bg-bg-base">
 
+
+
       {/* ── Top Bar ─────────────────────────────────────────────────────────── */}
-      <div className="px-6 py-4 border-b border-border bg-bg-surface flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          {isBroadcasting && <StatusBadge status="live" />}
-          {!isBroadcasting && (
-            <span className="px-2 py-1 text-xs font-mono text-text-muted">
-              Not Broadcasting
-            </span>
-          )}
-          {isBroadcasting && (
-            <span className="font-mono font-medium tabular-nums text-base text-text-primary">
-              {formatTime(sessionSeconds)}
-            </span>
-          )}
-          {isBroadcasting && (
-            <>
-              <div className="h-4 w-px bg-border" />
-              <span className="text-sm text-text-secondary">
-                {viewerCount} {viewerCount === 1 ? "viewer" : "viewers"}
+      <div className="px-6 border-b border-border bg-bg-surface flex items-center justify-between gap-4 h-14 flex-shrink-0">
+        {!isBroadcasting ? (
+          <div className="flex items-center gap-3">
+            {currentLecture ? (
+              <button
+                onClick={() => handlePrefillScheduledLecture(currentLecture)}
+                className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-md text-xs text-accent-info font-medium transition-colors flex items-center gap-2"
+                title="Click to pre-fill lecture setup"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Current Scheduled: <strong className="text-text-primary">{currentLecture.subject_name}</strong> {currentLecture.class_name ? `(${currentLecture.class_name})` : ""}</span>
+                <span className="text-[10px] bg-accent-info/20 px-1.5 py-0.5 rounded text-accent-info font-semibold">Pre-fill</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
+                <Calendar className="w-3.5 h-3.5 text-text-muted/60" />
+                <span>No Lecture Scheduled</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2.5">
+              <StatusBadge status="live" />
+              <span className="font-mono font-medium tabular-nums text-sm text-text-primary">
+                {formatTime(sessionSeconds)}
               </span>
-            </>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Mode pills — only when a session is active */}
-          {isBroadcasting && (
-            <div className="flex items-center gap-0.5 p-1 bg-bg-elevated rounded-lg border border-border">
-              <button
-                onClick={() => handleModeSwitch("screen")}
-                className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 ${
-                  activeMode === "screen"
-                    ? "bg-bg-surface text-text-primary shadow-sm"
-                    : "text-text-muted hover:text-text-secondary"
-                }`}
-              >
-                <Monitor className="w-3.5 h-3.5" />
-                Screen Share
-              </button>
-              <button
-                onClick={() => handleModeSwitch("editor")}
-                className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 ${
-                  activeMode === "editor"
-                    ? "bg-bg-surface text-text-primary shadow-sm"
-                    : "text-text-muted hover:text-text-secondary"
-                }`}
-              >
-                <Code2 className="w-3.5 h-3.5" />
-                Code Editor
-              </button>
-            </div>
-          )}
-
-          {/* Mic warning */}
-          {micWarning && isBroadcasting && (
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-accent-warning/10 border border-accent-warning/20 rounded text-xs text-accent-warning">
-              <TriangleAlert className="w-3 h-3 flex-shrink-0" />
-              <span className="max-w-[200px] truncate">{micWarning}</span>
-            </div>
-          )}
-
-          {/* Recording indicator */}
-          {isRecording && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-accent-critical/10 border border-accent-critical/20 rounded">
-              <Circle className="w-3 h-3 text-accent-critical fill-accent-critical" />
-              <span className="text-xs font-mono text-accent-critical">
-                REC <span className="tabular-nums">{formatTime(recordingSeconds)}</span>
+              <span className="text-xs text-text-secondary font-medium">
+                · {connectedStudents.length} {connectedStudents.length === 1 ? "Student" : "Students"}
               </span>
             </div>
-          )}
-        </div>
+
+            {sessionInfo && (
+              <div className="flex items-center gap-2 px-2.5 py-1 bg-bg-elevated border border-border rounded-md text-xs">
+                <span className="text-text-muted">Password:</span>
+                <span className="font-mono font-bold text-text-primary tracking-wider">
+                  {showPassword ? sessionInfo.password : "••••••••"}
+                </span>
+                <button
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="text-text-muted hover:text-text-primary transition-colors p-0.5"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <div className="h-3 w-px bg-border my-auto" />
+                <button
+                  onClick={() => {
+                    const msg =
+                      `📚 Live Lab Session is Active!\n\n` +
+                      `Lecture: ${sessionInfo.lectureName}\n` +
+                      `Subject: ${sessionInfo.subject}\n` +
+                      `Lab Room: ${sessionInfo.labRoom}\n` +
+                      `Password: ${sessionInfo.password}\n\n` +
+                      `Log in to the student portal, enter the password, and click "JOIN NOW".`;
+                    handleCopy("topInvite", msg);
+                  }}
+                  className="text-text-muted hover:text-text-primary transition-colors p-0.5 flex items-center gap-1 text-[11px]"
+                  title="Copy session invite message"
+                >
+                  {copiedField === "topInvite" ? (
+                    <Check className="w-3.5 h-3.5 text-accent-success" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
-
-      {/* ── Main Area ────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
 
         {/* Left: Preview / Editor */}
@@ -1894,7 +1952,7 @@ export function LiveBroadcast() {
                     ))}
                   </select>
 
-                  {/* Editor Live / Paused toggle — distinct from broadcast pause */}
+                  {/* Editor Sync toggle — relabeled to prevent confusion with session broadcast state */}
                   <button
                     onClick={handleEditorLiveToggle}
                     className={`h-7 px-3 text-xs font-medium rounded border transition-colors flex items-center gap-1.5 ${
@@ -1911,12 +1969,12 @@ export function LiveBroadcast() {
                     {editorLiveStatus === "live" ? (
                       <>
                         <span className="w-1.5 h-1.5 rounded-full bg-accent-success inline-block" />
-                        Live
+                        Editor Synced
                       </>
                     ) : (
                       <>
                         <Pause className="w-3 h-3" />
-                        Paused
+                        Editor Paused
                       </>
                     )}
                   </button>
@@ -1937,7 +1995,25 @@ export function LiveBroadcast() {
                     </button>
                   )}
 
-                  {/* Run / Save button */}
+
+
+                  <div className="flex-1" />
+
+                  {/* Clear output */}
+                  {outputMode !== "none" && (
+                    <button
+                      onClick={() => {
+                        setOutputMode("none");
+                        setConsoleLines([]);
+                        setTextOutput("");
+                      }}
+                      className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded transition-colors"
+                    >
+                      Clear output
+                    </button>
+                  )}
+
+                  {/* Run / Save button — solid primary blue */}
                   {editorLanguage === "whiteboard" ? (
                     <button
                       onClick={handleSaveWhiteboard}
@@ -2073,16 +2149,16 @@ export function LiveBroadcast() {
             )}
           </div>
 
-          {/* ── Control Bar ────────────────────────────────────────────────── */}
+          {/* ── Control Bar — centered Start Lecture button when idle, full control bar when live ───── */}
           <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
             {!isBroadcasting ? (
               <Button
                 data-tour="teacher-broadcast-start"
                 onClick={handleOpenSetupModal}
-                className="bg-accent-success hover:bg-accent-success/90 text-white"
+                className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold shadow px-6"
               >
                 <Play className="w-4 h-4 mr-2" />
-                Start Broadcast
+                Start Lecture
               </Button>
             ) : (
               <>
@@ -2168,14 +2244,14 @@ export function LiveBroadcast() {
                   )}
                 </Button>
 
-                {/* Stop broadcast */}
+                {/* End Broadcast */}
                 <Button
                   variant="outline"
                   onClick={() => setShowStopConfirm(true)}
                   className="border-accent-critical text-accent-critical hover:bg-accent-critical/10"
                 >
                   <Square className="w-4 h-4 mr-2" />
-                  Stop Broadcast
+                  End
                 </Button>
               </>
             )}
@@ -2207,172 +2283,6 @@ export function LiveBroadcast() {
             </p>
           )}
         </div>
-
-        {/* ── Right: Viewer sidebar ─────────────────────────────────────────── */}
-        <div className="w-64 border-l border-border bg-bg-surface overflow-y-auto flex-shrink-0">
-          <div className="p-4 border-b border-border">
-            <h3 className="text-sm font-semibold text-text-primary">Connected Students</h3>
-            <p className="text-xs text-text-secondary mt-0.5">{connectedStudents.length} total</p>
-          </div>
-
-          <div className="p-2 space-y-1">
-            {connectedStudents.length > 0 ? (
-              connectedStudents.map((student, index) => {
-                // Derive badge status from the explicit `status` field:
-                //   'live' → green LIVE badge (in fullscreen, tab visible)
-                //   'idle' → amber NOT VIEWING badge (lost fullscreen or tab hidden)
-                //   'left' → red LEFT badge (socket disconnected; tile removed after 5s)
-                const tileStatus = deriveConnectionStatus(student);
-                return (
-                  <div
-                    key={student.socket_id}
-                    className={`px-3 py-2 rounded transition-colors ${
-                      tileStatus === 'left'
-                        ? 'bg-accent-critical/5 border border-accent-critical/20'
-                        : 'hover:bg-bg-elevated'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm font-medium ${
-                        tileStatus === 'left' ? 'text-text-muted' : 'text-text-primary'
-                      }`}>
-                        {student.student_name || `Student ${index + 1}`}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        {tileStatus === 'idle' && (
-                          <span className="w-2 h-2 rounded-full bg-accent-warning animate-pulse" title="Out of Focus" />
-                        )}
-                        {tileStatus === 'left' ? (
-                          <span className="px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-accent-critical/15 text-accent-critical border border-accent-critical/30">
-                            LEFT
-                          </span>
-                        ) : (
-                          <StatusBadge status={tileStatus === 'idle' ? 'idle' : 'live'} />
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-text-muted font-mono">
-                        {student.socket_id.slice(0, 8)}…
-                      </span>
-                      {student.focusLossCount > 0 && (
-                        <span className="text-[10px] text-accent-warning font-semibold">
-                          left view {student.focusLossCount}x
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 px-3 gap-3">
-                <Users className="w-12 h-12 text-text-muted" />
-                <div className="text-center">
-                  <p className="text-sm font-medium text-text-primary">No students connected</p>
-                  <p className="text-xs text-text-muted mt-1">
-                    Share the session password to let students join.
-                  </p>
-                </div>
-
-                {/* Session info card */}
-                {isBroadcasting && sessionInfo && (
-                  <div className="w-full mt-2 p-3 bg-bg-elevated border border-border rounded-lg space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs text-text-muted">Lecture</p>
-                        <p className="text-xs text-text-primary truncate">{sessionInfo.lectureName}</p>
-                      </div>
-                      <button
-                        onClick={() => handleCopy("lecture", sessionInfo.lectureName)}
-                        className="flex-shrink-0 text-text-muted hover:text-text-secondary transition-colors"
-                      >
-                        {copiedField === "lecture" ? (
-                          <Check className="w-3.5 h-3.5 text-accent-success" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="h-px bg-border" />
-
-                    <div className="min-w-0">
-                      <p className="text-xs text-text-muted">Target Classes</p>
-                      <p className="text-xs text-text-primary truncate">
-                        {sessionInfo.class_ids && sessionInfo.class_ids.length > 0
-                          ? sessionInfo.class_ids
-                              .map((cid) => classes.find((c) => c.id === Number(cid))?.name || `Class ${cid}`)
-                              .join(", ")
-                          : "None"}
-                      </p>
-                    </div>
-
-                    <div className="h-px bg-border" />
-
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-xs text-text-muted">Password</p>
-                        <p className="text-xs text-text-primary font-mono tracking-widest">
-                          {showPassword ? sessionInfo.password : "••••••••"}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => setShowPassword((p) => !p)}
-                          className="text-text-muted hover:text-text-secondary transition-colors"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-3.5 h-3.5" />
-                          ) : (
-                            <Eye className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleCopy("password", sessionInfo.password)}
-                          className="text-text-muted hover:text-text-secondary transition-colors"
-                        >
-                          {copiedField === "password" ? (
-                            <Check className="w-3.5 h-3.5 text-accent-success" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="h-px bg-border" />
-
-                    <button
-                      onClick={() => {
-                        const msg =
-                          `📚 Live Lab Session is Active!\n\n` +
-                          `Lecture: ${sessionInfo.lectureName}\n` +
-                          `Subject: ${sessionInfo.subject}\n` +
-                          `Lab Room: ${sessionInfo.labRoom}\n` +
-                          `Password: ${sessionInfo.password}\n\n` +
-                          `Log in to the student portal, enter the password, and click "JOIN NOW".`;
-                        handleCopy("invite", msg);
-                      }}
-                      className="w-full py-1.5 px-2 bg-accent-info/10 hover:bg-accent-info/20 text-accent-info border border-accent-info/30 rounded flex items-center justify-center gap-1.5 text-xs font-medium transition-colors"
-                    >
-                      {copiedField === "invite" ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-accent-success" />
-                          Invite Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          Copy Invite Message
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* ── Session Setup Modal ──────────────────────────────────────────────── */}
@@ -2380,7 +2290,7 @@ export function LiveBroadcast() {
         <DialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-text-primary">
-              Start New Broadcast Session
+              Start New Lecture Session
             </DialogTitle>
           </DialogHeader>
 
@@ -2505,7 +2415,7 @@ export function LiveBroadcast() {
               className="bg-accent-info hover:bg-accent-info/90 text-white disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Monitor className="w-4 h-4 mr-2" />
-              {startLoading ? "Starting…" : "Start Broadcasting"}
+              {startLoading ? "Starting…" : "Start Lecture"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2516,7 +2426,7 @@ export function LiveBroadcast() {
         <AlertDialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-text-primary">
-              End this broadcast session?
+              End this lecture session?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-text-secondary">
               This will disconnect all students and stop any recording.
@@ -2530,7 +2440,7 @@ export function LiveBroadcast() {
               onClick={handleConfirmStop}
               className="bg-accent-critical hover:bg-accent-critical/90 text-white border-0"
             >
-              Stop Broadcast
+              End
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
