@@ -646,6 +646,7 @@ export function LiveSession() {
     socket.on('teacher:whiteboard_stroke', handleTeacherWhiteboardStroke);
     socket.on('teacher:whiteboard_clear', handleTeacherWhiteboardClear);
     socket.on('teacher:whiteboard_snapshot', handleTeacherWhiteboardSnapshot);
+    socket.on('teacher:whiteboard_sync', handleTeacherWhiteboardSnapshot);
     socket.on('student:session_state', handleSessionState);
 
     // ── Request session-state snapshot AFTER all listeners are registered ──────
@@ -675,6 +676,7 @@ export function LiveSession() {
       socket.off('teacher:whiteboard_stroke', handleTeacherWhiteboardStroke);
       socket.off('teacher:whiteboard_clear', handleTeacherWhiteboardClear);
       socket.off('teacher:whiteboard_snapshot', handleTeacherWhiteboardSnapshot);
+      socket.off('teacher:whiteboard_sync', handleTeacherWhiteboardSnapshot);
       socket.off('student:session_state', handleSessionState);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

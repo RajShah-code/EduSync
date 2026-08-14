@@ -1704,14 +1704,14 @@ export function LiveBroadcast() {
     }
   };
 
-  const handleWhiteboardSnapshot = (strokes) => {
+  const handleWhiteboardSync = (strokes) => {
     teacherWhiteboardStrokesRef.current = [...(strokes || [])];
     const currentBg = whiteboardRef.current?.getBgColor?.() || teacherWhiteboardBgColorRef.current;
     teacherWhiteboardBgColorRef.current = currentBg;
 
     const socket = getSocket();
     if (socket && sessionInfoRef.current) {
-      socket.emit("teacher:whiteboard_snapshot", {
+      socket.emit("teacher:whiteboard_sync", {
         sessionId: sessionInfoRef.current.id,
         strokes,
         bgColor: currentBg,
@@ -2107,7 +2107,8 @@ export function LiveBroadcast() {
                       initialBgColor={teacherWhiteboardBgColorRef.current}
                       onStrokeEmit={handleWhiteboardStroke}
                       onClearEmit={handleWhiteboardClear}
-                      onSnapshotEmit={handleWhiteboardSnapshot}
+                      onSnapshotEmit={handleWhiteboardSync}
+                      onSyncEmit={handleWhiteboardSync}
                     />
                   </div>
                   <div
