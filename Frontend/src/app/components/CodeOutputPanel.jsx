@@ -38,7 +38,7 @@ export function CodeOutputPanel({
     return null;
   }
 
-  const shouldRenderIframe = outputMode === "iframe" || (outputMode === "console" && showIframe);
+  const isIframeCollapsed = outputMode === "console" && !showIframe;
 
   const handleMouseDown = (e) => {
     if (!resizable || !onSizeChange) return;
@@ -194,8 +194,8 @@ export function CodeOutputPanel({
 
       {/* Main output content area */}
       <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
-        {/* Rendered iframe (HTML / CSS / JS DOM with output) */}
-        {shouldRenderIframe && (
+        {/* Rendered iframe (Always mounted for iframe & console mode so scripts execute and postMessage) */}
+        {(outputMode === "iframe" || outputMode === "console") && (
           <iframe
             key={iframeKey}
             srcDoc={iframeSrcdoc}
@@ -203,10 +203,14 @@ export function CodeOutputPanel({
             title="Code output"
             style={{
               width: "100%",
-              flex: outputMode === "console" ? "0 0 55%" : "1",
+              flex: isIframeCollapsed ? "0 0 0px" : outputMode === "console" ? "0 0 55%" : "1",
+              height: isIframeCollapsed ? "0px" : "auto",
+              minHeight: isIframeCollapsed ? "0px" : "auto",
               border: "none",
               background: "#fff",
               display: "block",
+              overflow: isIframeCollapsed ? "hidden" : "visible",
+              visibility: isIframeCollapsed ? "hidden" : "visible",
             }}
           />
         )}
@@ -217,7 +221,7 @@ export function CodeOutputPanel({
             style={{
               margin: 0,
               padding: "8px 12px",
-              flex: outputMode === "console" && shouldRenderIframe ? "0 0 45%" : "1",
+              flex: isIframeCollapsed ? "1" : outputMode === "console" ? "0 0 45%" : "1",
               overflow: "auto",
               background: "var(--bg-base)",
               color: "var(--text-primary)",
@@ -225,7 +229,7 @@ export function CodeOutputPanel({
               fontSize: "12px",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
-              borderTop: outputMode === "console" && shouldRenderIframe ? "1px solid var(--border)" : "none",
+              borderTop: isIframeCollapsed ? "none" : outputMode === "console" ? "1px solid var(--border)" : "none",
             }}
           >
             {outputMode === "console"

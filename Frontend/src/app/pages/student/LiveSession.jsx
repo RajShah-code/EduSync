@@ -20,25 +20,11 @@ const LANGUAGES = [
   { id: "javascript", label: "JavaScript" },
   { id: "python", label: "Python" },
   { id: "html", label: "HTML" },
-  { id: "css", label: "CSS" },
   { id: "plaintext", label: "Plain Text" },
   { id: "whiteboard", label: "Whiteboard" },
 ];
 
 // ─── Helpers (identical to LiveBroadcast.jsx — each side runs independently) ──
-
-const wrapCssInHtml = (css) =>
-  `<!DOCTYPE html><html><head><style>
-body{margin:0;padding:20px;background:#1a1a24;color:#f0f0f5;font-family:system-ui}
-${css}
-</style></head><body>
-  <h1>Heading 1</h1><h2>Heading 2</h2>
-  <p>Sample paragraph for CSS preview.</p>
-  <button>Button</button>
-  <a href="#">Anchor link</a>
-  <ul><li>List item one</li><li>List item two</li></ul>
-  <div class="container"><div class="box">Box element</div></div>
-</body></html>`;
 
 const buildJsSrcdoc = (code) =>
   `<!DOCTYPE html><html><head>
@@ -766,11 +752,6 @@ export function LiveSession() {
       setStudentConsoleLines([]);
       setStudentOutputMode("iframe");
       setStudentIframeSrcdoc(code);
-      setStudentIframeKey((k) => k + 1);
-    } else if (lang === "css") {
-      setStudentConsoleLines([]);
-      setStudentOutputMode("iframe");
-      setStudentIframeSrcdoc(wrapCssInHtml(code));
       setStudentIframeKey((k) => k + 1);
     } else if (lang === "javascript") {
       setStudentConsoleLines([]);

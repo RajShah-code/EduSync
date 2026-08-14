@@ -61,7 +61,6 @@ const LANGUAGES = [
   { id: "javascript", label: "JavaScript" },
   { id: "python", label: "Python" },
   { id: "html", label: "HTML" },
-  { id: "css", label: "CSS" },
   { id: "plaintext", label: "Plain Text" },
   { id: "whiteboard", label: "Whiteboard" },
 ];
@@ -74,20 +73,6 @@ const formatTime = (totalSeconds) => {
   const s = totalSeconds % 60;
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 };
-
-// Wrap CSS code in a minimal HTML shell so styles are visually testable
-const wrapCssInHtml = (css) =>
-  `<!DOCTYPE html><html><head><style>
-body{margin:0;padding:20px;background:#1a1a24;color:#f0f0f5;font-family:system-ui}
-${css}
-</style></head><body>
-  <h1>Heading 1</h1><h2>Heading 2</h2>
-  <p>Sample paragraph for CSS preview.</p>
-  <button>Button</button>
-  <a href="#">Anchor link</a>
-  <ul><li>List item one</li><li>List item two</li></ul>
-  <div class="container"><div class="box">Box element</div></div>
-</body></html>`;
 
 // Build an iframe srcdoc for JS execution.
 // Console methods are overridden to postMessage results to the parent window,
@@ -1798,13 +1783,6 @@ export function LiveBroadcast() {
       setIframeSrcdoc(code);
       setIframeKey((k) => k + 1);
       emitCodeOutput("iframe", "", code, []);
-    } else if (lang === "css") {
-      setConsoleLines([]);
-      setOutputMode("iframe");
-      const cssHtml = wrapCssInHtml(code);
-      setIframeSrcdoc(cssHtml);
-      setIframeKey((k) => k + 1);
-      emitCodeOutput("iframe", "", cssHtml, []);
     } else if (lang === "javascript") {
       setConsoleLines([]);
       setOutputMode("console");
