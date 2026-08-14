@@ -61,6 +61,19 @@ function getSubjectAcronym(subject) {
   return chars.join("") || subject;
 }
 
+/**
+ * Determines whether a subject should be abbreviated to an acronym.
+ * Returns false for single-word subjects or short subjects (<= 12 chars).
+ * Returns true only when multi-word AND length > 12.
+ */
+function shouldAbbreviateSubject(subject) {
+  if (!subject || typeof subject !== "string") return false;
+  const trimmed = subject.trim();
+  if (trimmed.length <= 12) return false;
+  const words = trimmed.split(/\s+/);
+  return words.length > 1;
+}
+
 export function TimetableSetup() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -645,23 +658,29 @@ export function TimetableSetup() {
                             </button>
                           </div>
 
-                          {/* 1st Line: Subject (Reordered Hierarchy) with Acronym & Styled Tooltip */}
-                          <div className="font-semibold text-text-primary text-[length:var(--text-sm)] flex items-center gap-1.5 pr-14">
+                          {/* 1st Line: Subject (Reordered Hierarchy) with conditional Acronym & Tooltip */}
+                          <div className="font-semibold text-text-primary text-[length:var(--text-sm)] flex items-center gap-1.5 pr-14 min-w-0">
                             {entry.session_type === "lab" ? (
                               <FlaskConical className="w-3.5 h-3.5 text-accent-live shrink-0" />
                             ) : (
                               <BookOpen className="w-3.5 h-3.5 text-accent-info shrink-0" />
                             )}
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help font-bold tracking-wide">
-                                  {getSubjectAcronym(entry.subject)}
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent className="bg-bg-elevated border border-border text-text-primary text-xs font-medium px-2.5 py-1.5 rounded-md shadow-lg z-50">
+                            {shouldAbbreviateSubject(entry.subject) ? (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help font-bold tracking-wide">
+                                    {getSubjectAcronym(entry.subject)}
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-bg-elevated border border-border text-text-primary text-xs font-medium px-2.5 py-1.5 rounded-md shadow-lg z-50">
+                                  {entry.subject}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              <span className="truncate" title={entry.subject}>
                                 {entry.subject}
-                              </TooltipContent>
-                            </Tooltip>
+                              </span>
+                            )}
                           </div>
 
                           {/* 2nd Line: Time Range */}
