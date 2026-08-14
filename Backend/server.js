@@ -933,6 +933,21 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('teacher:whiteboard_snapshot', (payload) => {
+    try {
+      if (role !== 'teacher') return;
+      const { sessionId, strokes, bgColor } = payload;
+      const prev = getSessionState(sessionId);
+      if (prev) {
+        prev.whiteboardStrokes = strokes || [];
+        if (bgColor) prev.whiteboardBgColor = bgColor;
+      }
+      socket.to(`session:${sessionId}`).emit('teacher:whiteboard_snapshot', payload);
+    } catch (err) {
+      console.error('[Socket] teacher:whiteboard_snapshot relay error:', err);
+    }
+  });
+
   // ── Focus Guard Signaling ──────────────────────────────────────────────────
   //
   // Emitted by useFocusGuard.js (student side) when the student exits or

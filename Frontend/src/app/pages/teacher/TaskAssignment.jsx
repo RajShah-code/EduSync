@@ -111,10 +111,10 @@ export function TaskAssignment() {
   };
 
   const isFormValid =
-    formData.title.trim() &&
-    formData.description.trim() &&
-    formData.languages.length > 0 &&
-    (!formData.hasTimeLimit || formData.timeLimitMinutes > 0);
+    (formData?.title || "").trim() &&
+    (formData?.description || "").trim() &&
+    (formData?.languages || []).length > 0 &&
+    (!formData?.hasTimeLimit || formData?.timeLimitMinutes > 0);
 
   if (!sessionInfo) {
     return (

@@ -44,18 +44,6 @@ function formatTimeHHMM(timeStr) {
   return timeStr.slice(0, 5);
 }
 
-/**
- * Helper to compute 1-hour end time given start time "HH:MM"
- */
-function computeDefaultEndTime(startTimeStr) {
-  if (!startTimeStr) return "10:00";
-  const [h, m] = startTimeStr.split(":").map(Number);
-  const nextH = (h + 1) % 24;
-  const hStr = String(nextH).padStart(2, "0");
-  const mStr = String(m || 0).padStart(2, "0");
-  return `${hStr}:${mStr}`;
-}
-
 export function TimetableSetup() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -86,9 +74,35 @@ export function TimetableSetup() {
   const [formSessionType, setFormSessionType] = useState("standard"); // 'standard' | 'lab'
   const [formReminderEnabled, setFormReminderEnabled] = useState(true);
   const [formError, setFormError] = useState("");
+  const [formTouched, setFormTouched] = useState(false);
 
   // Excel Import Report Modal State
   const [importReport, setImportReport] = useState(null);
+
+  // Empty state banner visibility
+  const [showEmptyBanner, setShowEmptyBanner] = useState(true);
+
+  // Compute today's day_of_week in Monday=0..Saturday=5 convention (Sunday=0 in JS -> 0 default)
+  const jsDay = new Date().getDay();
+  const defaultDay = jsDay === 0 ? 0 : jsDay - 1;
+  const todayDow = jsDay === 0 ? null : jsDay - 1;
+
+  // Real-time form errors
+  const timeError =
+    formStartTime && formEndTime && formEndTime <= formStartTime
+      ? "End time must be later than start time."
+      : "";
+  const subjectError =
+    formTouched && !formSubject.trim() ? "Subject name is required." : "";
+  const classError =
+    formTouched && !formClassId ? "Please select a class." : "";
+
+  const isFormValid =
+    formSubject.trim() !== "" &&
+    formClassId !== "" &&
+    formStartTime !== "" &&
+    formEndTime !== "" &&
+    !timeError;
 
   // Fetch classes, timetable, global settings, and exceptions on mount
   useEffect(() => {
@@ -183,7 +197,7 @@ export function TimetableSetup() {
   const serialRowIndices = Array.from({ length: totalSerialRows }, (_, i) => i + 1);
 
   // Open modal to add a new lecture
-  const handleOpenAddModal = (dayIndex) => {
+  const handleOpenAddModal = (dayIndex = defaultDay) => {
     setEditingEntryId(null);
     setFormDayOfWeek(dayIndex);
     setFormStartTime("09:00");
@@ -194,6 +208,7 @@ export function TimetableSetup() {
     setFormSessionType("standard");
     setFormReminderEnabled(true);
     setFormError("");
+    setFormTouched(false);
     setIsModalOpen(true);
   };
 
@@ -210,30 +225,16 @@ export function TimetableSetup() {
     setFormSessionType(entry.session_type || "standard");
     setFormReminderEnabled(Boolean(entry.reminder_enabled));
     setFormError("");
+    setFormTouched(false);
     setIsModalOpen(true);
   };
 
   // Save (Create / Update) timetable entry
   const handleSaveModalEntry = async () => {
+    setFormTouched(true);
     setFormError("");
-    if (!formSubject.trim()) {
-      setFormError("Subject name is required.");
-      return;
-    }
-    if (!formStartTime) {
-      setFormError("Start time is required.");
-      return;
-    }
-    if (!formEndTime) {
-      setFormError("End time is required.");
-      return;
-    }
-    if (formStartTime >= formEndTime) {
-      setFormError("End time must be later than start time.");
-      return;
-    }
-    if (!formClassId) {
-      setFormError("Please select a class.");
+
+    if (!formSubject.trim() || !formStartTime || !formEndTime || formStartTime >= formEndTime || !formClassId) {
       return;
     }
 
@@ -425,9 +426,9 @@ export function TimetableSetup() {
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-text-muted gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-        <p className="text-sm font-medium">Loading weekly timetable grid...</p>
+      <div className="min-h-[70vh] flex flex-col items-center justify-center text-text-secondary gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-accent-info" />
+        <p className="text-[length:var(--text-base)] font-medium">Loading weekly timetable grid...</p>
       </div>
     );
   }
@@ -444,167 +445,229 @@ export function TimetableSetup() {
       />
 
       {/* A. HEADER ROW */}
-      <div
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5 shadow-lg"
-        style={{
-          backgroundColor: "var(--bg-surface, #111118)",
-          borderColor: "var(--border, #2A2A3A)",
-        }}
-      >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5 shadow-lg">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight flex items-center gap-2.5">
-            <Calendar className="w-6 h-6 text-emerald-400" />
-            Weekly Timetable Setup Grid
+          <h1 className="text-[length:var(--text-xl)] font-bold text-text-primary tracking-tight flex items-center gap-2.5">
+            <Calendar className="w-6 h-6 text-accent-info" />
+            Weekly Timetable
           </h1>
-          <p className="text-xs text-text-secondary mt-1">
+          <p className="text-[length:var(--text-sm)] text-text-secondary mt-1">
             Directly configure your weekly lecture and lab schedule across Monday through Saturday.
           </p>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
           <Button
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-            className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-xs h-9"
+            onClick={() => handleOpenAddModal(defaultDay)}
+            className="bg-accent-info hover:bg-accent-info/90 text-white font-medium flex items-center gap-2 cursor-pointer text-[length:var(--text-sm)] h-9 shadow-md shadow-accent-info/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
           >
-            {importing ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Upload className="w-3.5 h-3.5" />
-            )}
-            Import Excel
+            <Plus className="w-4 h-4" />
+            Add Lecture
           </Button>
 
-          <Button
-            onClick={handleDownloadTemplate}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium flex items-center gap-2 cursor-pointer text-xs h-9 shadow-md shadow-emerald-950/40"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Download Template
-          </Button>
+          <div className="flex items-center gap-2 border-l border-border/60 pl-3">
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            >
+              {importing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Upload className="w-3.5 h-3.5" />
+              )}
+              Import Excel
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleDownloadTemplate}
+              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download Template
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Empty-state banner for first-time setup */}
+      {entries.length === 0 && showEmptyBanner && (
+        <div className="bg-accent-info/10 border border-accent-info/20 rounded-xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="p-2.5 rounded-lg bg-accent-info/20 border border-accent-info/30 text-accent-info shrink-0 mt-0.5 sm:mt-0">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[length:var(--text-base)] text-text-primary font-medium">
+                Get started: import your Excel timetable, or use + Add Lecture above to add your first one.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-xs)] h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            >
+              {importing ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Upload className="w-3.5 h-3.5" />
+              )}
+              Import Excel
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowEmptyBanner(false)}
+              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer text-[length:var(--text-xs)] h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* B. WEEKLY GRID (SERIAL NUMBER ROWS 1, 2, 3...) */}
-      <div
-        className="bg-bg-surface border border-border rounded-2xl p-5 shadow-2xl overflow-x-auto w-full"
-        style={{
-          backgroundColor: "var(--bg-surface, #111118)",
-          borderColor: "var(--border, #2A2A3A)",
-        }}
-      >
+      <div className="bg-bg-surface border border-border rounded-2xl p-5 shadow-2xl overflow-x-auto w-full">
         <table className="w-full border-collapse min-w-[900px]">
           <thead>
             <tr>
-              <th className="w-16 pb-4 pt-1 text-center text-xs font-mono font-semibold text-text-muted uppercase tracking-wider border-b border-border/80 px-2">
+              <th className="w-16 pb-4 pt-1 text-center text-[length:var(--text-xs)] font-mono font-medium text-text-muted uppercase tracking-wider border-b border-border/80 px-2">
                 #
               </th>
-              {DAYS.map((day) => (
-                <th
-                  key={day.id}
-                  className="pb-4 pt-1 text-center text-xs font-bold text-text-primary uppercase tracking-wider border-b border-border/80 px-2"
-                >
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-bg-base border border-border/60">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>{day.fullName}</span>
-                  </div>
-                </th>
-              ))}
+              {DAYS.map((day) => {
+                const isToday = day.id === todayDow;
+                return (
+                  <th
+                    key={day.id}
+                    className={`pb-4 pt-1 text-center text-[length:var(--text-xs)] font-semibold uppercase tracking-wider border-b border-border/80 px-2 ${
+                      isToday ? "bg-accent-info/10 text-accent-info rounded-t-lg" : "text-text-primary"
+                    }`}
+                  >
+                    <div
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border ${
+                        isToday
+                          ? "bg-accent-info/20 border-accent-info/40 text-accent-info ring-1 ring-accent-info/40"
+                          : "bg-bg-base border-border/60 text-text-primary"
+                      }`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isToday ? "bg-accent-info animate-pulse" : "bg-text-secondary"
+                        }`}
+                      />
+                      <span>{day.fullName}</span>
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
 
           <tbody className="divide-y divide-border/40">
             {serialRowIndices.map((serialNum) => (
               <tr key={serialNum} className="group hover:bg-bg-base/20 transition-colors">
-                {/* Serial Number Column */}
-                <td className="py-4 px-2 text-center text-xs font-mono font-bold text-text-muted align-middle">
-                  <span className="w-6 h-6 rounded-full bg-bg-base border border-border/60 inline-flex items-center justify-center">
-                    {serialNum}
-                  </span>
+                {/* Serial Number Column - De-emphasized Plain Text */}
+                <td className="py-4 px-2 text-center text-[length:var(--text-xs)] font-mono text-text-muted align-middle">
+                  {serialNum}
                 </td>
 
                 {/* Days MON-SAT (0-5) */}
                 {DAYS.map((day) => {
                   const dayLectures = getDayEntries(day.id);
                   const entry = dayLectures[serialNum - 1]; // 0-indexed lecture for this row
+                  const isToday = day.id === todayDow;
 
                   return (
-                    <td key={day.id} className="p-2 align-top w-1/6 min-w-[140px]">
+                    <td
+                      key={day.id}
+                      className={`p-2 align-top w-1/6 min-w-[140px] ${
+                        isToday ? "bg-accent-info/[0.03]" : ""
+                      }`}
+                    >
                       {!entry ? (
                         /* Empty Cell: Dashed border with (+) Add Lecture */
                         <button
                           onClick={() => handleOpenAddModal(day.id)}
-                          className="w-full h-24 rounded-xl border border-dashed border-border/80 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all flex flex-col items-center justify-center gap-1 text-text-muted hover:text-emerald-400 cursor-pointer group/cell"
+                          className="w-full h-28 rounded-xl border border-dashed border-border/80 hover:border-accent-info/50 hover:bg-accent-info/5 transition-all flex flex-col items-center justify-center gap-1.5 text-text-secondary hover:text-accent-info cursor-pointer group/cell focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                         >
-                          <div className="w-7 h-7 rounded-full bg-bg-base border border-border/60 group-hover/cell:border-emerald-500/40 flex items-center justify-center transition-colors">
+                          <div className="w-7 h-7 rounded-full bg-bg-base border border-border/60 group-hover/cell:border-accent-info/40 flex items-center justify-center transition-colors">
                             <Plus className="w-4 h-4" />
                           </div>
-                          <span className="text-[11px] font-medium">Add Lecture</span>
+                          <span className="text-[length:var(--text-xs)] font-medium text-text-secondary group-hover/cell:text-accent-info">
+                            Add Lecture
+                          </span>
                         </button>
                       ) : (
                         /* Filled Cell Card */
                         <div
-                          className={`group/card relative rounded-xl p-3.5 border transition-all shadow-md flex flex-col justify-between gap-2.5 h-28 ${
+                          className={`group/card relative rounded-xl p-3 border transition-all shadow-md flex flex-col justify-between h-28 ${
                             entry.session_type === "lab"
-                              ? "bg-emerald-500/10 border-emerald-500/30 hover:border-emerald-500/60 text-emerald-300"
-                              : "bg-blue-500/10 border-blue-500/30 hover:border-blue-500/60 text-blue-300"
+                              ? "bg-accent-live/10 border-accent-live/30 hover:border-accent-live/60 text-accent-live"
+                              : "bg-accent-info/10 border-accent-info/30 hover:border-accent-info/60 text-accent-info"
                           }`}
                         >
                           {/* Action buttons on hover */}
-                          <div className="absolute top-2.5 right-2.5 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-bg-base/90 p-1 rounded-md border border-border shadow-sm z-10">
+                          <div className="absolute top-2 right-2 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-bg-base/90 p-1 rounded-md border border-border shadow-sm z-10">
                             <button
                               onClick={(e) => handleOpenEditModal(entry, e)}
-                              className="p-1 hover:text-emerald-400 text-text-muted transition-colors cursor-pointer"
+                              className="p-1.5 hover:text-accent-info text-text-secondary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Edit lecture"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={(e) => handleDeleteEntry(entry.id, e)}
-                              className="p-1 hover:text-rose-400 text-text-muted transition-colors cursor-pointer"
+                              className="p-1.5 hover:text-accent-critical text-text-secondary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Delete lecture"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
 
-                          <div>
-                            {/* Subject Bold Header */}
-                            <div className="font-bold text-text-primary text-sm line-clamp-1 pr-12 flex items-center gap-1.5">
-                              {entry.session_type === "lab" ? (
-                                <FlaskConical className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                              ) : (
-                                <BookOpen className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                              )}
-                              <span className="truncate">{entry.subject}</span>
-                            </div>
+                          {/* 1st Line: Time Range (Promoted Dominant Element) */}
+                          <div className="flex items-center justify-between pr-14">
+                            <span className="font-semibold font-mono text-[length:var(--text-base)] tracking-tight">
+                              {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
+                            </span>
+                          </div>
 
-                            {/* Class / Room Line */}
-                            <div className="text-[11px] text-text-secondary mt-1 flex items-center gap-1.5 truncate">
-                              <School className="w-3 h-3 text-text-muted shrink-0" />
-                              <span className="truncate">
+                          {/* 2nd Line: Subject */}
+                          <div className="font-medium text-text-primary text-[length:var(--text-sm)] line-clamp-1 flex items-center gap-1.5">
+                            {entry.session_type === "lab" ? (
+                              <FlaskConical className="w-3.5 h-3.5 text-accent-live shrink-0" />
+                            ) : (
+                              <BookOpen className="w-3.5 h-3.5 text-accent-info shrink-0" />
+                            )}
+                            <span className="truncate" title={entry.subject}>
+                              {entry.subject}
+                            </span>
+                          </div>
+
+                          {/* 3rd Line: Class / Room & Alert indicator */}
+                          <div className="flex items-center justify-between text-[length:var(--text-xs)] text-text-secondary pt-1 border-t border-border/40">
+                            <div className="flex items-center gap-1 truncate">
+                              <School className="w-3 h-3 text-text-secondary shrink-0" />
+                              <span
+                                className="truncate"
+                                title={`${entry.class_name || "Class #" + entry.class_id}${
+                                  entry.room ? ` • ${entry.room}` : ""
+                                }`}
+                              >
                                 {entry.class_name || "Class #" + entry.class_id}
                                 {entry.room && ` • ${entry.room}`}
                               </span>
                             </div>
-                          </div>
-
-                          {/* Time Range Badge & Reminder Indicator */}
-                          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px] font-mono">
-                            <span
-                              className={`px-2 py-0.5 rounded font-semibold ${
-                                entry.session_type === "lab"
-                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                              }`}
-                            >
-                              {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
-                            </span>
 
                             {entry.reminder_enabled ? (
-                              <span className="flex items-center gap-1 text-amber-400 text-[10px]" title="Reminder enabled">
-                                <Bell className="w-3 h-3" /> Alert On
+                              <span
+                                className="flex items-center gap-1 text-accent-warning shrink-0"
+                                title="Reminder enabled"
+                              >
+                                <Bell className="w-3 h-3" />
                               </span>
                             ) : null}
                           </div>
@@ -617,31 +680,28 @@ export function TimetableSetup() {
             ))}
           </tbody>
         </table>
+        <p className="text-[length:var(--text-xs)] text-text-secondary mt-3">
+          Each day's lectures are listed in the order they occur — row numbers are not synced across days.
+        </p>
       </div>
 
-      {/* C. GLOBAL OPTIONS & REMINDER SUPPRESSION DATES PANEL */}
+      {/* C. LATE WARNING DELAY & REMINDER SUPPRESSION DATES PANEL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Global Timetable Options Card (Single Teacher Setting) */}
-        <div
-          className="bg-bg-surface border border-border rounded-xl p-5 shadow-lg space-y-4 flex flex-col justify-between"
-          style={{
-            backgroundColor: "var(--bg-surface, #111118)",
-            borderColor: "var(--border, #2A2A3A)",
-          }}
-        >
+        {/* Late Warning Delay Card (Teacher setting) */}
+        <div className="bg-bg-surface border border-border rounded-xl p-5 shadow-lg space-y-4 flex flex-col justify-between">
           <div className="space-y-0.5">
-            <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-emerald-400" />
-              Global Timetable Options
+            <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-accent-warning" />
+              Late Warning Delay
             </h3>
-            <p className="text-xs text-text-secondary">
+            <p className="text-[length:var(--text-sm)] text-text-secondary">
               Configure your single global late warning email threshold applied to all enabled lecture reminders.
             </p>
           </div>
 
           <div className="flex items-center gap-4 bg-bg-base/80 border border-border/80 px-4 py-3 rounded-lg">
-            <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5 whitespace-nowrap">
-              <Bell className="w-3.5 h-3.5 text-amber-400" />
+            <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5 whitespace-nowrap">
+              <Bell className="w-3.5 h-3.5 text-accent-warning" />
               Set Late Warning Email:
             </label>
             <input
@@ -650,28 +710,22 @@ export function TimetableSetup() {
               max="30"
               value={defaultDelayMinutes}
               onChange={(e) => handleUpdateGlobalDelay(Number(e.target.value))}
-              className="w-full accent-emerald-500 cursor-pointer"
+              className="w-full accent-accent-warning cursor-pointer"
             />
-            <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded shrink-0">
+            <span className="text-[length:var(--text-xs)] font-mono font-semibold text-accent-warning bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded shrink-0">
               {defaultDelayMinutes} min
             </span>
           </div>
         </div>
 
         {/* Reminder Suppression Dates Card */}
-        <div
-          className="bg-bg-surface border border-border rounded-xl p-5 shadow-lg space-y-4"
-          style={{
-            backgroundColor: "var(--bg-surface, #111118)",
-            borderColor: "var(--border, #2A2A3A)",
-          }}
-        >
+        <div className="bg-bg-surface border border-border rounded-xl p-5 shadow-lg space-y-4">
           <div className="space-y-0.5">
-            <h3 className="text-base font-semibold text-text-primary flex items-center gap-2">
-              <CalendarOff className="w-4 h-4 text-amber-400" />
+            <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
+              <CalendarOff className="w-4 h-4 text-accent-warning" />
               Reminder Suppression Dates
             </h3>
-            <p className="text-xs text-text-secondary">
+            <p className="text-[length:var(--text-sm)] text-text-secondary">
               Mark specific dates (holidays, leave) when email alerts are paused.
             </p>
           </div>
@@ -681,12 +735,12 @@ export function TimetableSetup() {
               type="date"
               value={newExceptionDate}
               onChange={(e) => setNewExceptionDate(e.target.value)}
-              className="bg-bg-base border-border text-text-primary text-xs h-9 w-44"
+              className="bg-bg-base border-border text-text-primary text-[length:var(--text-sm)] h-9 w-44"
             />
             <Button
               onClick={handleAddException}
               disabled={addingException}
-              className="bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs h-9 cursor-pointer flex items-center gap-1.5"
+              className="bg-accent-warning hover:bg-accent-warning/90 text-bg-base font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {addingException ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -699,18 +753,18 @@ export function TimetableSetup() {
 
           {/* List of Marked Exception Dates */}
           {exceptions.length === 0 ? (
-            <p className="text-xs text-text-muted italic pt-1">No suppression dates marked.</p>
+            <p className="text-[length:var(--text-xs)] text-text-secondary italic pt-1">No suppression dates marked.</p>
           ) : (
             <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pt-1">
               {exceptions.map((ex) => (
                 <div
                   key={ex.id}
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono"
+                  className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-accent-warning/10 border border-accent-warning/30 text-accent-warning text-[length:var(--text-xs)] font-mono"
                 >
                   <span>{ex.exception_date}</span>
                   <button
                     onClick={() => handleDeleteException(ex.id)}
-                    className="hover:text-rose-400 text-amber-400 transition-colors cursor-pointer"
+                    className="hover:text-accent-critical text-accent-warning transition-colors cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                     title="Remove suppression date"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -722,68 +776,70 @@ export function TimetableSetup() {
         </div>
       </div>
 
-      {/* ADD / EDIT LECTURE MODAL (SIMPLIFIED — NO PER-LECTURE DELAY INPUT) */}
+      {/* ADD / EDIT LECTURE MODAL (BG-ELEVATED, INLINE PER-FIELD ERRORS) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div
-            className="relative max-w-md w-full my-8 bg-bg-surface border border-border rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200"
-            style={{
-              backgroundColor: "var(--bg-surface, #111118)",
-              borderColor: "var(--border, #2A2A3A)",
-            }}
-          >
+          <div className="relative max-w-md w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+              <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
                 {editingEntryId ? (
                   <>
-                    <Edit3 className="w-5 h-5 text-emerald-400" /> Edit Lecture
+                    <Edit3 className="w-5 h-5 text-accent-info" /> Edit Lecture
                   </>
                 ) : (
                   <>
-                    <Plus className="w-5 h-5 text-emerald-400" /> Add New Lecture
+                    <Plus className="w-5 h-5 text-accent-info" /> Add New Lecture
                   </>
                 )}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-text-muted hover:text-text-primary p-1 rounded transition-colors cursor-pointer"
+                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {formError && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs flex items-center gap-2">
-                <X className="w-4 h-4 shrink-0" />
-                {formError}
-              </div>
-            )}
-
-            <div className="space-y-4 text-xs">
+            <div className="space-y-4 text-[length:var(--text-sm)]">
               {/* Subject */}
               <div>
                 <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> Subject Name *
+                  <BookOpen className="w-3.5 h-3.5 text-accent-info" /> Subject Name *
                 </label>
                 <Input
                   type="text"
                   placeholder="e.g. Operating Systems"
                   value={formSubject}
-                  onChange={(e) => setFormSubject(e.target.value)}
-                  className="bg-bg-base border-border text-text-primary text-sm"
+                  onChange={(e) => {
+                    setFormSubject(e.target.value);
+                    setFormTouched(true);
+                  }}
+                  className={`bg-bg-base text-text-primary text-[length:var(--text-base)] ${
+                    subjectError ? "border-accent-critical focus:border-accent-critical" : "border-border"
+                  }`}
                 />
+                {subjectError && (
+                  <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {subjectError}
+                  </p>
+                )}
               </div>
 
               {/* Class & Room */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <School className="w-3.5 h-3.5 text-emerald-400" /> Class *
+                    <School className="w-3.5 h-3.5 text-accent-info" /> Class *
                   </label>
                   <select
                     value={formClassId}
-                    onChange={(e) => setFormClassId(e.target.value)}
-                    className="w-full h-10 px-3 rounded-md bg-bg-base border border-border text-text-primary text-xs focus:outline-none focus:border-emerald-500"
+                    onChange={(e) => {
+                      setFormClassId(e.target.value);
+                      setFormTouched(true);
+                    }}
+                    className={`w-full h-10 px-3 rounded-md bg-bg-base text-text-primary text-[length:var(--text-sm)] focus:outline-none focus:border-accent-info ${
+                      classError ? "border border-accent-critical" : "border border-border"
+                    }`}
                   >
                     {classes.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -791,18 +847,23 @@ export function TimetableSetup() {
                       </option>
                     ))}
                   </select>
+                  {classError && (
+                    <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {classError}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-emerald-400" /> Room / Lab
+                    <Building className="w-3.5 h-3.5 text-accent-info" /> Room / Lab
                   </label>
                   <Input
                     type="text"
                     placeholder="e.g. Lab 2 or Room 301"
                     value={formRoom}
                     onChange={(e) => setFormRoom(e.target.value)}
-                    className="bg-bg-base border-border text-text-primary text-xs"
+                    className="bg-bg-base border-border text-text-primary text-[length:var(--text-sm)]"
                   />
                 </div>
               </div>
@@ -816,32 +877,32 @@ export function TimetableSetup() {
                   <button
                     type="button"
                     onClick={() => setFormSessionType("standard")}
-                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-all ${
+                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
                       formSessionType === "standard"
-                        ? "bg-blue-500/20 border-blue-500/50 text-blue-300 font-bold"
-                        : "bg-bg-base border-border text-text-muted"
+                        ? "bg-accent-info/20 border-accent-info/50 text-accent-info font-semibold"
+                        : "bg-bg-base border-border text-text-secondary"
                     }`}
                   >
-                    <BookOpen className="w-4 h-4 text-blue-400 shrink-0" />
+                    <BookOpen className="w-4 h-4 text-accent-info shrink-0" />
                     <div>
-                      <div className="text-xs">Standard</div>
-                      <div className="text-[10px] text-text-muted font-normal">Blue card style</div>
+                      <div className="text-[length:var(--text-sm)]">Standard</div>
+                      <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Blue card style</div>
                     </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setFormSessionType("lab")}
-                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-all ${
+                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
                       formSessionType === "lab"
-                        ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold"
-                        : "bg-bg-base border-border text-text-muted"
+                        ? "bg-accent-live/20 border-accent-live/50 text-accent-live font-semibold"
+                        : "bg-bg-base border-border text-text-secondary"
                     }`}
                   >
-                    <FlaskConical className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <FlaskConical className="w-4 h-4 text-accent-live shrink-0" />
                     <div>
-                      <div className="text-xs">Lab Session</div>
-                      <div className="text-[10px] text-text-muted font-normal">Green card style</div>
+                      <div className="text-[length:var(--text-sm)]">Lab Session</div>
+                      <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Green card style</div>
                     </div>
                   </button>
                 </div>
@@ -854,7 +915,7 @@ export function TimetableSetup() {
                   <select
                     value={formDayOfWeek}
                     onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
-                    className="w-full h-9 px-2 rounded-md bg-bg-base border border-border text-text-primary text-xs focus:outline-none focus:border-emerald-500"
+                    className="w-full h-9 px-2 rounded-md bg-bg-base border border-border text-text-primary text-[length:var(--text-sm)] focus:outline-none focus:border-accent-info"
                   >
                     {DAYS.map((d) => (
                       <option key={d.id} value={d.id}>
@@ -869,8 +930,13 @@ export function TimetableSetup() {
                   <Input
                     type="time"
                     value={formStartTime}
-                    onChange={(e) => setFormStartTime(e.target.value)}
-                    className="bg-bg-base border-border text-text-primary text-xs h-9"
+                    onChange={(e) => {
+                      setFormStartTime(e.target.value);
+                      setFormTouched(true);
+                    }}
+                    className={`bg-bg-base text-text-primary text-[length:var(--text-sm)] h-9 ${
+                      timeError ? "border-accent-critical" : "border-border"
+                    }`}
                   />
                 </div>
 
@@ -879,27 +945,46 @@ export function TimetableSetup() {
                   <Input
                     type="time"
                     value={formEndTime}
-                    onChange={(e) => setFormEndTime(e.target.value)}
-                    className="bg-bg-base border-border text-text-primary text-xs h-9"
+                    onChange={(e) => {
+                      setFormEndTime(e.target.value);
+                      setFormTouched(true);
+                    }}
+                    className={`bg-bg-base text-text-primary text-[length:var(--text-sm)] h-9 ${
+                      timeError ? "border-accent-critical" : "border-border"
+                    }`}
                   />
                 </div>
               </div>
+
+              {/* Real-time Inline Time Error Banner */}
+              {timeError && (
+                <p className="text-[length:var(--text-xs)] text-accent-critical font-medium flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {timeError}
+                </p>
+              )}
+
+              {/* Network / General Save Error Banner */}
+              {formError && (
+                <p className="text-[length:var(--text-xs)] text-accent-critical font-medium flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {formError}
+                </p>
+              )}
 
               {/* Late Warning Email Alert Checkbox Only */}
               <div className="bg-bg-base border border-border rounded-lg p-3">
                 <label className="flex items-center justify-between cursor-pointer">
                   <span className="font-medium text-text-primary flex items-center gap-1.5">
-                    <Bell className="w-3.5 h-3.5 text-amber-400" /> Enable Late Warning Email Alert
+                    <Bell className="w-3.5 h-3.5 text-accent-warning" /> Enable Late Warning Email Alert
                   </span>
                   <input
                     type="checkbox"
                     checked={formReminderEnabled}
                     onChange={(e) => setFormReminderEnabled(e.target.checked)}
-                    className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                    className="w-4 h-4 accent-accent-warning rounded cursor-pointer"
                   />
                 </label>
-                <p className="text-[10px] text-text-muted mt-1.5">
-                  Uses your global late warning delay ({defaultDelayMinutes} min) configured in Global Timetable Options.
+                <p className="text-[length:var(--text-xs)] text-text-secondary mt-1.5">
+                  Uses your global late warning delay ({defaultDelayMinutes} min) configured in Late Warning Delay options.
                 </p>
               </div>
             </div>
@@ -908,14 +993,14 @@ export function TimetableSetup() {
               <Button
                 variant="outline"
                 onClick={() => setIsModalOpen(false)}
-                className="border-border text-text-secondary text-xs"
+                className="border-border text-text-secondary text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSaveModalEntry}
-                disabled={saving}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs flex items-center gap-1.5 shadow-md shadow-emerald-950/40 cursor-pointer"
+                disabled={saving || !isFormValid}
+                className="bg-accent-info hover:bg-accent-info/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[length:var(--text-sm)] h-9 flex items-center gap-1.5 shadow-md shadow-accent-info/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 {saving ? (
                   <>
@@ -932,60 +1017,54 @@ export function TimetableSetup() {
         </div>
       )}
 
-      {/* EXCEL IMPORT REPORT MODAL */}
+      {/* EXCEL IMPORT REPORT MODAL (BG-ELEVATED) */}
       {importReport && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div
-            className="relative max-w-xl w-full my-8 bg-bg-surface border border-border rounded-2xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200"
-            style={{
-              backgroundColor: "var(--bg-surface, #111118)",
-              borderColor: "var(--border, #2A2A3A)",
-            }}
-          >
+          <div className="relative max-w-xl w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-400" /> Excel Import Report
+              <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-accent-info" /> Excel Import Report
               </h2>
               <button
                 onClick={() => setImportReport(null)}
-                className="text-text-muted hover:text-text-primary p-1 rounded transition-colors cursor-pointer"
+                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1 text-xs">
+            <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1 text-[length:var(--text-sm)]">
               {importReport.map((resItem, idx) => (
                 <div
                   key={idx}
                   className={`p-3 rounded-lg border flex flex-col gap-1 ${
                     resItem.status === "created"
-                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
-                      : "bg-rose-500/10 border-rose-500/20 text-rose-300"
+                      ? "bg-accent-live/10 border-accent-live/20 text-accent-live"
+                      : "bg-accent-critical/10 border-accent-critical/20 text-accent-critical"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold flex items-center gap-1.5">
                       {resItem.status === "created" ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-accent-live shrink-0" />
                       ) : (
-                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <AlertTriangle className="w-4 h-4 text-accent-critical shrink-0" />
                       )}
                       Row {resItem.row}: {resItem.subject || "Unnamed Entry"}
                     </span>
-                    <span className="font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-bg-base/60">
+                    <span className="font-mono text-[length:var(--text-xs)] uppercase font-bold px-2 py-0.5 rounded bg-bg-base/60">
                       {resItem.status}
                     </span>
                   </div>
 
                   {resItem.reason && (
-                    <div className="text-[11px] text-rose-400 pl-5">
+                    <div className="text-[length:var(--text-xs)] text-accent-critical pl-5">
                       Reason: {resItem.reason}
                     </div>
                   )}
 
                   {resItem.note && (
-                    <div className="text-[11px] text-amber-400 pl-5 flex items-center gap-1">
+                    <div className="text-[length:var(--text-xs)] text-accent-warning pl-5 flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3 shrink-0" /> {resItem.note}
                     </div>
                   )}
@@ -996,7 +1075,7 @@ export function TimetableSetup() {
             <div className="flex justify-end pt-3 border-t border-border/60">
               <Button
                 onClick={() => setImportReport(null)}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium cursor-pointer"
+                className="bg-accent-info hover:bg-accent-info/90 text-white text-[length:var(--text-sm)] font-medium cursor-pointer h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 Close Report
               </Button>

@@ -26,6 +26,8 @@ import {
   TriangleAlert,
   Download,
   Calendar,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import {
   Dialog,
@@ -201,6 +203,41 @@ export function LiveBroadcast() {
   const [startLoading, setStartLoading] = useState(false);
   const [classes, setClasses] = useState([]);
   const [selectedClassIds, setSelectedClassIds] = useState([]);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const fullScreenContainerRef = useRef(null);
+
+  const handleToggleFullScreen = () => {
+    if (!isFullScreen) {
+      setIsFullScreen(true);
+      if (fullScreenContainerRef.current?.requestFullscreen) {
+        fullScreenContainerRef.current.requestFullscreen().catch(() => {});
+      }
+    } else {
+      setIsFullScreen(false);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+    const handleFullScreenChange = () => {
+      if (!document.fullscreenElement && isFullScreen) {
+        setIsFullScreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+    };
+  }, [isFullScreen]);
 
   // ── Timetable & Schedule Auto-Detection ──────────────────────────────────────
   const [timetableEntries, setTimetableEntries] = useState([]);
@@ -243,11 +280,14 @@ export function LiveBroadcast() {
   });
 
   const handlePrefillScheduledLecture = (entry) => {
+    if (!entry) return;
+    const subName = entry.subject || entry.subject_name || "";
+    const roomName = entry.room || entry.room_number || "LAB 301";
     setFormData({
-      lectureName: `${entry.subject_name} Lecture`,
-      subject: entry.subject_name,
+      lectureName: subName ? `${subName} Lecture` : "",
+      subject: subName,
       password: "",
-      labRoom: entry.room_number || "LAB 301",
+      labRoom: roomName,
     });
     setSelectedClassIds(entry.class_id ? [Number(entry.class_id)] : []);
     setShowPassword(false);
@@ -1664,6 +1704,21 @@ export function LiveBroadcast() {
     }
   };
 
+  const handleWhiteboardSnapshot = (strokes) => {
+    teacherWhiteboardStrokesRef.current = [...(strokes || [])];
+    const currentBg = whiteboardRef.current?.getBgColor?.() || teacherWhiteboardBgColorRef.current;
+    teacherWhiteboardBgColorRef.current = currentBg;
+
+    const socket = getSocket();
+    if (socket && sessionInfoRef.current) {
+      socket.emit("teacher:whiteboard_snapshot", {
+        sessionId: sessionInfoRef.current.id,
+        strokes,
+        bgColor: currentBg,
+      });
+    }
+  };
+
   const handleSaveWhiteboard = async () => {
     if (!whiteboardRef.current) return;
     try {
@@ -1804,11 +1859,11 @@ export function LiveBroadcast() {
   const isBroadcasting = broadcastState === "live";
   const isRecording = recordingState === "recording";
   const isFormValid =
-    formData.lectureName.trim() !== "" &&
-    formData.subject.trim() !== "" &&
-    formData.password.trim() !== "" &&
-    formData.labRoom.trim() !== "" &&
-    selectedClassIds.length > 0;
+    (formData?.lectureName || "").trim() !== "" &&
+    (formData?.subject || "").trim() !== "" &&
+    (formData?.password || "").trim() !== "" &&
+    (formData?.labRoom || "").trim() !== "" &&
+    (selectedClassIds || []).length > 0;
   const viewerCount = connectedStudents.length;
   const hasMic = !!micStreamRef.current;
 
@@ -1830,7 +1885,7 @@ export function LiveBroadcast() {
                 title="Click to pre-fill lecture setup"
               >
                 <Calendar className="w-3.5 h-3.5" />
-                <span>Current Scheduled: <strong className="text-text-primary">{currentLecture.subject_name}</strong> {currentLecture.class_name ? `(${currentLecture.class_name})` : ""}</span>
+                <span>Current Scheduled: <strong className="text-text-primary">{currentLecture.subject || currentLecture.subject_name}</strong> {currentLecture.class_name ? `(${currentLecture.class_name})` : ""}</span>
                 <span className="text-[10px] bg-accent-info/20 px-1.5 py-0.5 rounded text-accent-info font-semibold">Pre-fill</span>
               </button>
             ) : (
@@ -1900,8 +1955,14 @@ export function LiveBroadcast() {
         {/* Left: Preview / Editor */}
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
           {/* Content container */}
-          <div className="flex-1 bg-bg-surface border-2 border-border rounded-lg flex flex-col relative overflow-hidden">
-
+          <div
+            ref={fullScreenContainerRef}
+            className={`flex-1 bg-bg-surface flex flex-col relative overflow-hidden transition-all ${
+              isFullScreen
+                ? "fixed top-0 left-0 right-0 bottom-0 z-[99999] w-full h-full max-w-full max-h-full bg-bg-base border-none rounded-none overflow-hidden"
+                : "border-2 border-border rounded-lg"
+            }`}
+          >
             {/* ── SCREEN SHARE MODE ────────────────────────────────────────── */}
             {activeMode === "screen" && (
               <>
@@ -1917,9 +1978,29 @@ export function LiveBroadcast() {
                     <div className="absolute top-4 left-4 z-10">
                       <StatusBadge status="live" />
                     </div>
+                    <div className="absolute top-4 right-4 z-10">
+                      <button
+                        type="button"
+                        onClick={handleToggleFullScreen}
+                        className="p-2 rounded-md bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border shadow-lg transition-colors"
+                        title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
+                      >
+                        {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center">
+                  <div className="flex-1 flex items-center justify-center relative">
+                    <div className="absolute top-4 right-4 z-10">
+                      <button
+                        type="button"
+                        onClick={handleToggleFullScreen}
+                        className="p-2 rounded-md bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border shadow-lg transition-colors"
+                        title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
+                      >
+                        {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                    </div>
                     <div className="text-center">
                       <MonitorStop className="w-16 h-16 text-text-muted mx-auto mb-3" />
                       <p className="text-text-secondary">Not Broadcasting</p>
@@ -1951,51 +2032,6 @@ export function LiveBroadcast() {
                       </option>
                     ))}
                   </select>
-
-                  {/* Editor Sync toggle — relabeled to prevent confusion with session broadcast state */}
-                  <button
-                    onClick={handleEditorLiveToggle}
-                    className={`h-7 px-3 text-xs font-medium rounded border transition-colors flex items-center gap-1.5 ${
-                      editorLiveStatus === "live"
-                        ? "bg-accent-success/10 border-accent-success/30 text-accent-success hover:bg-accent-success/20"
-                        : "bg-accent-warning/10 border-accent-warning/30 text-accent-warning hover:bg-accent-warning/20"
-                    }`}
-                    title={
-                      editorLiveStatus === "live"
-                        ? "Students see every keystroke (200ms delay) — click to edit privately"
-                        : "Students are frozen on last sync — click to resume live"
-                    }
-                  >
-                    {editorLiveStatus === "live" ? (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-accent-success inline-block" />
-                        Editor Synced
-                      </>
-                    ) : (
-                      <>
-                        <Pause className="w-3 h-3" />
-                        Editor Paused
-                      </>
-                    )}
-                  </button>
-
-                  <div className="flex-1" />
-
-                  {/* Clear output */}
-                  {outputMode !== "none" && (
-                    <button
-                      onClick={() => {
-                        setOutputMode("none");
-                        setConsoleLines([]);
-                        setTextOutput("");
-                      }}
-                      className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded transition-colors"
-                    >
-                      Clear output
-                    </button>
-                  )}
-
-
 
                   <div className="flex-1" />
 
@@ -2043,6 +2079,16 @@ export function LiveBroadcast() {
                       </button>
                     )
                   )}
+
+                  {/* YouTube style Fullscreen toggle button */}
+                  <button
+                    type="button"
+                    onClick={handleToggleFullScreen}
+                    className="h-7 px-2.5 text-xs font-medium rounded border border-border bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5 ml-1"
+                    title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
+                  >
+                    {isFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
 
                 {/* Main Editor Slot — Whiteboard Canvas and Monaco Editor both permanently mounted, toggled via CSS display */}
@@ -2061,6 +2107,7 @@ export function LiveBroadcast() {
                       initialBgColor={teacherWhiteboardBgColorRef.current}
                       onStrokeEmit={handleWhiteboardStroke}
                       onClearEmit={handleWhiteboardClear}
+                      onSnapshotEmit={handleWhiteboardSnapshot}
                     />
                   </div>
                   <div

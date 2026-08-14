@@ -574,6 +574,21 @@ export function LiveSession() {
       }
     };
 
+    // ── teacher:whiteboard_snapshot ───────────────────────────────────────────
+    const handleTeacherWhiteboardSnapshot = ({ sessionId, strokes, bgColor }) => {
+      const currentSessionId = joinedSession?.id;
+      if (currentSessionId && String(sessionId) !== String(currentSessionId)) return;
+
+      studentWhiteboardStrokesRef.current = [...(strokes || [])];
+      if (bgColor) {
+        studentWhiteboardBgColorRef.current = bgColor;
+      }
+
+      if (studentWhiteboardRef.current) {
+        studentWhiteboardRef.current.loadSnapshot(strokes, bgColor);
+      }
+    };
+
     // ── student:session_state ─────────────────────────────────────────────────
     // Sent by server immediately after join or rejoin-approval so the student
     // sees the current mode and code without waiting for the next editor:sync.
@@ -630,6 +645,7 @@ export function LiveSession() {
     socket.on('teacher:code_output', handleTeacherCodeOutput);
     socket.on('teacher:whiteboard_stroke', handleTeacherWhiteboardStroke);
     socket.on('teacher:whiteboard_clear', handleTeacherWhiteboardClear);
+    socket.on('teacher:whiteboard_snapshot', handleTeacherWhiteboardSnapshot);
     socket.on('student:session_state', handleSessionState);
 
     // ── Request session-state snapshot AFTER all listeners are registered ──────
@@ -656,6 +672,9 @@ export function LiveSession() {
       socket.off('teacher:mode_changed', handleTeacherModeChanged);
       socket.off('teacher:code_changed', handleTeacherCodeChanged);
       socket.off('teacher:code_output', handleTeacherCodeOutput);
+      socket.off('teacher:whiteboard_stroke', handleTeacherWhiteboardStroke);
+      socket.off('teacher:whiteboard_clear', handleTeacherWhiteboardClear);
+      socket.off('teacher:whiteboard_snapshot', handleTeacherWhiteboardSnapshot);
       socket.off('student:session_state', handleSessionState);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -905,19 +924,26 @@ export function LiveSession() {
 
       {/* ── MAIN SESSION CONTENT ───────────────────────────────────────────────
           Only shown when not in an override overlay state. */}
-      <div className="flex-1 bg-gradient-to-br from-bg-base to-bg-elevated flex items-center justify-center p-6 overflow-hidden">
+      <div className="flex-1 bg-bg-base flex flex-col w-full h-full overflow-hidden">
         {isLive ? (
-          <div className="w-full h-full max-w-7xl bg-bg-surface border border-border rounded-lg shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-6 pb-4 flex-shrink-0">
-              <h1 className="text-2xl font-semibold text-text-primary mb-1">
-                {joinedSession.lecture_name ?? joinedSession.lectureName}
-              </h1>
-              <p className="text-text-secondary text-sm">
-                {joinedSession.lab_room ?? joinedSession.labRoom} — Live Session
-              </p>
+          <div className="w-full h-full bg-bg-base overflow-hidden flex flex-col">
+            <div className="px-4 py-2 bg-bg-surface border-b border-border flex items-center justify-between flex-shrink-0 h-10">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-text-primary">
+                  {joinedSession.lecture_name ?? joinedSession.lectureName}
+                </span>
+                <span className="text-xs text-text-muted">
+                  • {joinedSession.lab_room ?? joinedSession.labRoom} — Live Session
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] px-2 py-0.5 rounded bg-accent-live/10 text-accent-live border border-accent-live/20 font-semibold">
+                  LIVE
+                </span>
+              </div>
             </div>
 
-            <div className="flex-1 px-6 pb-6 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-hidden flex flex-col">
 
               {/* ── SCREEN SHARE MODE ─────────────────────────────────────── */}
               <div className={`flex-1 relative rounded-lg overflow-hidden border border-border bg-black ${
