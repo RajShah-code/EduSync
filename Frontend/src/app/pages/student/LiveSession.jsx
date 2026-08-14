@@ -3,6 +3,7 @@ import { Monitor, MonitorStop, Loader2, Play, Mic, Maximize2, AlertTriangle } fr
 import { useLocation, useOutletContext, useNavigate } from "react-router";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
+import { CodeOutputPanel } from "../../components/CodeOutputPanel";
 import { sessionStore } from "../../store/sessionStore";
 import { getSocket } from "../../store/socket";
 import { useFocusGuard } from "../../hooks/useFocusGuard";
@@ -153,6 +154,8 @@ export function LiveSession() {
   const [studentCode, setStudentCode] = useState("");
   const [studentLanguage, setStudentLanguage] = useState("javascript");
   const [studentOutputMode, setStudentOutputMode] = useState("none");
+  const [studentOutputDockPosition, setStudentOutputDockPosition] = useState("bottom");
+  const [studentOutputPanelSize, setStudentOutputPanelSize] = useState(220);
   const [studentIframeSrcdoc, setStudentIframeSrcdoc] = useState("");
   const [studentIframeKey, setStudentIframeKey] = useState(0);
   const [studentConsoleLines, setStudentConsoleLines] = useState([]);
@@ -1109,166 +1112,105 @@ export function LiveSession() {
                     )}
                   </div>
 
-                  {/* Code display area — Whiteboard Canvas and Monaco Editor both permanently mounted, toggled via CSS display */}
-                  <div style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative" }}>
+                  {/* Resizable / Dockable Flex Container */}
+                  <div
+                    style={{
+                      flex: 1,
+                      minHeight: 0,
+                      minWidth: 0,
+                      display: "flex",
+                      flexDirection: (editingEnabled ? studentOutputDockPosition : "bottom") === "bottom" ? "column" : "row",
+                      overflow: "hidden",
+                      position: "relative",
+                    }}
+                  >
+                    {/* Code display area — Whiteboard Canvas and Monaco Editor both permanently mounted */}
                     <div
                       style={{
-                        height: "100%",
-                        width: "100%",
-                        display: (editingEnabled ? studentLanguage : mirroredLanguage) === "whiteboard" ? "block" : "none",
+                        flex: 1,
+                        minHeight: 0,
+                        minWidth: 0,
+                        overflow: "hidden",
+                        position: "relative",
+                        order: (editingEnabled ? studentOutputDockPosition : "bottom") === "left" ? 1 : 0,
                       }}
                     >
-                      <WhiteboardCanvas
-                        ref={studentWhiteboardRef}
-                        readOnly={true}
-                        initialStrokes={[...studentWhiteboardStrokesRef.current]}
-                        initialBgColor={studentWhiteboardBgColorRef.current}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        height: "100%",
-                        width: "100%",
-                        display: (editingEnabled ? studentLanguage : mirroredLanguage) !== "whiteboard" ? "block" : "none",
-                      }}
-                    >
-                      <Editor
-                        height="100%"
-                        language={editingEnabled ? studentLanguage : mirroredLanguage}
-                        theme="vs-dark"
-                        value={editingEnabled ? studentCode : mirroredCode}
-                        onChange={editingEnabled ? handleStudentEditorChange : undefined}
-                        options={{
-                          fontSize: 14,
-                          fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
-                          minimap: { enabled: false },
-                          wordWrap: "on",
-                          scrollBeyondLastLine: false,
-                          padding: { top: 12, bottom: 12 },
-                          lineNumbers: "on",
-                          renderLineHighlight: "line",
-                          tabSize: 2,
-                          automaticLayout: true,
-                          readOnly: !editingEnabled,
-                          domReadOnly: !editingEnabled,
+                      <div
+                        style={{
+                          height: "100%",
+                          width: "100%",
+                          display: (editingEnabled ? studentLanguage : mirroredLanguage) === "whiteboard" ? "block" : "none",
                         }}
+                      >
+                        <WhiteboardCanvas
+                          ref={studentWhiteboardRef}
+                          readOnly={true}
+                          isActive={(editingEnabled ? studentLanguage : mirroredLanguage) === "whiteboard"}
+                          initialStrokes={[...studentWhiteboardStrokesRef.current]}
+                          initialBgColor={studentWhiteboardBgColorRef.current}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          height: "100%",
+                          width: "100%",
+                          display: (editingEnabled ? studentLanguage : mirroredLanguage) !== "whiteboard" ? "block" : "none",
+                        }}
+                      >
+                        <Editor
+                          height="100%"
+                          language={editingEnabled ? studentLanguage : mirroredLanguage}
+                          theme="vs-dark"
+                          value={editingEnabled ? studentCode : mirroredCode}
+                          onChange={editingEnabled ? handleStudentEditorChange : undefined}
+                          options={{
+                            fontSize: 14,
+                            fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
+                            minimap: { enabled: false },
+                            wordWrap: "on",
+                            scrollBeyondLastLine: false,
+                            padding: { top: 12, bottom: 12 },
+                            lineNumbers: "on",
+                            renderLineHighlight: "line",
+                            tabSize: 2,
+                            automaticLayout: true,
+                            readOnly: !editingEnabled,
+                            domReadOnly: !editingEnabled,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Output panel — local workspace output (if editingEnabled) */}
+                    {editingEnabled && (
+                      <CodeOutputPanel
+                        outputMode={studentOutputMode}
+                        iframeSrcdoc={studentIframeSrcdoc}
+                        iframeKey={studentIframeKey}
+                        consoleLines={studentConsoleLines}
+                        textOutput={studentTextOutput}
+                        dockPosition={studentOutputDockPosition}
+                        onDockChange={setStudentOutputDockPosition}
+                        size={studentOutputPanelSize}
+                        onSizeChange={setStudentOutputPanelSize}
+                        resizable={true}
                       />
-                    </div>
+                    )}
+
+                    {/* Output panel — mirrored output from teacher (if !editingEnabled) */}
+                    {!editingEnabled && (
+                      <CodeOutputPanel
+                        outputMode={mirroredOutput.outputMode}
+                        iframeSrcdoc={mirroredOutput.iframeSrcdoc}
+                        iframeKey={mirroredOutput.iframeSrcdoc}
+                        consoleLines={mirroredOutput.consoleLines}
+                        textOutput={mirroredOutput.textOutput}
+                        dockPosition="bottom"
+                        size={220}
+                        resizable={false}
+                      />
+                    )}
                   </div>
-
-                  {/* Output panel — local workspace output (if editingEnabled) */}
-                  {editingEnabled && studentOutputMode !== "none" && (
-                    <div
-                      style={{
-                        height: "220px",
-                        flexShrink: 0,
-                        borderTop: "1px solid var(--border)",
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {/* Rendered iframe (HTML / CSS / JS DOM) */}
-                      {(studentOutputMode === "iframe" || studentOutputMode === "console") && (
-                        <iframe
-                          key={studentIframeKey}
-                          srcDoc={studentIframeSrcdoc}
-                          sandbox="allow-scripts"
-                          title="Student code output"
-                          style={{
-                            width: "100%",
-                            flex: studentOutputMode === "console" ? "0 0 55%" : "1",
-                            border: "none",
-                            background: "#fff",
-                            display: "block",
-                          }}
-                        />
-                      )}
-                      {/* Console / text output */}
-                      {(studentOutputMode === "console" || studentOutputMode === "text") && (
-                        <pre
-                          style={{
-                            margin: 0,
-                            padding: "8px 12px",
-                            flex: studentOutputMode === "console" ? "0 0 45%" : "1",
-                            overflow: "auto",
-                            background: "var(--bg-base)",
-                            color: "var(--text-primary)",
-                            fontFamily: "var(--font-mono)",
-                            fontSize: "12px",
-                            whiteSpace: "pre-wrap",
-                            wordBreak: "break-word",
-                            borderTop:
-                              studentOutputMode === "console"
-                                ? "1px solid var(--border)"
-                                : "none",
-                          }}
-                        >
-                          {studentOutputMode === "console"
-                            ? studentConsoleLines.length > 0
-                              ? studentConsoleLines.join("\n")
-                              : "// No console output"
-                            : studentTextOutput || "(no output)"}
-                        </pre>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Output panel — mirrored output from teacher (if !editingEnabled) */}
-                  {!editingEnabled && mirroredOutput.outputMode !== "none" && (
-                    <div
-                      style={{
-                        height: "220px",
-                        flexShrink: 0,
-                        borderTop: "1px solid var(--border)",
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {/* Rendered iframe (HTML / CSS / JS DOM) */}
-                      {(mirroredOutput.outputMode === "iframe" || mirroredOutput.outputMode === "console") && (
-                        <iframe
-                          key={mirroredOutput.iframeSrcdoc}
-                          srcDoc={mirroredOutput.iframeSrcdoc}
-                          sandbox="allow-scripts"
-                          title="Mirrored code output"
-                          style={{
-                            width: "100%",
-                            flex: mirroredOutput.outputMode === "console" ? "0 0 55%" : "1",
-                            border: "none",
-                            background: "#fff",
-                            display: "block",
-                          }}
-                        />
-                      )}
-                      {/* Console / text output */}
-                      {(mirroredOutput.outputMode === "console" || mirroredOutput.outputMode === "text") && (
-                        <pre
-                          style={{
-                            margin: 0,
-                            padding: "8px 12px",
-                            flex: mirroredOutput.outputMode === "console" ? "0 0 45%" : "1",
-                            overflow: "auto",
-                            background: "var(--bg-base)",
-                            color: "var(--text-primary)",
-                            fontFamily: "var(--font-mono)",
-                            fontSize: "12px",
-                            whiteSpace: "pre-wrap",
-                            wordBreak: "break-word",
-                            borderTop:
-                              mirroredOutput.outputMode === "console"
-                                ? "1px solid var(--border)"
-                                : "none",
-                          }}
-                        >
-                          {mirroredOutput.outputMode === "console"
-                            ? mirroredOutput.consoleLines.length > 0
-                              ? mirroredOutput.consoleLines.join("\n")
-                              : "// No console output"
-                            : mirroredOutput.textOutput || "(no output)"}
-                        </pre>
-                      )}
-                    </div>
-                  )}
               </div>
             </div>
           </div>

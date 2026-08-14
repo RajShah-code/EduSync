@@ -35,6 +35,7 @@ const ERASER_SIZES = [10, 20, 40, 60];
 export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   {
     readOnly = false,
+    isActive = true,
     onStrokeEmit,
     onClearEmit,
     onSnapshotEmit,
@@ -144,9 +145,10 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
   // Stylus button / Context menu and Keyboard shortcuts
   useEffect(() => {
-    if (readOnly) return;
+    if (readOnly || !isActive) return;
 
     const handleKeyDown = (e) => {
+      if (!isActive) return;
       // Ignore key events when user is typing in form inputs
       const targetTag = e.target?.tagName;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(targetTag)) return;
@@ -200,7 +202,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       }
       window.removeEventListener("keydown", handleKeyDown, true);
     };
-  }, [readOnly]);
+  }, [readOnly, isActive]);
 
   // Resize listener to ensure sharp canvas resolution matching inner canvas wrapper bounds
   useEffect(() => {

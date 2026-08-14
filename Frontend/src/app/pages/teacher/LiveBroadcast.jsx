@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useOutletContext, useLocation } from "react-router";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
+import { CodeOutputPanel } from "../../components/CodeOutputPanel";
 import { Button } from "../../components/ui/button";
 import { StatusBadge } from "../../components/StatusBadge";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
@@ -337,6 +338,8 @@ export function LiveBroadcast() {
   //   'console' — iframe (top) + console text (bottom) for JavaScript
   //   'text'    — plain pre text for Python stdout
   const [outputMode, setOutputMode] = useState("none");
+  const [outputDockPosition, setOutputDockPosition] = useState("bottom"); // 'bottom' | 'right' | 'left'
+  const [outputPanelSize, setOutputPanelSize] = useState(220);
   const [iframeSrcdoc, setIframeSrcdoc] = useState("");
   const [iframeKey, setIframeKey] = useState(0);
   const [consoleLines, setConsoleLines] = useState([]);
@@ -2091,108 +2094,90 @@ export function LiveBroadcast() {
                   </button>
                 </div>
 
-                {/* Main Editor Slot — Whiteboard Canvas and Monaco Editor both permanently mounted, toggled via CSS display */}
-                <div style={{ flex: 1, minHeight: 0, overflow: "hidden", position: "relative" }}>
+                {/* Resizable / Dockable Flex Container — sits flush against editor with no dead gap */}
+                <div
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    minWidth: 0,
+                    display: "flex",
+                    flexDirection: outputDockPosition === "bottom" ? "column" : "row",
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  {/* Main Editor Slot — Whiteboard Canvas and Monaco Editor both permanently mounted */}
                   <div
                     style={{
-                      height: "100%",
-                      width: "100%",
-                      display: editorLanguage === "whiteboard" ? "block" : "none",
+                      flex: 1,
+                      minHeight: 0,
+                      minWidth: 0,
+                      overflow: "hidden",
+                      position: "relative",
+                      order: outputDockPosition === "left" ? 1 : 0,
                     }}
                   >
-                    <WhiteboardCanvas
-                      ref={whiteboardRef}
-                      readOnly={false}
-                      initialStrokes={[...teacherWhiteboardStrokesRef.current]}
-                      initialBgColor={teacherWhiteboardBgColorRef.current}
-                      onStrokeEmit={handleWhiteboardStroke}
-                      onClearEmit={handleWhiteboardClear}
-                      onSnapshotEmit={handleWhiteboardSync}
-                      onSyncEmit={handleWhiteboardSync}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      height: "100%",
-                      width: "100%",
-                      display: editorLanguage !== "whiteboard" ? "block" : "none",
-                    }}
-                  >
-                    <Editor
-                      height="100%"
-                      language={editorLanguage === "plaintext" ? "plaintext" : editorLanguage}
-                      theme="vs-dark"
-                      value={editorCode}
-                      onChange={handleEditorChange}
-                      options={{
-                        fontSize: 14,
-                        fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
-                        minimap: { enabled: false },
-                        wordWrap: "on",
-                        scrollBeyondLastLine: false,
-                        padding: { top: 12, bottom: 12 },
-                        lineNumbers: "on",
-                        renderLineHighlight: "line",
-                        tabSize: 2,
-                        automaticLayout: true,
+                    <div
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        display: editorLanguage === "whiteboard" ? "block" : "none",
                       }}
-                    />
-                  </div>
-                </div>
-
-                {/* Output panel — shown after Run is clicked */}
-                {outputMode !== "none" && (
-                  <div
-                    style={{
-                      height: "220px",
-                      flexShrink: 0,
-                      borderTop: "1px solid var(--border)",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    {/* Rendered iframe (HTML / CSS / JS DOM) */}
-                    {(outputMode === "iframe" || outputMode === "console") && (
-                      <iframe
-                        key={iframeKey}
-                        srcDoc={iframeSrcdoc}
-                        sandbox="allow-scripts"
-                        title="Code output"
-                        style={{
-                          width: "100%",
-                          flex: outputMode === "console" ? "0 0 55%" : "1",
-                          border: "none",
-                          background: "#fff",
-                          display: "block",
+                    >
+                      <WhiteboardCanvas
+                        ref={whiteboardRef}
+                        readOnly={false}
+                        isActive={editorLanguage === "whiteboard"}
+                        initialStrokes={[...teacherWhiteboardStrokesRef.current]}
+                        initialBgColor={teacherWhiteboardBgColorRef.current}
+                        onStrokeEmit={handleWhiteboardStroke}
+                        onClearEmit={handleWhiteboardClear}
+                        onSyncEmit={handleWhiteboardSync}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        display: editorLanguage !== "whiteboard" ? "block" : "none",
+                      }}
+                    >
+                      <Editor
+                        height="100%"
+                        language={editorLanguage === "plaintext" ? "plaintext" : editorLanguage}
+                        theme="vs-dark"
+                        value={editorCode}
+                        onChange={handleEditorChange}
+                        options={{
+                          fontSize: 14,
+                          fontFamily: "'JetBrains Mono', 'Consolas', 'Monaco', monospace",
+                          minimap: { enabled: false },
+                          wordWrap: "on",
+                          scrollBeyondLastLine: false,
+                          padding: { top: 12, bottom: 12 },
+                          lineNumbers: "on",
+                          renderLineHighlight: "line",
+                          tabSize: 2,
+                          automaticLayout: true,
                         }}
                       />
-                    )}
-                    {/* Console / text output */}
-                    {(outputMode === "console" || outputMode === "text") && (
-                      <pre
-                        style={{
-                          margin: 0,
-                          padding: "8px 12px",
-                          flex: outputMode === "console" ? "0 0 45%" : "1",
-                          overflow: "auto",
-                          background: "var(--bg-base)",
-                          color: "var(--text-primary)",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "12px",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
-                          borderTop: outputMode === "console" ? "1px solid var(--border)" : "none",
-                        }}
-                      >
-                        {outputMode === "console"
-                          ? consoleLines.length > 0
-                            ? consoleLines.join("\n")
-                            : "// No console output"
-                          : textOutput || "(no output)"}
-                      </pre>
-                    )}
+                    </div>
                   </div>
-                )}
+
+                  {/* Shared Dockable Code Output Panel */}
+                  <CodeOutputPanel
+                    outputMode={outputMode}
+                    iframeSrcdoc={iframeSrcdoc}
+                    iframeKey={iframeKey}
+                    consoleLines={consoleLines}
+                    textOutput={textOutput}
+                    dockPosition={outputDockPosition}
+                    onDockChange={setOutputDockPosition}
+                    size={outputPanelSize}
+                    onSizeChange={setOutputPanelSize}
+                    resizable={true}
+                  />
+                </div>
               </div>
             )}
           </div>
