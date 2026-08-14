@@ -17,6 +17,7 @@ export function CodeOutputPanel({
   size = 220,
   onSizeChange,
   resizable = true,
+  showIframe = true,
 }) {
   const panelRef = useRef(null);
   const isDraggingRef = useRef(false);
@@ -36,6 +37,8 @@ export function CodeOutputPanel({
   if (outputMode === "none") {
     return null;
   }
+
+  const shouldRenderIframe = outputMode === "iframe" || (outputMode === "console" && showIframe);
 
   const handleMouseDown = (e) => {
     if (!resizable || !onSizeChange) return;
@@ -118,7 +121,7 @@ export function CodeOutputPanel({
       <div className="flex items-center justify-between px-3 py-1 bg-bg-elevated border-b border-border text-[11px] font-mono text-text-muted flex-shrink-0 h-7">
         <span className="font-semibold text-text-secondary">Output</span>
 
-        {/* Dock position selector dropdown (Only when resizable / teacher / active control) */}
+        {/* Dock position selector dropdown */}
         {resizable && onDockChange && (
           <div className="relative" ref={dropdownRef}>
             <button
@@ -191,8 +194,8 @@ export function CodeOutputPanel({
 
       {/* Main output content area */}
       <div className="flex-1 flex flex-col min-h-0 w-full overflow-hidden">
-        {/* Rendered iframe (HTML / CSS / JS DOM) */}
-        {(outputMode === "iframe" || outputMode === "console") && (
+        {/* Rendered iframe (HTML / CSS / JS DOM with output) */}
+        {shouldRenderIframe && (
           <iframe
             key={iframeKey}
             srcDoc={iframeSrcdoc}
@@ -214,7 +217,7 @@ export function CodeOutputPanel({
             style={{
               margin: 0,
               padding: "8px 12px",
-              flex: outputMode === "console" ? "0 0 45%" : "1",
+              flex: outputMode === "console" && shouldRenderIframe ? "0 0 45%" : "1",
               overflow: "auto",
               background: "var(--bg-base)",
               color: "var(--text-primary)",
@@ -222,7 +225,7 @@ export function CodeOutputPanel({
               fontSize: "12px",
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
-              borderTop: outputMode === "console" ? "1px solid var(--border)" : "none",
+              borderTop: outputMode === "console" && shouldRenderIframe ? "1px solid var(--border)" : "none",
             }}
           >
             {outputMode === "console"

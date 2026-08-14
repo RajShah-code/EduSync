@@ -44,13 +44,22 @@ const buildJsSrcdoc = (code) =>
   `<!DOCTYPE html><html><head>
 <script>
 (function(){
+  const logs = [];
   const send=(m,args)=>{
     const msg=args.map(a=>{try{return typeof a==='object'?JSON.stringify(a,null,2):String(a)}catch{return String(a)}}).join(' ');
+    logs.push({method:m,msg});
     window.parent.postMessage({type:'__edusync_student_console__',method:m,msg},'*');
   };
   ['log','warn','error','info'].forEach(fn=>{console[fn]=(...a)=>send(fn,a);});
   window.onerror=(msg,_,line)=>{send('error',['Line '+line+': '+msg]);return true;};
   window.onunhandledrejection=e=>{send('error',['Unhandled promise: '+e.reason]);};
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      const hasVisibleOutput = document.body.children.length > 1 || (document.body.innerText || '').trim().length > 0;
+      window.parent.postMessage({type:'__edusync_student_js_done__', logs, hasVisibleOutput}, '*');
+    }, 50);
+  });
 })();
 <\/script>
 </head>
@@ -149,6 +158,8 @@ export function LiveSession() {
     consoleLines: [],
     textOutput: "",
   });
+  const [mirroredOutputDockPosition, setMirroredOutputDockPosition] = useState("bottom");
+  const [mirroredOutputPanelSize, setMirroredOutputPanelSize] = useState(220);
 
   // ── Student-local editor state (NEVER synced back to teacher or other students) ──
   const [studentCode, setStudentCode] = useState("");
@@ -156,6 +167,7 @@ export function LiveSession() {
   const [studentOutputMode, setStudentOutputMode] = useState("none");
   const [studentOutputDockPosition, setStudentOutputDockPosition] = useState("bottom");
   const [studentOutputPanelSize, setStudentOutputPanelSize] = useState(220);
+  const [studentJsHasVisibleOutput, setStudentJsHasVisibleOutput] = useState(false);
   const [studentIframeSrcdoc, setStudentIframeSrcdoc] = useState("");
   const [studentIframeKey, setStudentIframeKey] = useState(0);
   const [studentConsoleLines, setStudentConsoleLines] = useState([]);
@@ -282,11 +294,23 @@ export function LiveSession() {
   // cross-contamination with the teacher's iframe in the same browser session.
   useEffect(() => {
     const handler = (event) => {
-      if (event.data?.type !== "__edusync_student_console__") return;
-      const { method, msg } = event.data;
-      const prefix =
-        method === "error" ? "❌" : method === "warn" ? "⚠️" : method === "info" ? "ℹ️" : "›";
-      setStudentConsoleLines((prev) => [...prev, `${prefix} ${msg}`]);
+      if (event.data?.type === "__edusync_student_console__") {
+        const { method, msg } = event.data;
+        const prefix =
+          method === "error" ? "❌" : method === "warn" ? "⚠️" : method === "info" ? "ℹ️" : "›";
+        setStudentConsoleLines((prev) => [...prev, `${prefix} ${msg}`]);
+      } else if (event.data?.type === "__edusync_student_js_done__") {
+        const { logs, hasVisibleOutput } = event.data;
+        setStudentJsHasVisibleOutput(Boolean(hasVisibleOutput));
+        if (logs) {
+          const lines = logs.map((l) => {
+            const prefix =
+              l.method === "error" ? "❌" : l.method === "warn" ? "⚠️" : l.method === "info" ? "ℹ️" : "›";
+            return `${prefix} ${l.msg}`;
+          });
+          setStudentConsoleLines(lines);
+        }
+      }
     };
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
@@ -1119,7 +1143,7 @@ export function LiveSession() {
                       minHeight: 0,
                       minWidth: 0,
                       display: "flex",
-                      flexDirection: (editingEnabled ? studentOutputDockPosition : "bottom") === "bottom" ? "column" : "row",
+                      flexDirection: (editingEnabled ? studentOutputDockPosition : mirroredOutputDockPosition) === "bottom" ? "column" : "row",
                       overflow: "hidden",
                       position: "relative",
                     }}
@@ -1132,7 +1156,7 @@ export function LiveSession() {
                         minWidth: 0,
                         overflow: "hidden",
                         position: "relative",
-                        order: (editingEnabled ? studentOutputDockPosition : "bottom") === "left" ? 1 : 0,
+                        order: (editingEnabled ? studentOutputDockPosition : mirroredOutputDockPosition) === "left" ? 1 : 0,
                       }}
                     >
                       <div
@@ -1194,6 +1218,7 @@ export function LiveSession() {
                         size={studentOutputPanelSize}
                         onSizeChange={setStudentOutputPanelSize}
                         resizable={true}
+                        showIframe={studentOutputMode !== "console" || studentJsHasVisibleOutput}
                       />
                     )}
 
@@ -1205,9 +1230,12 @@ export function LiveSession() {
                         iframeKey={mirroredOutput.iframeSrcdoc}
                         consoleLines={mirroredOutput.consoleLines}
                         textOutput={mirroredOutput.textOutput}
-                        dockPosition="bottom"
-                        size={220}
-                        resizable={false}
+                        dockPosition={mirroredOutputDockPosition}
+                        onDockChange={setMirroredOutputDockPosition}
+                        size={mirroredOutputPanelSize}
+                        onSizeChange={setMirroredOutputPanelSize}
+                        resizable={true}
+                        showIframe={mirroredOutput.outputMode !== "console" || mirroredOutput.showIframe !== false}
                       />
                     )}
                   </div>

@@ -108,7 +108,8 @@ const buildJsSrcdoc = (code) =>
 
   window.addEventListener('load', () => {
     setTimeout(() => {
-      window.parent.postMessage({type:'__edusync_js_done__', logs}, '*');
+      const hasVisibleOutput = document.body.children.length > 1 || (document.body.innerText || '').trim().length > 0;
+      window.parent.postMessage({type:'__edusync_js_done__', logs, hasVisibleOutput}, '*');
     }, 50);
   });
 })();
@@ -340,6 +341,7 @@ export function LiveBroadcast() {
   const [outputMode, setOutputMode] = useState("none");
   const [outputDockPosition, setOutputDockPosition] = useState("bottom"); // 'bottom' | 'right' | 'left'
   const [outputPanelSize, setOutputPanelSize] = useState(220);
+  const [jsHasVisibleOutput, setJsHasVisibleOutput] = useState(false);
   const [iframeSrcdoc, setIframeSrcdoc] = useState("");
   const [iframeKey, setIframeKey] = useState(0);
   const [consoleLines, setConsoleLines] = useState([]);
@@ -402,13 +404,16 @@ export function LiveBroadcast() {
           method === "error" ? "❌" : method === "warn" ? "⚠️" : method === "info" ? "ℹ️" : "›";
         setConsoleLines((prev) => [...prev, `${prefix} ${msg}`]);
       } else if (event.data?.type === "__edusync_js_done__") {
-        const { logs } = event.data;
-        const lines = logs.map(l => {
-          const prefix = l.method === "error" ? "❌" : l.method === "warn" ? "⚠️" : l.method === "info" ? "ℹ️" : "›";
+        const { logs, hasVisibleOutput } = event.data;
+        const visible = Boolean(hasVisibleOutput);
+        setJsHasVisibleOutput(visible);
+        const lines = logs.map((l) => {
+          const prefix =
+            l.method === "error" ? "❌" : l.method === "warn" ? "⚠️" : l.method === "info" ? "ℹ️" : "›";
           return `${prefix} ${l.msg}`;
         });
         setConsoleLines(lines);
-        emitCodeOutput("console", "", buildJsSrcdoc(editorCodeRef.current), lines);
+        emitCodeOutput("console", "", buildJsSrcdoc(editorCodeRef.current), lines, visible);
       }
     };
     window.addEventListener("message", handler);
@@ -1580,7 +1585,7 @@ export function LiveBroadcast() {
     setMicMuted(newMuted);
   };
 
-  const emitCodeOutput = (outMode, txtOut, ifrSrc, conLines) => {
+  const emitCodeOutput = (outMode, txtOut, ifrSrc, conLines, showIfr = true) => {
     const socket = getSocket();
     if (socket && sessionInfoRef.current) {
       socket.emit("teacher:code_output", {
@@ -1590,6 +1595,7 @@ export function LiveBroadcast() {
           textOutput: txtOut,
           iframeSrcdoc: ifrSrc,
           consoleLines: conLines,
+          showIframe: showIfr,
         },
       });
     }
@@ -2176,6 +2182,7 @@ export function LiveBroadcast() {
                     size={outputPanelSize}
                     onSizeChange={setOutputPanelSize}
                     resizable={true}
+                    showIframe={outputMode !== "console" || jsHasVisibleOutput}
                   />
                 </div>
               </div>
