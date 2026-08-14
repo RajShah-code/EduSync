@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 
 // Monday through Saturday (day_of_week 0–5)
 const DAYS = [
@@ -42,6 +43,22 @@ const DAYS = [
 function formatTimeHHMM(timeStr) {
   if (!timeStr) return "09:00";
   return timeStr.slice(0, 5);
+}
+
+/**
+ * Extract subject acronym e.g. "Data Structure & Algorithm" -> "DSA"
+ */
+function getSubjectAcronym(subject) {
+  if (!subject || typeof subject !== "string") return "";
+  const tokens = subject.trim().split(/\s+/);
+  const chars = [];
+  for (const token of tokens) {
+    const match = token.match(/[a-zA-Z0-9]/);
+    if (match) {
+      chars.push(match[0].toUpperCase());
+    }
+  }
+  return chars.join("") || subject;
 }
 
 export function TimetableSetup() {
@@ -592,7 +609,7 @@ export function TimetableSetup() {
                         /* Empty Cell: Dashed border with (+) Add Lecture */
                         <button
                           onClick={() => handleOpenAddModal(day.id)}
-                          className="w-full h-28 rounded-xl border border-dashed border-border/80 hover:border-accent-info/50 hover:bg-accent-info/5 transition-all flex flex-col items-center justify-center gap-1.5 text-text-secondary hover:text-accent-info cursor-pointer group/cell focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                          className="w-full min-h-28 h-auto p-3 rounded-xl border border-dashed border-border/80 hover:border-accent-info/50 hover:bg-accent-info/5 transition-all flex flex-col items-center justify-center gap-1.5 text-text-secondary hover:text-accent-info cursor-pointer group/cell focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                         >
                           <div className="w-7 h-7 rounded-full bg-bg-base border border-border/60 group-hover/cell:border-accent-info/40 flex items-center justify-center transition-colors">
                             <Plus className="w-4 h-4" />
@@ -604,7 +621,7 @@ export function TimetableSetup() {
                       ) : (
                         /* Filled Cell Card */
                         <div
-                          className={`group/card relative rounded-xl p-3 border transition-all shadow-md flex flex-col justify-between h-28 ${
+                          className={`group/card relative rounded-xl p-3 border transition-all shadow-md flex flex-col justify-between min-h-28 h-auto gap-2 ${
                             entry.session_type === "lab"
                               ? "bg-accent-live/10 border-accent-live/30 hover:border-accent-live/60 text-accent-live"
                               : "bg-accent-info/10 border-accent-info/30 hover:border-accent-info/60 text-accent-info"
@@ -628,35 +645,37 @@ export function TimetableSetup() {
                             </button>
                           </div>
 
-                          {/* 1st Line: Time Range (Promoted Dominant Element) */}
-                          <div className="flex items-center justify-between pr-14">
-                            <span className="font-semibold font-mono text-[length:var(--text-base)] tracking-tight">
-                              {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
-                            </span>
-                          </div>
-
-                          {/* 2nd Line: Subject */}
-                          <div className="font-medium text-text-primary text-[length:var(--text-sm)] line-clamp-1 flex items-center gap-1.5">
+                          {/* 1st Line: Subject (Reordered Hierarchy) with Acronym & Styled Tooltip */}
+                          <div className="font-semibold text-text-primary text-[length:var(--text-sm)] flex items-center gap-1.5 pr-14">
                             {entry.session_type === "lab" ? (
                               <FlaskConical className="w-3.5 h-3.5 text-accent-live shrink-0" />
                             ) : (
                               <BookOpen className="w-3.5 h-3.5 text-accent-info shrink-0" />
                             )}
-                            <span className="truncate" title={entry.subject}>
-                              {entry.subject}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-help font-bold tracking-wide">
+                                  {getSubjectAcronym(entry.subject)}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="bg-bg-elevated border border-border text-text-primary text-xs font-medium px-2.5 py-1.5 rounded-md shadow-lg z-50">
+                                {entry.subject}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+
+                          {/* 2nd Line: Time Range */}
+                          <div className="flex items-center justify-between font-mono text-[length:var(--text-xs)] font-medium text-text-secondary">
+                            <span>
+                              {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
                             </span>
                           </div>
 
                           {/* 3rd Line: Class / Room & Alert indicator */}
-                          <div className="flex items-center justify-between text-[length:var(--text-xs)] text-text-secondary pt-1 border-t border-border/40">
-                            <div className="flex items-center gap-1 truncate">
-                              <School className="w-3 h-3 text-text-secondary shrink-0" />
-                              <span
-                                className="truncate"
-                                title={`${entry.class_name || "Class #" + entry.class_id}${
-                                  entry.room ? ` • ${entry.room}` : ""
-                                }`}
-                              >
+                          <div className="flex items-start justify-between text-[length:var(--text-xs)] text-text-secondary pt-1.5 border-t border-border/40 gap-1">
+                            <div className="flex items-start gap-1 min-w-0">
+                              <School className="w-3 h-3 text-text-secondary shrink-0 mt-0.5" />
+                              <span className="break-words leading-tight">
                                 {entry.class_name || "Class #" + entry.class_id}
                                 {entry.room && ` • ${entry.room}`}
                               </span>
@@ -667,9 +686,17 @@ export function TimetableSetup() {
                                 className="flex items-center gap-1 text-accent-warning shrink-0"
                                 title="Reminder enabled"
                               >
-                                <Bell className="w-3 h-3" />
+                                <Bell className="w-3.5 h-3.5" />
                               </span>
-                            ) : null}
+                            ) : (
+                              <span
+                                className="relative inline-flex items-center justify-center shrink-0"
+                                title="Reminder disabled"
+                              >
+                                <Bell className="w-3.5 h-3.5 text-text-muted" />
+                                <X className="absolute -bottom-0.5 -right-0.5 w-2 h-2 text-text-muted stroke-[3]" />
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
