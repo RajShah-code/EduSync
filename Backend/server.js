@@ -21,6 +21,7 @@ const filesRoutes = require('./routes/filesRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const usersRoutes = require('./routes/usersRoutes');
 const timetableRoutes = require('./routes/timetableRoutes');
+const studentTimetableRoutes = require('./routes/studentTimetableRoutes');
 const { initReminderCron } = require('./jobs/reminderCron');
 const { invalidateAnalyticsCache } = require('./controllers/analyticsController');
 const protect = require('./middleware/authMiddleware');
@@ -59,6 +60,7 @@ app.use('/doubts', doubtsRoutes);
 app.use('/exams', examsRoutes);
 app.use('/analytics', protect(['teacher']), analyticsRoutes);
 app.use('/timetable', timetableRoutes);
+app.use('/student-timetable', studentTimetableRoutes);
 
 
 app.get('/', (req, res) => { res.send('EduSync backend running'); });
