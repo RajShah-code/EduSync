@@ -105,18 +105,28 @@ const getStudentAttendance = async (req, res) => {
           COALESCE(a.id, -s.id)::int AS id,
           COALESCE(a.status, 'absent') AS status,
           s.lecture_name,
-          s.started_at
+          s.subject,
+          s.started_at,
+          u.name AS teacher_name
         FROM sessions s
         JOIN session_classes sc ON s.id = sc.session_id
+        LEFT JOIN users u ON s.teacher_id = u.id
         LEFT JOIN attendance a ON s.id = a.session_id AND a.student_id = ${student_id}
         WHERE sc.class_id = ${user.class_id}
         ORDER BY s.started_at DESC
       `;
     } else {
       list = await sql`
-        SELECT a.id, a.status, s.lecture_name, s.started_at
+        SELECT 
+          a.id, 
+          a.status, 
+          s.lecture_name, 
+          s.subject,
+          s.started_at,
+          u.name AS teacher_name
         FROM attendance a
         JOIN sessions s ON a.session_id = s.id
+        LEFT JOIN users u ON s.teacher_id = u.id
         WHERE a.student_id = ${student_id}
         ORDER BY s.started_at DESC
       `;
