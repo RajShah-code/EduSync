@@ -203,28 +203,28 @@ export function TeacherDashboard() {
 
         {/* Student Overview */}
         <div className="grid grid-cols-4 gap-4">
-          <div className="p-4 bg-bg-base rounded border border-border">
-            <div className="text-2xl font-mono font-semibold text-text-primary">
+          <div className="p-5 bg-bg-base rounded border border-border">
+            <div className="text-2xl font-mono font-semibold text-text-primary [font-variant-numeric:tabular-nums]">
               {mockStats.connectedStudents}
             </div>
             <div className="text-xs text-text-secondary mt-1">
               TOTAL CONNECTED
             </div>
           </div>
-          <div className="p-4 bg-bg-base rounded border border-accent-success/20">
-            <div className="text-2xl font-mono font-semibold text-accent-success">
+          <div className="p-5 bg-bg-base rounded border border-accent-success/20">
+            <div className="text-2xl font-mono font-semibold text-accent-success [font-variant-numeric:tabular-nums]">
               {mockStats.activeStudents}
             </div>
             <div className="text-xs text-text-secondary mt-1">ACTIVE</div>
           </div>
-          <div className="p-4 bg-bg-base rounded border border-accent-warning/20">
-            <div className="text-2xl font-mono font-semibold text-accent-warning">
+          <div className="p-5 bg-bg-base rounded border border-accent-warning/20">
+            <div className="text-2xl font-mono font-semibold text-accent-warning [font-variant-numeric:tabular-nums]">
               {mockStats.idleStudents}
             </div>
             <div className="text-xs text-text-secondary mt-1">NOT VIEWING</div>
           </div>
-          <div className="p-4 bg-bg-base rounded border border-border">
-            <div className="text-2xl font-mono font-semibold text-text-muted">
+          <div className="p-5 bg-bg-base rounded border border-border">
+            <div className="text-2xl font-mono font-semibold text-text-muted [font-variant-numeric:tabular-nums]">
               {mockStats.offlineStudents}
             </div>
             <div className="text-xs text-text-secondary mt-1">OFFLINE</div>
@@ -236,7 +236,7 @@ export function TeacherDashboard() {
       <div data-tour="teacher-todays-schedule" className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-emerald-400" />
+            <Calendar className="w-5 h-5 text-accent-success" />
             Today's Schedule ({todayName})
           </h2>
           {hasAnyTimetable && (
@@ -252,13 +252,13 @@ export function TeacherDashboard() {
 
         {loadingTimetable ? (
           <div className="p-8 bg-bg-surface border border-border rounded-lg flex items-center justify-center gap-2 text-text-muted">
-            <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-accent-success" />
             <span className="text-sm">Loading today's schedule...</span>
           </div>
         ) : !hasAnyTimetable ? (
           /* EMPTY STATE 1: No Timetable Configured At All */
           <div className="p-8 bg-bg-surface border border-border rounded-lg text-center space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-xl bg-accent-success/10 border border-accent-success/20 text-accent-success flex items-center justify-center mx-auto">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
@@ -269,7 +269,7 @@ export function TeacherDashboard() {
             </div>
             <Button
               onClick={() => navigate("/teacher/timetable")}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium cursor-pointer shadow-lg shadow-emerald-950/40"
+              className="bg-accent-success hover:bg-accent-success/90 text-white text-xs font-medium cursor-pointer shadow-lg shadow-accent-success/20"
             >
               <Plus className="w-4 h-4 mr-1.5" /> Set Up Timetable
             </Button>
@@ -291,7 +291,7 @@ export function TeacherDashboard() {
                   key={entry.id}
                   className={`p-4 rounded-xl border transition-all flex items-center justify-between gap-4 ${
                     status === "ACTIVE"
-                      ? "bg-emerald-950/20 border-emerald-500/50 shadow-lg shadow-emerald-950/30"
+                      ? "bg-accent-success/10 border-accent-success/50 shadow-lg shadow-accent-success/15"
                       : status === "UPCOMING"
                       ? "bg-bg-surface border-border hover:border-border/80"
                       : "bg-bg-base/60 border-border/50 opacity-65"
@@ -301,7 +301,7 @@ export function TeacherDashboard() {
                     {/* Time Badge */}
                     <div className="flex flex-col items-center justify-center px-3 py-2 rounded-lg bg-bg-base border border-border min-w-[110px]">
                       <span className="text-xs font-mono font-bold text-text-primary flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-emerald-400" />
+                        <Clock className="w-3 h-3 text-accent-success" />
                         {entry.start_time.slice(0, 5)}
                       </span>
                       <span className="text-[10px] text-text-muted font-mono mt-0.5">
@@ -313,23 +313,23 @@ export function TeacherDashboard() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-base font-bold text-text-primary flex items-center gap-1.5">
-                          <BookOpen className="w-4 h-4 text-emerald-400" />
+                          <BookOpen className="w-4 h-4 text-accent-success" />
                           {entry.subject}
                         </span>
 
                         {/* Status Badge */}
                         {status === "ACTIVE" && (
-                          <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 animate-pulse">
+                          <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-accent-success/20 border border-accent-success/40 text-accent-success animate-pulse">
                             ACTIVE NOW
                           </span>
                         )}
                         {status === "UPCOMING" && (
-                          <span className="text-[10px] font-medium font-mono px-2 py-0.5 rounded bg-bg-base border border-border text-text-muted">
+                          <span className="text-[10px] font-medium font-mono px-2 py-0.5 rounded-full bg-bg-base border border-border text-text-muted">
                             UPCOMING
                           </span>
                         )}
                         {status === "PAST" && (
-                          <span className="text-[10px] font-medium font-mono px-2 py-0.5 rounded bg-bg-base border border-border/60 text-text-muted">
+                          <span className="text-[10px] font-medium font-mono px-2 py-0.5 rounded-full bg-bg-base border border-border/60 text-text-muted">
                             PAST
                           </span>
                         )}
@@ -341,7 +341,7 @@ export function TeacherDashboard() {
                           {entry.class_name || "Class #" + entry.class_id}
                         </span>
                         {entry.reminder_enabled && (
-                          <span className="flex items-center gap-1 text-amber-400 text-[11px]">
+                          <span className="flex items-center gap-1 text-accent-warning text-[11px]">
                             <Bell className="w-3 h-3" /> {entry.reminder_delay_minutes}m alert
                           </span>
                         )}
@@ -354,7 +354,7 @@ export function TeacherDashboard() {
                     {status === "ACTIVE" ? (
                       <Button
                         onClick={() => handleStartActiveLecture(entry)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-lg shadow-emerald-950/50 cursor-pointer flex items-center gap-1.5"
+                        className="bg-accent-success hover:bg-accent-success/90 text-white font-medium text-xs shadow-lg shadow-accent-success/20 cursor-pointer flex items-center gap-1.5"
                       >
                         <Play className="w-3.5 h-3.5 fill-current" /> Start Now
                       </Button>

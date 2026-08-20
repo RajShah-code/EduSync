@@ -126,125 +126,144 @@ export function StudentSettings() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto w-full">
       <div>
         <h1 className="text-2xl font-semibold text-text-primary">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-text-secondary mt-1">
           Manage your account profile and password settings.
         </p>
       </div>
 
-      {/* Section 1: Profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <User className="h-5 w-5 text-primary" /> Profile
-          </CardTitle>
-          <CardDescription>
-            View and update your profile information.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-                className="opacity-70 cursor-not-allowed bg-muted"
-              />
-            </div>
-            <Button type="submit" disabled={savingProfile}>
-              {savingProfile ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* 2-Column Grid Row for Profile & Change Password Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* Section 1: Profile */}
+        <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+              <User className="h-4 w-4 text-accent-info" /> Profile
+            </CardTitle>
+            <CardDescription className="text-xs text-text-secondary">
+              View and update your profile information.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-xs font-semibold text-text-primary">Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs font-semibold text-text-primary">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    disabled
+                    className="opacity-70 cursor-not-allowed text-text-muted"
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="bg-accent-info hover:bg-accent-info/90 text-white font-medium text-xs"
+                >
+                  {savingProfile ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
 
-      {/* Section 2: Change Password */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Key className="h-5 w-5 text-primary" /> Change Password
-          </CardTitle>
-          <CardDescription>
-            Update your account password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min 8 characters)"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                required
-              />
-            </div>
-            <Button type="submit" disabled={savingPassword}>
-              {savingPassword ? "Updating..." : "Update Password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Section 2: Change Password */}
+        <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+              <Key className="h-4 w-4 text-accent-info" /> Change Password
+            </CardTitle>
+            <CardDescription className="text-xs text-text-secondary">
+              Update your account password.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="currentPassword" className="text-xs font-semibold text-text-primary">Current Password</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="newPassword" className="text-xs font-semibold text-text-primary">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 8 characters)"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword" className="text-xs font-semibold text-text-primary">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={savingPassword}
+                  className="bg-accent-info hover:bg-accent-info/90 text-white font-medium text-xs"
+                >
+                  {savingPassword ? "Updating..." : "Update Password"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Section 3: App Tour */}
-      <Card>
+      <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <HelpCircle className="h-5 w-5 text-primary" /> App Tour
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+            <HelpCircle className="h-4 w-4 text-accent-info" /> App Tour
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs text-text-secondary">
             Replay the guided feature tour for your role.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground mb-4">
+        <CardContent className="space-y-4">
+          <p className="text-xs text-text-secondary">
             Need a refresher on how to navigate EduSync? Launch the interactive spotlight tour anytime.
           </p>
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate("/student", { state: { startTour: true } })}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 text-xs"
           >
             <HelpCircle className="h-4 w-4 text-accent-info" />
             Restart Tour

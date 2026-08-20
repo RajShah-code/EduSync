@@ -18,6 +18,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "../components/ui/utils";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
 import { Toaster } from "sonner";
 
@@ -278,17 +279,15 @@ export function TeacherLayout() {
     <div className="flex h-screen bg-bg-base">
       {/* Sidebar */}
       <aside
-        className="flex flex-col bg-bg-surface"
+        className="flex flex-col bg-bg-surface border-r border-border"
         style={{
           width: "240px",
           minWidth: "240px",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
         }}
       >
         {/* Brand */}
         <div
-          className="px-5 py-4"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          className="px-5 py-4 border-b border-border"
         >
           <div
             className="font-semibold text-text-primary"
@@ -344,30 +343,25 @@ export function TeacherLayout() {
 
         {/* User info */}
         <div
-          className="p-3 space-y-1"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+          className="p-3 space-y-1 border-t border-border"
         >
-          <div className="px-3 py-2">
-            <div className="text-sm font-medium text-text-primary truncate">
-              {displayUser.name || "Teacher"}
+          <div className="px-3 py-2 flex items-center justify-between">
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-text-primary truncate">
+                {displayUser.name || "Teacher"}
+              </div>
+              <div
+                className="font-mono text-text-muted truncate"
+                style={{ fontSize: "11px" }}
+              >
+                {displayUser.email || ""}
+              </div>
             </div>
-            <div
-              className="font-mono text-text-muted truncate"
-              style={{ fontSize: "11px" }}
-            >
-              {displayUser.email || ""}
-            </div>
+            <ThemeToggle />
           </div>
           <button
             onClick={handleLogout}
-            className="btn-press w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:text-accent-critical transition-std"
-            style={{ borderRadius: "8px" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(239,68,68,0.08)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
+            className="btn-press w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
@@ -376,10 +370,9 @@ export function TeacherLayout() {
 
         {/* Version */}
         <div
-          className="px-5 py-3 font-mono text-text-muted text-center"
+          className="px-5 py-3 font-mono text-text-muted text-center border-t border-border"
           style={{
             fontSize: "11px",
-            borderTop: "1px solid rgba(255,255,255,0.04)",
           }}
         >
           v2.4.1

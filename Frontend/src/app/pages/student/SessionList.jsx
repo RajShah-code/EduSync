@@ -22,7 +22,7 @@ function getRelativeTime(isoString) {
 function SessionCard({ session, onJoin }) {
   return (
     <div
-      className="bg-bg-surface border border-border rounded-lg p-5 flex flex-col gap-3 transition-all duration-200 hover:border-accent-info/40 hover:shadow-[0_0_0_1px_rgba(79,142,247,0.15)]"
+      className="bg-bg-surface border border-border rounded-lg p-5 flex flex-col gap-3 shadow-[var(--shadow-card)] transition-all duration-200 hover:border-accent-info/40 hover:shadow-[0_0_0_1px_rgba(79,142,247,0.15)]"
       style={{ animation: "page-enter 220ms ease-out both" }}
     >
       {/* Header: lab room + live dot + relative time */}
@@ -113,7 +113,7 @@ export function SessionList() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6 page-enter">
+    <div className="p-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
       {/* Page header */}
       <div className="space-y-1">
         <div className="flex items-center gap-3">

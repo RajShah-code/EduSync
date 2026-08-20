@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail, Settings } from "lucide-react";
+import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail, Settings, Sun, Moon, CircleUserRound } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { sessionStore } from "../store/sessionStore"; // kept in place but no longer source of truth
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
@@ -21,7 +21,7 @@ import { Toaster, toast } from "sonner";
 const navigation = [
   { name: "Dashboard", href: "/student", icon: Home, dataTour: "student-dashboard-link" },
   { name: "Live Sessions", href: "/student/sessions", icon: Radio, dataTour: "student-sessions-link" },
-  { name: "Email My Folder", href: "/student/email-folder", icon: Mail, dataTour: "student-email-folder-link" },
+  { name: "Email Me", href: "/student/email-folder", icon: Mail, dataTour: "student-email-folder-link" },
   { name: "Attendance", href: "/student/attendance", icon: CalendarCheck, dataTour: "student-attendance-link" },
   { name: "Settings", href: "/student/settings", icon: Settings, dataTour: "student-settings-link" },
 ];
@@ -30,6 +30,23 @@ const navigation = [
 export function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("edusync_theme") || "dark";
+  });
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("edusync_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   const [activeExam, setActiveExam] = useState(null); // { examId, title } | null
 
@@ -566,40 +583,17 @@ export function StudentLayout() {
   return (
     <div className="flex h-screen bg-bg-base">
       {/* Sidebar */}
-      <aside
-        className="flex flex-col bg-bg-surface"
-        style={{
-          width: "240px",
-          minWidth: "240px",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
+      <aside className="w-16 min-w-16 md:w-[240px] md:min-w-[240px] flex flex-col bg-bg-surface border-r border-border transition-all duration-200">
         {/* Brand */}
-        <div
-          className="px-5 py-4"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div
-            className="font-semibold text-text-primary"
-            style={{ fontSize: "15px", letterSpacing: "-0.01em" }}
-          >
-            Lab System
-          </div>
-          <div
-            className="font-mono text-text-muted"
-            style={{
-              fontSize: "11px",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              marginTop: "2px",
-            }}
-          >
-            Student
-          </div>
+        <div className="px-3 md:px-5 py-4 border-b border-border flex items-center gap-2.5 justify-center md:justify-start">
+          <div className="w-7 h-7 bg-bg-surface-3 border border-border rounded-md shrink-0" />
+          <span className="font-mono font-semibold text-text-primary text-[15px] tracking-tight hidden md:inline">
+            EduSync
+          </span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1" style={{ padding: "12px 8px" }}>
+        <nav className="flex-1 p-2 md:p-3 space-y-1">
           {[
             ...navigation,
             ...(activeExam ? [{ name: "Exam", href: `/student/exam/${activeExam.examId}`, icon: FileText }] : []),
@@ -615,64 +609,53 @@ export function StudentLayout() {
                 key={item.name}
                 to={item.href}
                 data-tour={item.dataTour}
+                title={item.name}
                 className={cn(
-                  "flex items-center gap-3 py-2 mb-0.5",
-                  isActive ? "nav-active" : "nav-inactive",
+                  "flex items-center gap-3 px-3 py-2 text-[13.5px] rounded-lg transition-colors mb-0.5 justify-center md:justify-start",
+                  isActive
+                    ? "bg-accent-info/15 text-accent-info font-medium nav-active"
+                    : "text-text-secondary font-normal hover:bg-bg-surface-3 hover:text-text-primary nav-inactive"
                 )}
-                style={{
-                  borderRadius: "8px",
-                  fontSize: "13.5px",
-                  fontWeight: isActive ? 500 : 400,
-                }}
               >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                <span>{item.name}</span>
+                <item.icon className={cn("w-4 h-4 shrink-0", isActive && "text-accent-info")} />
+                <span className="hidden md:inline">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User info */}
-        <div
-          className="p-3 space-y-1"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div className="px-3 py-2">
-            <div className="text-sm font-medium text-text-primary truncate">
-              {displayUser.name || ""}
+        {/* User info & Actions */}
+        <div className="p-2 md:p-3 space-y-1 border-t border-border">
+          {/* Identity & Theme Toggle Row */}
+          <div className="flex items-center justify-center md:justify-between px-2 py-1.5 rounded-lg gap-2">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <CircleUserRound className="w-4 h-4 text-text-secondary shrink-0" />
+              <span className="text-sm font-medium text-text-primary truncate hidden md:inline">
+                {displayUser.name || "Student"}
+              </span>
             </div>
-            <div
-              className="font-mono text-text-muted truncate"
-              style={{ fontSize: "11px" }}
+            <button
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              className="btn-press p-1 text-text-secondary hover:text-text-primary hover:bg-bg-surface-3 rounded-md transition-std shrink-0"
             >
-              {displayUser.roll_no || ""}
-            </div>
+              {theme === "dark" ? (
+                <Sun className="w-4 h-4 text-accent-warning" />
+              ) : (
+                <Moon className="w-4 h-4 text-accent-info" />
+              )}
+            </button>
           </div>
+
+          {/* Logout button */}
           <button
             onClick={handleLogout}
-            className="btn-press w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:text-accent-critical transition-std"
-            style={{ borderRadius: "8px" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(239,68,68,0.08)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
+            title="Logout"
+            className="btn-press w-full flex items-center gap-2.5 px-2 py-1.5 text-sm text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std justify-center md:justify-start"
           >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
+            <LogOut className="w-4 h-4 shrink-0" />
+            <span className="hidden md:inline">Logout</span>
           </button>
-        </div>
-
-        {/* Version */}
-        <div
-          className="px-5 py-3 font-mono text-text-muted text-center"
-          style={{
-            fontSize: "11px",
-            borderTop: "1px solid rgba(255,255,255,0.04)",
-          }}
-        >
-          v2.4.1
         </div>
       </aside>
 

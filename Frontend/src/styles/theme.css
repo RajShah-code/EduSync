@@ -1,24 +1,24 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Base Colors — Apple × Linear dark refinement */
-  --bg-base: #0A0A0F;
-  --bg-surface: #111118;
-  --bg-elevated: #1A1A24;
-  --bg-surface-3: #22222F;
-  --border: #2A2A3A;
+  /* Base Colors — Light Mode (Calm Productivity default) */
+  --bg-base: #F7F6F3;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+  --bg-surface-3: #EFEEEA;
+  --border: #E3E1DB;
 
-  /* Text Colors */
-  --text-primary: #F0F0F5;
-  --text-secondary: #8B8BA7;
-  --text-muted: #4A4A6A;
+  /* Text Colors — Light Mode */
+  --text-primary: #1C1C1F;
+  --text-secondary: #68666E;
+  --text-muted: #706E76;
 
   /* Accent Colors */
   --accent-live: #22C55E;
   --accent-success: #22C55E;
   --accent-warning: #F59E0B;
   --accent-critical: #EF4444;
-  --accent-info: #4F8EF7;
+  --accent-info: #3B6FE0;
   --accent-locked: #A371F7;
 
   /* Typography */
@@ -50,11 +50,14 @@
   --radius-lg: 12px;
   --radius-pill: 999px;
 
-  /* Shadows */
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
-  --shadow-modal: 0 4px 6px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.6);
-  --shadow-focus: 0 0 0 2px rgba(79,142,247,0.4);
+  /* Shadows — Light Mode */
+  --shadow-card: 0 1px 2px rgba(28,28,31,0.04), 0 1px 8px rgba(28,28,31,0.06);
+  --shadow-modal: 0 4px 12px rgba(28,28,31,0.08), 0 24px 48px rgba(28,28,31,0.12);
+  --shadow-focus: 0 0 0 2px rgba(59,111,224,0.35);
   --shadow-glow-live: 0 0 12px rgba(34,197,94,0.4);
+  --shadow-card-soft: 0 1px 2px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --glow-accent-info: 0 0 0 1px rgba(59,111,224,0.15), 0 8px 32px rgba(59,111,224,0.12);
+  --glow-accent-locked: 0 0 0 1px rgba(163,113,247,0.15), 0 8px 32px rgba(163,113,247,0.12);
 
   /* Shadcn/UI compatibility */
   --background: var(--bg-base);
@@ -73,7 +76,8 @@
   --accent-foreground: var(--text-primary);
   --destructive: var(--accent-critical);
   --destructive-foreground: var(--text-primary);
-  --input: var(--bg-surface);
+  --input: var(--border);
+  --input-background: var(--bg-base);
   --ring: var(--accent-info);
   --radius: var(--radius-md);
   --font-weight-medium: 600;
@@ -85,6 +89,29 @@
   --chart-3: var(--accent-warning);
   --chart-4: var(--accent-locked);
   --chart-5: var(--accent-critical);
+}
+
+.dark {
+  /* Base Colors — Dark Mode (Obsidian Command) */
+  --bg-base: #0A0A0F;
+  --bg-surface: #111118;
+  --bg-elevated: #1A1A24;
+  --bg-surface-3: #22222F;
+  --border: #2A2A3A;
+
+  /* Text Colors — Dark Mode */
+  --text-primary: #F0F0F5;
+  --text-secondary: #8B8BA7;
+  --text-muted: #4A4A6A;
+
+  /* Accent Colors — Dark Mode */
+  --accent-info: #4F8EF7;
+
+  /* Shadows — Dark Mode */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3);
+  --shadow-modal: 0 4px 6px rgba(0,0,0,0.5), 0 24px 64px rgba(0,0,0,0.6);
+  --shadow-focus: 0 0 0 2px rgba(79,142,247,0.4);
+  --glow-accent-info: 0 0 0 1px rgba(79,142,247,0.15), 0 8px 32px rgba(79,142,247,0.12);
 }
 
 @theme inline {
@@ -120,6 +147,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-input: var(--input);
+  --color-input-background: var(--input-background);
   --color-ring: var(--ring);
   
   --radius-sm: var(--radius-sm);
@@ -283,9 +311,9 @@
 
 /* Sidebar nav active indicator */
 .nav-active {
-  background: rgba(79, 142, 247, 0.12);
-  color: #4F8EF7;
-  border-left: 3px solid #4F8EF7;
+  background: color-mix(in srgb, var(--accent-info) 12%, transparent);
+  color: var(--accent-info);
+  border-left: 3px solid var(--accent-info);
   padding-left: calc(0.75rem - 3px);
 }
 
@@ -297,13 +325,13 @@
 }
 
 .nav-inactive:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-surface-3);
   color: var(--text-primary);
 }
 
 /* Table row hover */
 .table-row-hover:hover {
-  background: rgba(255, 255, 255, 0.025);
+  background: color-mix(in srgb, var(--text-primary) 2.5%, transparent);
 }
 
 /* Input focus glow */

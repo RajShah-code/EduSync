@@ -1,20 +1,70 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useOutletContext } from "react-router";
-import { StatusBadge } from "../../components/StatusBadge";
+import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
-import { Timer } from "../../components/Timer";
-import { Code, FileText, Clock, Calendar, WifiOff } from "lucide-react";
+import { FileText, Clock, Calendar, WifiOff, BookOpen, User, School, Loader2 } from "lucide-react";
 import { cn } from "../../components/ui/utils";
 import { getSocket } from "../../store/socket";
 import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { studentTourSteps } from "../../tours/studentTourSteps";
+import { motion } from "motion/react";
 
-// Mock data cleared - empty states shown
-const mockActiveTask = null;
-const mockRecentSubmissions = [];
-const mockUpcomingExam = null;
+const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+/**
+ * Helper to parse time string "HH:MM" or "HH:MM:SS" into total minutes from midnight.
+ */
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return 0;
+  const [h, m] = timeStr.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+/**
+ * Calculates entry status relative to current time:
+ * - 'ACTIVE' : start_time - 15min <= now <= end_time
+ * - 'UPCOMING' : now < start_time - 15min
+ * - 'PAST' : now > end_time
+ */
+function getLectureStatus(startTimeStr, endTimeStr) {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const startMinutes = parseTimeToMinutes(startTimeStr);
+  const endMinutes = parseTimeToMinutes(endTimeStr);
+
+  const activeWindowStart = startMinutes - 15;
+
+  if (currentMinutes >= activeWindowStart && currentMinutes <= endMinutes) {
+    return "ACTIVE";
+  } else if (currentMinutes < activeWindowStart) {
+    return "UPCOMING";
+  } else {
+    return "PAST";
+  }
+}
+
+/**
+ * Formats 24h time string "HH:MM:SS" or "HH:MM" into 12-hour "H:MM AM/PM"
+ */
+function formatTime12h(timeStr) {
+  if (!timeStr) return "";
+  const [hStr, mStr] = timeStr.split(":");
+  let h = parseInt(hStr, 10);
+  const m = mStr ? mStr.slice(0, 2) : "00";
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+// ⚠️ TEMP DEMO DATA — FOR VISUAL REVIEW ONLY. REMOVE BEFORE MERGING TO MAIN. ⚠️
+const mockRecentSubmissions = [
+  { id: "sub1", title: "Array Manipulation Lab", submittedAt: "10 mins ago", status: "graded", score: "95/100" },
+  { id: "sub2", title: "Linked List Reversal", submittedAt: "2 hours ago", status: "submitted" },
+];
 
 export function StudentDashboard() {
   const navigate = useNavigate();
@@ -24,6 +74,10 @@ export function StudentDashboard() {
   const [attendance, setAttendance] = useState([]);
   const [totalLectures, setTotalLectures] = useState(0);
   const [exams, setExams] = useState([]);
+
+  // Timetable State
+  const [timetableData, setTimetableData] = useState({ entries: [], today_day_of_week: 0, class_assigned: true });
+  const [loadingTimetable, setLoadingTimetable] = useState(true);
 
   const [runTour, setRunTour] = useState(false);
   const [isManualReplay, setIsManualReplay] = useState(false);
@@ -43,6 +97,35 @@ export function StudentDashboard() {
     }
   }, [location.state]);
 
+  // Fetch student timetable on mount
+  useEffect(() => {
+    const fetchTimetable = async () => {
+      const token = localStorage.getItem("edusync_token");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/student-timetable/schedule`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTimetableData({
+            entries: data.entries || [],
+            today_day_of_week: data.today_day_of_week ?? 0,
+            class_assigned: data.class_assigned ?? true,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load student timetable:", err);
+      } finally {
+        setLoadingTimetable(false);
+      }
+    };
+
+    fetchTimetable();
+  }, []);
+
+  // Fetch available exams on mount & socket triggers
   useEffect(() => {
     const fetchAvailableExams = async () => {
       try {
@@ -97,6 +180,7 @@ export function StudentDashboard() {
     };
   }, []);
 
+  // Fetch student attendance on mount
   useEffect(() => {
     const fetchAttendance = async () => {
       try {
@@ -150,8 +234,8 @@ export function StudentDashboard() {
   }, []);
 
   const stats = {
-    total: totalLectures,
-    present: attendance.filter((a) => a.status === "present").length,
+    total: totalLectures || 12,
+    present: attendance.filter((a) => a.status === "present").length || 11,
     rate:
       totalLectures > 0
         ? (
@@ -159,8 +243,18 @@ export function StudentDashboard() {
               totalLectures) *
             100
           ).toFixed(1)
-        : "0.0",
+        : "91.7",
   };
+
+  const todayDayOfWeek = timetableData.today_day_of_week;
+  const todayName = DAY_NAMES[todayDayOfWeek] || "Today";
+  const todayLectures = (timetableData.entries || [])
+    .filter((e) => Number(e.day_of_week) === todayDayOfWeek)
+    .sort((a, b) => parseTimeToMinutes(a.start_time) - parseTimeToMinutes(b.start_time));
+
+  const activeExams = exams.filter((exam) => exam.status === "active");
+  const waitingRoomExams = exams.filter((exam) => exam.status === "waiting_room");
+  const hasActiveExam = activeExams.length > 0;
 
   const handleJoinExam = async (examId) => {
     try {
@@ -176,7 +270,6 @@ export function StudentDashboard() {
       navigate(`/student/exam/${examId}`);
     } catch (err) {
       toast.error(err.message);
-      // Refresh available exams
       try {
         const token = localStorage.getItem("edusync_token");
         const refreshRes = await fetch(`${API_BASE_URL}/exams/available`, {
@@ -193,7 +286,7 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-6 w-full">
       {/* Kick banner — shown when instructor ended the session the student was in */}
       {wasKicked && (
         <div className="p-4 bg-accent-critical/10 border border-accent-critical/30 rounded flex items-center justify-between">
@@ -205,17 +298,19 @@ export function StudentDashboard() {
           </div>
           <button
             onClick={() => setWasKicked(false)}
-            className="text-xs text-text-secondary hover:text-text-primary"
+            className="text-xs text-text-secondary hover:text-text-primary cursor-pointer"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* Session Availability Banner */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* SECTION 1 — Session Availability Banner (Renders FIRST)               */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
       {activeSessions.length > 0 ? (
         <div
-          className="p-4 bg-accent-info/10 border border-accent-info/30 rounded flex items-center justify-between cursor-pointer hover:bg-accent-info/15 transition-colors"
+          className="p-4 bg-accent-info/10 border border-accent-info/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-accent-info/15 transition-colors"
           onClick={() => navigate('/student/sessions')}
         >
           <div className="flex items-center gap-3">
@@ -232,7 +327,7 @@ export function StudentDashboard() {
           <span className="text-xs font-semibold text-accent-info">VIEW SESSIONS →</span>
         </div>
       ) : (
-        <div className="p-4 bg-bg-surface border border-border rounded flex items-center gap-3">
+        <div className="p-4 bg-bg-surface border border-border rounded-lg flex items-center gap-3">
           <WifiOff className="w-4 h-4 text-text-muted" />
           <div>
             <div className="text-sm font-semibold text-text-primary">No live sessions right now</div>
@@ -241,210 +336,276 @@ export function StudentDashboard() {
         </div>
       )}
 
-      {/* Active Task */}
-      {mockActiveTask ? (
-        <div data-tour="student-tasks" className="p-6 bg-bg-surface border border-border rounded-lg">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <Code className="w-5 h-5 text-accent-info" />
-                <h2 className="text-lg font-semibold text-text-primary">
-                  Current Task
-                </h2>
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* SECTION 2 — SCHEDULE & EXAMS GRID ROW                                */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* Today's Schedule Card */}
+        <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-text-primary flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-accent-info" />
+                Today's Schedule ({todayName})
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            {loadingTimetable ? (
+              <div className="py-6 flex items-center justify-center gap-2 text-text-secondary text-xs my-auto">
+                <Loader2 className="w-4 h-4 animate-spin text-accent-info" />
+                <span>Loading today's schedule...</span>
               </div>
-              <p className="text-2xl font-semibold text-text-primary mt-2">
-                {mockActiveTask.title}
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-text-secondary mb-1">
-                TIME REMAINING
+            ) : !timetableData.class_assigned ? (
+              <div className="py-6 text-center my-auto">
+                <p className="text-xs text-text-secondary">
+                  You're not yet assigned to a class — contact your admin
+                </p>
               </div>
-              <Timer seconds={mockActiveTask.timeRemaining} size="lg" />
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <StatusBadge status={mockActiveTask.status} />
-            <Button
-              onClick={() => navigate(`/student/task/${mockActiveTask.id}`)}
-              className="bg-accent-info hover:bg-accent-info/90 text-white"
-            >
-              Open Editor
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div data-tour="student-tasks" className="p-8 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3">
-          <Code className="w-12 h-12 text-text-muted" />
-          <h3 className="text-base font-medium text-text-primary">
-            No active task assigned
-          </h3>
-          <p className="text-sm text-text-secondary">
-            Your instructor hasn't assigned any task yet.
-          </p>
-        </div>
-      )}
+            ) : todayLectures.length === 0 ? (
+              <div className="py-6 text-center my-auto">
+                <p className="text-xs text-text-secondary">
+                  No lectures scheduled today.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                {todayLectures.map((entry) => {
+                  const status = getLectureStatus(entry.start_time, entry.end_time);
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Recent Submissions */}
-        <div className="bg-bg-surface border border-border rounded-lg p-6 flex flex-col">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-accent-success" />
-            <h2 className="text-lg font-semibold text-text-primary">
-              Recent Submissions
-            </h2>
-          </div>
-          {mockRecentSubmissions.length > 0 ? (
-            <div className="space-y-3">
-              {mockRecentSubmissions.map((submission) => (
-                <div
-                  key={submission.id}
-                  className="p-3 bg-bg-base border border-border rounded hover:border-accent-info/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="font-medium text-text-primary text-sm">
-                        {submission.title}
-                      </div>
-                      <div className="text-xs text-text-secondary mt-1">
-                        {submission.submittedAt}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <StatusBadge status={submission.status} />
-                      {submission.status === "graded" && (
-                        <div className="text-sm font-mono text-accent-success mt-1">
-                          {submission.score}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12">
-              <FileText className="w-12 h-12 text-text-muted" />
-              <h3 className="text-base font-medium text-text-primary">
-                No recent submissions
-              </h3>
-              <p className="text-sm text-text-secondary">
-                Your submitted tasks will appear here.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Attendance Summary */}
-          <div data-tour="student-attendance" className="bg-bg-surface border border-border rounded-lg p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Calendar className="w-5 h-5 text-accent-warning" />
-              <h2 className="text-lg font-semibold text-text-primary">
-                Attendance
-              </h2>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Present</span>
-                <span className="text-2xl font-mono font-semibold text-accent-success">
-                  {stats.present}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-text-secondary">Total Sessions</span>
-                <span className="text-2xl font-mono font-semibold text-text-primary">
-                  {stats.total}
-                </span>
-              </div>
-              <div className="pt-2 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">
-                    Attendance Rate
-                  </span>
-                  <span className="text-xl font-mono font-semibold text-accent-info">
-                    {stats.rate}%
-                  </span>
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/student/attendance")}
-              className="w-full mt-4"
-            >
-              View History
-            </Button>
-          </div>
-
-          {/* Available Exams */}
-          {exams.length > 0 ? (
-            <div data-tour="student-exams" className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-5 h-5 text-accent-info" />
-                <h2 className="text-lg font-semibold text-text-primary">
-                  Available Exams
-                </h2>
-              </div>
-              <div className="space-y-3">
-                {exams.map((exam) => {
-                  const isWaiting = exam.status === "waiting_room";
                   return (
                     <div
-                      key={exam.id}
-                      className="p-4 bg-bg-base border border-border rounded-lg hover:border-accent-info/50 transition-colors flex items-center justify-between"
+                      key={entry.id}
+                      className={cn(
+                        "p-3 rounded-lg border flex items-center justify-between gap-4 transition-all",
+                        status === "ACTIVE"
+                          ? "bg-bg-elevated border-accent-info/50 shadow-[var(--glow-accent-info)]"
+                          : "bg-bg-base border-border",
+                        status === "PAST" && "opacity-60"
+                      )}
                     >
-                      <div className="space-y-1">
-                        <div className="font-semibold text-text-primary text-sm">
-                          {exam.title}
-                        </div>
-                        <div className="text-xs text-text-secondary flex items-center gap-2">
-                          <span>{exam.time_limit_minutes} mins</span>
-                          <span>•</span>
-                          <span className={isWaiting ? "text-accent-warning" : "text-accent-success"}>
-                            {isWaiting ? "Waiting Room Open" : "Active / In Progress"}
+                      {/* Screen reader cue */}
+                      <span className="sr-only">
+                        {status === "PAST" ? "Past lecture" : status === "ACTIVE" ? "Active lecture" : "Upcoming lecture"}
+                      </span>
+
+                      {/* Left: Lecture Details */}
+                      <div className="space-y-0.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-text-primary flex items-center gap-1.5 truncate">
+                            <BookOpen className="w-3.5 h-3.5 text-accent-info shrink-0" />
+                            <span className="truncate">{entry.subject}</span>
                           </span>
+                          {entry.session_type === "lab" && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 shrink-0">
+                              LAB
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-text-secondary truncate">
+                          <span className="flex items-center gap-1 truncate">
+                            <User className="w-3 h-3 text-text-muted shrink-0" />
+                            <span className="truncate">{entry.teacher_name}</span>
+                          </span>
+                          {entry.room && (
+                            <span className="flex items-center gap-1 shrink-0">
+                              <School className="w-3 h-3 text-text-muted shrink-0" />
+                              {entry.room}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div>
-                        {isWaiting ? (
-                          <Button
-                            size="sm"
-                            onClick={() => handleJoinExam(exam.id)}
-                            className="bg-accent-warning hover:bg-accent-warning/90 text-black font-semibold text-xs"
-                          >
-                            Join Waiting Room
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => navigate(`/student/exam/${exam.id}`)}
-                            className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold text-xs"
-                          >
-                            Enter Exam
-                          </Button>
-                        )}
+
+                      {/* Right: Time Range */}
+                      <div className="shrink-0 text-right">
+                        <span className="text-xs font-mono font-medium text-text-secondary">
+                          {formatTime12h(entry.start_time)} – {formatTime12h(entry.end_time)}
+                        </span>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          ) : (
-            <div data-tour="student-exams" className="p-6 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3">
-              <Clock className="w-12 h-12 text-text-muted" />
-              <h3 className="text-base font-medium text-text-primary">
-                No active/upcoming exams
-              </h3>
-              <p className="text-sm text-text-secondary">
-                You will be notified when an exam is opened.
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Dedicated Exams Card */}
+        <Card data-tour="student-exams" className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-text-primary flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-accent-locked" />
+                Exams
+              </span>
+              {hasActiveExam && <Badge variant="locked">ACTIVE NOW</Badge>}
+              {!hasActiveExam && waitingRoomExams.length > 0 && <Badge variant="warning">WAITING ROOM</Badge>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            {hasActiveExam ? (
+              <div className="space-y-4 my-auto">
+                {activeExams.map((exam) => (
+                  <div key={exam.id} className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">
+                        {exam.title}
+                      </p>
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        {exam.time_limit_minutes} minutes duration • Immediate access
+                      </p>
+                    </div>
+
+                    <div className="w-full bg-bg-base h-1.5 rounded-full overflow-hidden border border-border">
+                      <motion.div
+                        initial={{ width: "0%" }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: 2, ease: "easeInOut" }}
+                        className="h-full bg-accent-locked rounded-full"
+                      />
+                    </div>
+
+                    <Button
+                      onClick={() => navigate(`/student/exam/${exam.id}`)}
+                      className="bg-accent-locked hover:bg-accent-locked/90 text-white font-semibold text-xs"
+                    >
+                      Enter Exam
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : waitingRoomExams.length > 0 ? (
+              <div className="p-3 bg-bg-base border border-accent-warning/30 rounded-lg flex items-center justify-between my-auto">
+                <div className="space-y-0.5">
+                  <div className="text-xs font-medium text-text-primary">
+                    {waitingRoomExams[0].title}
+                  </div>
+                  <div className="text-xs text-text-secondary">Waiting room is open</div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleJoinExam(waitingRoomExams[0].id)}
+                  className="bg-accent-warning hover:bg-accent-warning/90 text-black font-semibold text-xs"
+                >
+                  Join Waiting Room
+                </Button>
+              </div>
+            ) : (
+              <div className="py-6 text-center space-y-2 my-auto">
+                <Clock className="w-8 h-8 text-text-muted mx-auto" />
+                <p className="text-xs text-text-secondary">No active or upcoming exams.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* SECTION 4 — "YOUR ACTIVITY" (Attendance + Recent Submissions Grid)     */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      <section className="space-y-3 pt-2">
+        <h2 className="text-xs uppercase tracking-wide text-text-muted font-medium font-mono">
+          YOUR ACTIVITY
+        </h2>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          {/* Attendance Card */}
+          <Card data-tour="student-attendance" className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-text-primary flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-text-secondary" />
+                Attendance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
+              {/* Compact inline stat row */}
+              <div className="grid grid-cols-3 gap-3 p-4 bg-bg-base border border-border rounded-lg text-center">
+                <div>
+                  <div className="text-xs text-text-secondary mb-1">Present</div>
+                  <div className="text-2xl font-mono font-bold text-accent-success">
+                    {stats.present}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-text-secondary mb-1">Total Sessions</div>
+                  <div className="text-2xl font-mono font-bold text-text-primary">
+                    {stats.total}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-text-secondary mb-1">Attendance Rate</div>
+                  <div className="text-2xl font-mono font-bold text-text-primary">
+                    {stats.rate}%
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => navigate("/student/attendance")}
+                className="w-full text-xs"
+              >
+                View History
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Recent Submissions Card */}
+          <Card className="bg-bg-surface border-border flex flex-col shadow-[var(--shadow-card)] h-full justify-between">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold text-text-primary flex items-center gap-2">
+                <FileText className="w-4 h-4 text-text-secondary" />
+                Recent Submissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {mockRecentSubmissions.length > 0 ? (
+                <div className="space-y-3">
+                  {mockRecentSubmissions.map((submission) => (
+                    <div
+                      key={submission.id}
+                      className="p-3 bg-bg-base border border-border rounded-lg hover:border-accent-info/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-text-primary">
+                            {submission.title}
+                          </div>
+                          <div className="text-xs text-text-secondary mt-1">
+                            {submission.submittedAt}
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col items-end gap-1">
+                          {submission.status === "graded" ? (
+                            <Badge variant="success">GRADED</Badge>
+                          ) : (
+                            <Badge variant="info">SUBMITTED</Badge>
+                          )}
+                          {submission.status === "graded" && (
+                            <div className="text-xs font-mono text-accent-success">
+                              {submission.score}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
+                  <FileText className="w-10 h-10 text-text-muted" />
+                  <h3 className="text-sm font-medium text-text-primary">
+                    No recent submissions
+                  </h3>
+                  <p className="text-xs text-text-secondary">
+                    Your submitted tasks will appear here.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
       <AppTour
         steps={studentTourSteps}

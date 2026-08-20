@@ -363,10 +363,10 @@ export function SendMyFiles() {
       )}
 
       {/* Main Card */}
-      <div className="bg-bg-surface border border-border rounded-xl p-6 space-y-6 shadow-sm">
+      <div className="bg-bg-surface border border-border rounded-xl p-6 space-y-6 shadow-[var(--shadow-card)]">
         {/* Step 1: Select Items */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
             <label className="text-sm font-semibold text-text-primary block">
               Step 1: Choose Folder or File(s) to Zip
             </label>
@@ -377,7 +377,7 @@ export function SendMyFiles() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap pt-1">
             {/* Button 1: Select Folder */}
             <Button
               type="button"
@@ -544,9 +544,9 @@ export function SendMyFiles() {
         )}
 
         {/* Step 2: Email Input & Submit */}
-        <form onSubmit={handleSendEmail} className="space-y-4 pt-2 border-t border-border">
-          <div className="space-y-2">
-            <Label htmlFor="recipientEmail" className="text-sm font-semibold text-text-primary">
+        <form onSubmit={handleSendEmail} className="space-y-5 pt-6 border-t border-border">
+          <div className="space-y-3">
+            <Label htmlFor="recipientEmail" className="text-sm font-semibold text-text-primary block">
               Step 2: Recipient Email Address
             </Label>
             <div className="relative max-w-md">
@@ -573,10 +573,10 @@ export function SendMyFiles() {
           <Button
             type="submit"
             disabled={!zipBlob || zipSizeMB > 20 || isSending || isZipping}
-            className={`font-semibold flex items-center gap-2 ${
+            className={`font-semibold flex items-center gap-2 transition-all ${
               !zipBlob || zipSizeMB > 20 || isSending || isZipping
-                ? "opacity-50 cursor-not-allowed bg-accent-info text-white"
-                : "bg-accent-info hover:bg-accent-info/90 text-white"
+                ? "bg-bg-surface-3 border border-border text-text-muted cursor-not-allowed"
+                : "bg-accent-info hover:bg-accent-info/90 text-white shadow-sm"
             }`}
           >
             {isSending ? (
