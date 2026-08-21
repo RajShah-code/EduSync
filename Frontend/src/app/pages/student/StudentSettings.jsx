@@ -7,6 +7,9 @@ import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router";
 import { User, Key, HelpCircle } from "lucide-react";
+import { AppTour } from "../../components/AppTour";
+import { settingsPageTourSteps } from "../../tours/studentTourSteps";
+import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
 
 export function StudentSettings() {
   const navigate = useNavigate();
@@ -19,6 +22,14 @@ export function StudentSettings() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    if (!hasSeenPageTour("settings")) {
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -120,7 +131,7 @@ export function StudentSettings() {
     return (
       <div className="p-6">
         <h1 className="text-2xl font-semibold text-text-primary mb-4">Settings</h1>
-        <div className="text-muted-foreground text-sm">Loading settings...</div>
+        <div className="text-text-secondary text-sm">Loading settings...</div>
       </div>
     );
   }
@@ -137,10 +148,10 @@ export function StudentSettings() {
       {/* 2-Column Grid Row for Profile & Change Password Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* Section 1: Profile */}
-        <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+        <Card className="bg-bg-surface border-border h-full flex flex-col justify-between" data-tour="settings-profile">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-              <User className="h-4 w-4 text-accent-info" /> Profile
+              <User className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Profile
             </CardTitle>
             <CardDescription className="text-xs text-text-secondary">
               View and update your profile information.
@@ -175,7 +186,7 @@ export function StudentSettings() {
                 <Button
                   type="submit"
                   disabled={savingProfile}
-                  className="bg-accent-info hover:bg-accent-info/90 text-white font-medium text-xs"
+                  className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium text-xs"
                 >
                   {savingProfile ? "Saving..." : "Save Changes"}
                 </Button>
@@ -185,10 +196,10 @@ export function StudentSettings() {
         </Card>
 
         {/* Section 2: Change Password */}
-        <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+        <Card className="bg-bg-surface border-border h-full flex flex-col justify-between" data-tour="settings-password">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-              <Key className="h-4 w-4 text-accent-info" /> Change Password
+              <Key className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Change Password
             </CardTitle>
             <CardDescription className="text-xs text-text-secondary">
               Update your account password.
@@ -235,7 +246,7 @@ export function StudentSettings() {
                 <Button
                   type="submit"
                   disabled={savingPassword}
-                  className="bg-accent-info hover:bg-accent-info/90 text-white font-medium text-xs"
+                  className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium text-xs"
                 >
                   {savingPassword ? "Updating..." : "Update Password"}
                 </Button>
@@ -246,10 +257,10 @@ export function StudentSettings() {
       </div>
 
       {/* Section 3: App Tour */}
-      <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)]">
+      <Card className="bg-bg-surface border-border" data-tour="settings-tour-replay">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-            <HelpCircle className="h-4 w-4 text-accent-info" /> App Tour
+            <HelpCircle className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> App Tour
           </CardTitle>
           <CardDescription className="text-xs text-text-secondary">
             Replay the guided feature tour for your role.
@@ -263,13 +274,23 @@ export function StudentSettings() {
             type="button"
             variant="outline"
             onClick={() => navigate("/student", { state: { startTour: true } })}
-            className="flex items-center gap-2 text-xs"
+            className="flex items-center gap-1.5 text-xs"
           >
-            <HelpCircle className="h-4 w-4 text-accent-info" />
+            <HelpCircle className="h-3.5 w-3.5 text-accent-500" strokeWidth={1.75} />
             Restart Tour
           </Button>
         </CardContent>
       </Card>
+
+      <AppTour
+        steps={settingsPageTourSteps}
+        run={runTour}
+        isManualReplay={true}
+        onFinish={() => {
+          setRunTour(false);
+          markPageTourSeen("settings");
+        }}
+      />
     </div>
   );
 }

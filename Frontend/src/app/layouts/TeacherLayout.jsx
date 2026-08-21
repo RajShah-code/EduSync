@@ -18,9 +18,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "../components/ui/utils";
-import { ThemeToggle } from "../components/ThemeToggle";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
-import { Toaster } from "sonner";
+import { Toaster } from "../components/ui/sonner";
 
 const navigation = [
   { name: "Dashboard", href: "/teacher", icon: LayoutDashboard, dataTour: "teacher-dashboard-link" },
@@ -345,7 +344,7 @@ export function TeacherLayout() {
         <div
           className="p-3 space-y-1 border-t border-border"
         >
-          <div className="px-3 py-2 flex items-center justify-between">
+          <div className="px-3 py-2">
             <div className="min-w-0">
               <div className="text-sm font-medium text-text-primary truncate">
                 {displayUser.name || "Teacher"}
@@ -357,7 +356,6 @@ export function TeacherLayout() {
                 {displayUser.email || ""}
               </div>
             </div>
-            <ThemeToggle />
           </div>
           <button
             onClick={handleLogout}
@@ -403,14 +401,14 @@ export function TeacherLayout() {
         <Toaster position="top-right" richColors />
       </div>
 
-      {/* Attendance Review Modal */}
+      {/* Attendance Review Modal — the post-session prompt for exceptions */}
       {attendanceExceptions && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-bg-surface border border-border rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 animate-in fade-in zoom-in duration-200">
+        <div className="fixed inset-0 bg-bg-base/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] max-w-2xl w-full max-h-[85vh] flex flex-col p-6 animate-in fade-in zoom-in duration-200">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-border pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-accent-warning/10 text-accent-warning">
+                <div className="p-2 rounded-[var(--radius-md)] bg-accent-warning/10 text-accent-warning">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
@@ -426,7 +424,7 @@ export function TeacherLayout() {
                 {/* Bulk action buttons */}
                 <button
                   onClick={() => handleDecideAll('approved')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-lg text-xs font-semibold transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-[var(--radius-md)] text-xs font-semibold transition-colors"
                   title="Approve all exceptions"
                 >
                   <Check className="w-3.5 h-3.5" />
@@ -434,7 +432,7 @@ export function TeacherLayout() {
                 </button>
                 <button
                   onClick={() => handleDecideAll('rejected')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-lg text-xs font-semibold transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-md)] text-xs font-semibold transition-colors"
                   title="Reject all exceptions"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -442,7 +440,7 @@ export function TeacherLayout() {
                 </button>
                 <button
                   onClick={() => { setAttendanceExceptions(null); setExpandedAttendanceId(null); }}
-                  className="p-1 hover:bg-bg-base rounded-lg text-text-secondary hover:text-text-primary transition-colors"
+                  className="p-1 hover:bg-bg-base rounded-[var(--radius-md)] text-text-secondary hover:text-text-primary transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -461,7 +459,7 @@ export function TeacherLayout() {
                     {/* Default collapsed/expandable row */}
                     <div
                       onClick={() => setExpandedAttendanceId(isExpanded ? null : exc.attendance_id)}
-                      className="p-3 bg-bg-base border border-border rounded-lg flex flex-col gap-3 cursor-pointer hover:border-border/80 transition-colors"
+                      className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] flex flex-col gap-3 cursor-pointer hover:border-border-hover transition-colors"
                     >
                       <div className="flex items-center justify-between gap-3 w-full">
                         {/* Left: name + exit count badge */}
@@ -469,7 +467,7 @@ export function TeacherLayout() {
                           <span className="text-sm font-semibold text-text-primary truncate">
                             {exc.student_name}
                           </span>
-                          <span className="flex-shrink-0 text-[10px] px-2 py-0.5 bg-accent-warning/10 text-accent-warning rounded-full border border-accent-warning/20 font-mono whitespace-nowrap">
+                          <span className="flex-shrink-0 text-[10px] px-2 py-0.5 bg-accent-warning/10 text-accent-warning rounded-[var(--radius-pill)] border border-accent-warning/20 font-mono whitespace-nowrap">
                             {exc.fullscreen_exit_count} exit{exc.fullscreen_exit_count !== 1 ? 's' : ''}
                           </span>
                         </div>
@@ -477,14 +475,14 @@ export function TeacherLayout() {
                         <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => handleDecideException(exc.attendance_id, 'approved')}
-                            className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-lg text-xs font-semibold flex items-center justify-center transition-all"
+                            className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-[var(--radius-md)] text-xs font-semibold flex items-center justify-center transition-colors"
                             title="Approve Attendance"
                           >
                             <Check className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDecideException(exc.attendance_id, 'rejected')}
-                            className="p-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-lg text-xs font-semibold flex items-center justify-center transition-all"
+                            className="p-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-md)] text-xs font-semibold flex items-center justify-center transition-colors"
                             title="Reject Attendance"
                           >
                             <X className="w-4 h-4" />
@@ -494,14 +492,14 @@ export function TeacherLayout() {
 
                       {/* Inline expanded Focus Log History */}
                       {isExpanded && (
-                        <div className="border-t border-border/40 pt-3 space-y-2 cursor-default" onClick={(e) => e.stopPropagation()}>
+                        <div className="border-t border-border pt-3 space-y-2 cursor-default" onClick={(e) => e.stopPropagation()}>
                           {/* Presence + late badges */}
                           <div className="flex flex-wrap gap-2">
-                            <span className="text-[10px] px-2 py-0.5 bg-accent-info/10 text-accent-info rounded-full border border-accent-info/20 font-mono">
+                            <span className="text-[10px] px-2 py-0.5 bg-accent-info/10 text-accent-info rounded-[var(--radius-pill)] border border-accent-info/20 font-mono">
                               {(exc.presence_percentage * 100).toFixed(0)}% present
                             </span>
                             {exc.minutes_late > 0 && (
-                              <span className="text-[10px] px-2 py-0.5 bg-accent-critical/10 text-accent-critical rounded-full border border-accent-critical/20 font-mono">
+                              <span className="text-[10px] px-2 py-0.5 bg-accent-critical/10 text-accent-critical rounded-[var(--radius-pill)] border border-accent-critical/20 font-mono">
                                 {exc.minutes_late} min late
                               </span>
                             )}
@@ -515,7 +513,7 @@ export function TeacherLayout() {
                               <ul className="space-y-1 max-h-40 overflow-y-auto pr-1">
                                 {(exc.fullscreen_exit_log || []).map((log, index) => (
                                   <li key={index} className="text-xs text-text-muted font-mono flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-text-muted/65 flex-shrink-0" />
+                                    <span className="w-1.5 h-1.5 rounded-full bg-text-muted flex-shrink-0" />
                                     Left at {formatTime(log.exited_at)} for {formatDuration(log.duration_seconds || 0)}
                                   </li>
                                 ))}
@@ -530,7 +528,7 @@ export function TeacherLayout() {
 
                     {/* Hover-reveal compact tooltip — absolutely positioned relative to row container */}
                     <div className={cn(
-                      "hidden absolute z-20 right-24 top-1/2 -translate-y-1/2 bg-bg-elevated border border-border rounded px-2.5 py-1 text-xs text-text-secondary shadow-lg pointer-events-none whitespace-nowrap",
+                      "hidden absolute z-20 right-24 top-1/2 -translate-y-1/2 bg-bg-elevated border border-border rounded-[var(--radius-sm)] px-2.5 py-1 text-xs text-text-secondary pointer-events-none whitespace-nowrap",
                       isExpanded ? "hidden" : "group-hover:block"
                     )}>
                       {(exc.presence_percentage * 100).toFixed(0)}% present • {exc.fullscreen_exit_count} exit{exc.fullscreen_exit_count !== 1 ? 's' : ''}
@@ -545,7 +543,7 @@ export function TeacherLayout() {
             <div className="border-t border-border pt-4 flex justify-end">
               <button
                 onClick={() => { setAttendanceExceptions(null); setExpandedAttendanceId(null); }}
-                className="px-4 py-2 bg-bg-base border border-border hover:border-border/80 text-text-primary text-xs font-medium rounded-lg transition-all"
+                className="px-4 py-2 bg-bg-base border border-border hover:border-border-hover text-text-primary text-xs font-medium rounded-[var(--radius-md)] transition-colors"
               >
                 Close
               </button>

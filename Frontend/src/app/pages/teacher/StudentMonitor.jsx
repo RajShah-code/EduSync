@@ -129,30 +129,30 @@ export function StudentMonitor() {
             <Filter className="w-4 h-4 text-text-secondary" />
             <button
               onClick={() => setFilter("all")}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-colors ${
                 filter === "all"
-                  ? "bg-accent-info/10 text-accent-info"
-                  : "text-text-secondary hover:text-text-primary"
+                  ? "bg-accent-info/10 border-accent-info/30 text-accent-info"
+                  : "border-transparent text-text-secondary hover:text-text-primary"
               }`}
             >
               All ({stats.all})
             </button>
             <button
               onClick={() => setFilter("active")}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-colors ${
                 filter === "active"
-                  ? "bg-accent-success/10 text-accent-success"
-                  : "text-text-secondary hover:text-text-primary"
+                  ? "bg-accent-success/10 border-accent-success/30 text-accent-success"
+                  : "border-transparent text-text-secondary hover:text-text-primary"
               }`}
             >
               Active ({stats.active})
             </button>
             <button
               onClick={() => setFilter("idle")}
-              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-colors ${
                 filter === "idle"
-                  ? "bg-accent-warning/10 text-accent-warning"
-                  : "text-text-secondary hover:text-text-primary"
+                  ? "bg-accent-warning/10 border-accent-warning/30 text-accent-warning"
+                  : "border-transparent text-text-secondary hover:text-text-primary"
               }`}
             >
               Not Viewing ({stats.idle})
@@ -160,7 +160,7 @@ export function StudentMonitor() {
           </div>
 
           {/* Grid Size Toggle */}
-          <div className="flex items-center gap-1 border border-border rounded">
+          <div className="flex items-center gap-1 border border-border rounded-[var(--radius-sm)]">
             <button
               onClick={() => setGridSize(4)}
               className={`p-2 transition-colors ${
@@ -252,7 +252,7 @@ export function StudentMonitor() {
           </DialogHeader>
           {selectedStudent && (
             <div className="space-y-4 my-2 text-sm">
-              <div className="space-y-2.5 p-4 bg-bg-base border border-border rounded-lg">
+              <div className="space-y-2.5 p-4 bg-bg-base border border-border rounded-[var(--radius-md)]">
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary font-medium">Name:</span>
                   <span className="font-semibold text-text-primary">

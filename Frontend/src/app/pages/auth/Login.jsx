@@ -71,7 +71,7 @@ export function Login() {
         </button>
 
         {/* Login Card */}
-        <div className="p-8 bg-bg-surface border border-border rounded-lg shadow-xl">
+        <div className="p-8 bg-bg-surface border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)]">
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-semibold text-text-primary mb-1">
@@ -84,7 +84,7 @@ export function Login() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-accent-critical/10 border border-accent-critical/20 rounded flex items-start gap-2">
+            <div className="mb-4 p-3 bg-accent-critical/10 border border-accent-critical/20 rounded-[var(--radius-md)] flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-accent-critical mt-0.5 flex-shrink-0" />
               <p className="text-sm text-accent-critical">{error}</p>
             </div>

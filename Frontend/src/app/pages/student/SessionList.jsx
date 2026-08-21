@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { Radio, Search, Wifi } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { AppTour } from "../../components/AppTour";
+import { sessionsPageTourSteps } from "../../tours/studentTourSteps";
+import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
 
 // ─── Relative time helper ─────────────────────────────────────────────────────
 function getRelativeTime(isoString) {
@@ -19,24 +22,24 @@ function getRelativeTime(isoString) {
 }
 
 // ─── Session Card ─────────────────────────────────────────────────────────────
-function SessionCard({ session, onJoin }) {
+function SessionCard({ session, onJoin, index = 0 }) {
   return (
     <div
-      className="bg-bg-surface border border-border rounded-lg p-5 flex flex-col gap-3 shadow-[var(--shadow-card)] transition-all duration-200 hover:border-accent-info/40 hover:shadow-[0_0_0_1px_rgba(79,142,247,0.15)]"
-      style={{ animation: "page-enter 220ms ease-out both" }}
+      className="bg-bg-surface border border-border rounded-lg p-5 flex flex-col gap-3 transition-colors duration-200 hover:border-accent-500/40"
+      style={{ animation: "page-enter 220ms ease-out both", animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       {/* Header: lab room + live dot + relative time */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
-            className="w-2 h-2 rounded-full bg-accent-success animate-pulse flex-shrink-0"
+            className="w-2 h-2 rounded-full bg-accent-success pulse-dot flex-shrink-0"
             aria-label="Live session"
           />
-          <span className="text-accent-info font-mono text-sm font-medium tracking-wider uppercase">
+          <span className="text-accent-info text-sm font-medium tracking-wider uppercase">
             {session.lab_room}
           </span>
         </div>
-        <span className="text-xs text-text-muted font-mono">
+        <span className="text-xs text-text-muted tnum">
           {getRelativeTime(session.started_at)}
         </span>
       </div>
@@ -53,7 +56,7 @@ function SessionCard({ session, onJoin }) {
       <div className="flex justify-end pt-1">
         <Button
           onClick={() => onJoin(session)}
-          className="bg-accent-info hover:bg-accent-info/90 text-white text-xs font-semibold h-8 px-4"
+          className="bg-accent-700 hover:bg-accent-700/90 text-white text-xs font-semibold h-8 px-4"
         >
           Join Session
         </Button>
@@ -68,9 +71,9 @@ function EmptyState({ hasQuery }) {
     <div className="col-span-full flex flex-col items-center justify-center py-24 gap-4">
       <div className="w-16 h-16 rounded-full bg-bg-surface border border-border flex items-center justify-center">
         {hasQuery ? (
-          <Search className="w-7 h-7 text-text-muted" />
+          <Search className="w-7 h-7 text-text-muted" strokeWidth={1.75} />
         ) : (
-          <Wifi className="w-7 h-7 text-text-muted" />
+          <Wifi className="w-7 h-7 text-text-muted" strokeWidth={1.75} />
         )}
       </div>
       <div className="text-center">
@@ -93,6 +96,14 @@ export function SessionList() {
     useOutletContext();
 
   const [query, setQuery] = useState("");
+  const [runTour, setRunTour] = useState(false);
+
+  useEffect(() => {
+    if (!hasSeenPageTour("sessions")) {
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // activeSessions is owned by StudentLayout and updated there via socket + fetch.
   // We only read it here and filter client-side — no duplicate socket listeners.
@@ -115,14 +126,14 @@ export function SessionList() {
   return (
     <div className="p-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
       {/* Page header */}
-      <div className="space-y-1">
+      <div className="space-y-1" data-tour="sessions-header">
         <div className="flex items-center gap-3">
-          <Radio className="w-5 h-5 text-accent-info" />
+          <Radio className="w-5 h-5 text-accent-info" strokeWidth={1.75} />
           <h1 className="text-xl font-semibold text-text-primary">
             Live Sessions
           </h1>
           {activeSessions.length > 0 && (
-            <span className="px-2 py-0.5 text-xs font-mono bg-accent-success/15 text-accent-success border border-accent-success/25 rounded-full">
+            <span className="px-2 py-0.5 text-xs tnum bg-accent-success/15 text-accent-success border border-accent-success/25 rounded-full">
               {activeSessions.length} live
             </span>
           )}
@@ -133,8 +144,8 @@ export function SessionList() {
       </div>
 
       {/* Search input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+      <div className="relative" data-tour="sessions-search">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" strokeWidth={1.75} />
         <Input
           id="session-search"
           type="text"
@@ -148,17 +159,28 @@ export function SessionList() {
       {/* Session grid — 2 columns on wide, 1 on narrow */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {filtered.length > 0 ? (
-          filtered.map((session) => (
+          filtered.map((session, i) => (
             <SessionCard
               key={session.id}
               session={session}
               onJoin={handleJoin}
+              index={i}
             />
           ))
         ) : (
           <EmptyState hasQuery={query.trim().length > 0} />
         )}
       </div>
+
+      <AppTour
+        steps={sessionsPageTourSteps}
+        run={runTour}
+        isManualReplay={true}
+        onFinish={() => {
+          setRunTour(false);
+          markPageTourSeen("sessions");
+        }}
+      />
     </div>
   );
 }

@@ -1,8 +1,12 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../components/StatusBadge";
-import { CalendarCheck, Loader2, Filter } from "lucide-react";
+import { CalendarCheck, Loader2, Filter, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 import { getSocket } from "../../store/socket";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { AppTour } from "../../components/AppTour";
+import { attendancePageTourSteps } from "../../tours/studentTourSteps";
+import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
 
 export function AttendanceHistory() {
   const [attendance, setAttendance] = useState([]);
@@ -12,6 +16,21 @@ export function AttendanceHistory() {
   // Filter States
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedTeacher, setSelectedTeacher] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [sortOrder, setSortOrder] = useState("new"); // "new" = newest first, "old" = oldest first
+  const [runTour, setRunTour] = useState(false);
+
+  // Pagination — 5 rows by default, keeps a large attendance history from
+  // making the page endlessly long.
+  const [pageSize, setPageSize] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    if (!hasSeenPageTour("attendance")) {
+      const timer = setTimeout(() => setRunTour(true), 400);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchAttendance = async () => {
@@ -73,14 +92,31 @@ export function AttendanceHistory() {
   const teachers = [...new Set(attendance.map((a) => a.teacher_name).filter(Boolean))].sort();
 
   // Client-side filtering
-  const filteredAttendance = attendance.filter((a) => {
-    if (selectedSubject && a.subject !== selectedSubject) return false;
-    if (selectedTeacher && a.teacher_name !== selectedTeacher) return false;
-    return true;
-  });
+  const filteredAttendance = attendance
+    .filter((a) => {
+      if (selectedSubject && a.subject !== selectedSubject) return false;
+      if (selectedTeacher && a.teacher_name !== selectedTeacher) return false;
+      if (selectedStatus && a.status !== selectedStatus) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const diff = new Date(a.started_at).getTime() - new Date(b.started_at).getTime();
+      return sortOrder === "old" ? diff : -diff;
+    });
+
+  // Reset to page 1 whenever the filtered set or page size changes, so we
+  // never land on a page that no longer exists.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSubject, selectedTeacher, selectedStatus, pageSize]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAttendance.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const paginatedAttendance = filteredAttendance.slice(pageStart, pageStart + pageSize);
 
   // Dynamic stats derived from the filtered set
-  const isFiltered = Boolean(selectedSubject || selectedTeacher);
+  const isFiltered = Boolean(selectedSubject || selectedTeacher || selectedStatus);
   const totalCount = isFiltered ? filteredAttendance.length : totalLectures;
   const presentCount = filteredAttendance.filter((a) => a.status === "present").length;
   const absentCount = Math.max(0, totalCount - presentCount);
@@ -90,7 +126,7 @@ export function AttendanceHistory() {
   if (loading) {
     return (
       <div className="flex h-96 items-center justify-center">
-        <Loader2 className="w-8 h-8 text-accent-info animate-spin" />
+        <Loader2 className="w-8 h-8 text-accent-500 animate-spin" strokeWidth={1.75} />
       </div>
     );
   }
@@ -107,35 +143,35 @@ export function AttendanceHistory() {
 
       {attendance.length > 0 ? (
         <>
-          {/* Summary Stats */}
-          <div className="p-6 bg-bg-surface border border-border rounded-lg shadow-[var(--shadow-card)]">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="text-3xl font-mono font-semibold text-text-primary mb-1">
+          {/* Summary Stats — hairline-divided row, reads as an instrument readout */}
+          <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)]" data-tour="attendance-stats">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+              <div className="text-center py-5 px-4">
+                <div className="text-3xl tnum font-semibold text-text-primary mb-1">
                   {totalCount}
                 </div>
                 <div className="text-xs text-text-secondary uppercase tracking-wider">
                   Total Sessions
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-mono font-semibold text-accent-success mb-1">
+              <div className="text-center py-5 px-4">
+                <div className="text-3xl tnum font-semibold text-accent-success mb-1">
                   {presentCount}
                 </div>
                 <div className="text-xs text-text-secondary uppercase tracking-wider">
                   Present
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-mono font-semibold text-accent-critical mb-1">
+              <div className="text-center py-5 px-4">
+                <div className="text-3xl tnum font-semibold text-accent-critical mb-1">
                   {absentCount}
                 </div>
                 <div className="text-xs text-text-secondary uppercase tracking-wider">
                   Absent
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-mono font-semibold text-accent-info mb-1">
+              <div className="text-center py-5 px-4">
+                <div className="text-3xl tnum font-semibold text-accent-500 mb-1">
                   {attendanceRate}%
                 </div>
                 <div className="text-xs text-text-secondary uppercase tracking-wider">
@@ -146,10 +182,10 @@ export function AttendanceHistory() {
           </div>
 
           {/* Filter Dropdowns Bar */}
-          <div className="flex items-center justify-between gap-4 flex-wrap p-4 bg-bg-surface border border-border rounded-lg shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between gap-4 flex-wrap p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)]" data-tour="attendance-filters">
             <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-text-muted shrink-0" />
+              <div className="flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-text-muted shrink-0" strokeWidth={1.75} />
                 <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
                   Filters:
                 </span>
@@ -160,19 +196,22 @@ export function AttendanceHistory() {
                 <label htmlFor="subject-filter" className="text-xs font-medium text-text-secondary">
                   Subject
                 </label>
-                <select
-                  id="subject-filter"
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="bg-bg-base border border-border text-text-primary text-xs rounded-md px-3 py-1.5 focus:outline-none focus:border-accent-info"
+                <Select
+                  value={selectedSubject || "__all__"}
+                  onValueChange={(v) => setSelectedSubject(v === "__all__" ? "" : v)}
                 >
-                  <option value="">All Subjects ({subjects.length})</option>
-                  {subjects.map((subj) => (
-                    <option key={subj} value={subj}>
-                      {subj}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="subject-filter" size="sm">
+                    <SelectValue placeholder="All Subjects" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All Subjects ({subjects.length})</SelectItem>
+                    {subjects.map((subj) => (
+                      <SelectItem key={subj} value={subj}>
+                        {subj}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Teacher Filter */}
@@ -180,19 +219,59 @@ export function AttendanceHistory() {
                 <label htmlFor="teacher-filter" className="text-xs font-medium text-text-secondary">
                   Teacher
                 </label>
-                <select
-                  id="teacher-filter"
-                  value={selectedTeacher}
-                  onChange={(e) => setSelectedTeacher(e.target.value)}
-                  className="bg-bg-base border border-border text-text-primary text-xs rounded-md px-3 py-1.5 focus:outline-none focus:border-accent-info"
+                <Select
+                  value={selectedTeacher || "__all__"}
+                  onValueChange={(v) => setSelectedTeacher(v === "__all__" ? "" : v)}
                 >
-                  <option value="">All Teachers ({teachers.length})</option>
-                  {teachers.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="teacher-filter" size="sm">
+                    <SelectValue placeholder="All Teachers" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All Teachers ({teachers.length})</SelectItem>
+                    {teachers.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="status-filter" className="text-xs font-medium text-text-secondary">
+                  Status
+                </label>
+                <Select
+                  value={selectedStatus || "__all__"}
+                  onValueChange={(v) => setSelectedStatus(v === "__all__" ? "" : v)}
+                >
+                  <SelectTrigger id="status-filter" size="sm">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All</SelectItem>
+                    <SelectItem value="present">Present</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Sort Order */}
+              <div className="flex items-center gap-2">
+                <label htmlFor="sort-order" className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                  Sort
+                </label>
+                <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <SelectTrigger id="sort-order" size="sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">Newest first</SelectItem>
+                    <SelectItem value="old">Oldest first</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -201,8 +280,9 @@ export function AttendanceHistory() {
                 onClick={() => {
                   setSelectedSubject("");
                   setSelectedTeacher("");
+                  setSelectedStatus("");
                 }}
-                className="text-xs text-accent-info hover:underline font-medium"
+                className="text-xs text-accent-500 hover:underline font-medium"
               >
                 Reset Filters
               </button>
@@ -210,7 +290,7 @@ export function AttendanceHistory() {
           </div>
 
           {/* Attendance Table */}
-          <div className="bg-bg-surface border border-border rounded-lg overflow-hidden shadow-[var(--shadow-card)]">
+          <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden" data-tour="attendance-table">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-bg-elevated">
@@ -232,11 +312,12 @@ export function AttendanceHistory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredAttendance.length > 0 ? (
-                  filteredAttendance.map((record) => (
+                {paginatedAttendance.length > 0 ? (
+                  paginatedAttendance.map((record, idx) => (
                     <tr
                       key={record.id}
-                      className="hover:bg-bg-elevated transition-colors"
+                      className="table-row-hover transition-colors stagger-enter"
+                      style={{ animationDelay: `${Math.min(idx, 8) * 35}ms` }}
                     >
                       <td className="px-4 py-3 text-sm text-text-primary">
                         {new Date(record.started_at).toLocaleDateString(undefined, {
@@ -269,11 +350,64 @@ export function AttendanceHistory() {
                 )}
               </tbody>
             </table>
+
+            {/* Pagination */}
+            {filteredAttendance.length > 0 && (
+              <div className="flex items-center justify-between gap-4 flex-wrap px-4 py-3 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text-secondary">Rows per page</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v) => setPageSize(Number(v))}
+                  >
+                    <SelectTrigger size="sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[5, 10, 25, 50].map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          {n}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <span className="text-xs tnum text-text-secondary">
+                    {pageStart + 1}–{Math.min(pageStart + pageSize, filteredAttendance.length)} of {filteredAttendance.length}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage <= 1}
+                      className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    </button>
+                    <span className="text-xs tnum text-text-primary px-2 min-w-[4.5rem] text-center">
+                      Page {safePage} / {totalPages}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage >= totalPages}
+                      className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </>
       ) : (
-        <div className="p-8 bg-bg-surface border border-border rounded-lg flex flex-col items-center justify-center gap-3 py-16 shadow-[var(--shadow-card)]">
-          <CalendarCheck className="w-12 h-12 text-text-muted" />
+        <div className="p-8 bg-bg-surface border border-border rounded-[var(--radius-lg)] flex flex-col items-center justify-center gap-3 py-16">
+          <CalendarCheck className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
           <h3 className="text-base font-medium text-text-primary">
             No attendance history
           </h3>
@@ -281,6 +415,18 @@ export function AttendanceHistory() {
             You haven't attended any lab sessions yet.
           </p>
         </div>
+      )}
+
+      {attendance.length > 0 && (
+        <AppTour
+          steps={attendancePageTourSteps}
+          run={runTour}
+          isManualReplay={true}
+          onFinish={() => {
+            setRunTour(false);
+            markPageTourSeen("attendance");
+          }}
+        />
       )}
     </div>
   );

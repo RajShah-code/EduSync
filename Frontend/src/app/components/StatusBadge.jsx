@@ -1,169 +1,71 @@
+import { Check, X, Circle, CircleDot, Lock, TriangleAlert, Undo2, MoreHorizontal, Minus } from "lucide-react";
 import { cn } from "../components/ui/utils";
 
+// Colors are drawn from the locked token set (theme.css) via CSS var references,
+// so badges follow the app's palette automatically. `solid: true` renders a
+// filled chip (white text) instead of a tinted wash — reserved for statuses
+// that need to read as decisive/high-stakes (present/absent/active), not
+// applied everywhere so it stays meaningful rather than loud by default.
 const statusConfig = {
-  live: {
-    label: "LIVE",
-    icon: "●",
-    color: "#22C55E",
-    bg: "rgba(34,197,94,0.12)",
-    border: "rgba(34,197,94,0.3)",
-    livePulse: true,
-  },
-  active: {
-    label: "ACTIVE",
-    icon: "●",
-    color: "#22C55E",
-    bg: "rgba(34,197,94,0.12)",
-    border: "rgba(34,197,94,0.25)",
-  },
-  idle: {
-    label: "NOT VIEWING",
-    icon: "◌",
-    color: "#F59E0B",
-    bg: "rgba(245,158,11,0.12)",
-    border: "rgba(245,158,11,0.25)",
-    pulse: true,
-  },
-  offline: {
-    label: "OFFLINE",
-    icon: "—",
-    color: "#8B8BA7",
-    bg: "rgba(255,255,255,0.05)",
-    border: "rgba(255,255,255,0.08)",
-  },
-  submitted: {
-    label: "SUBMITTED",
-    icon: "✓",
-    color: "#4F8EF7",
-    bg: "rgba(79,142,247,0.12)",
-    border: "rgba(79,142,247,0.25)",
-  },
-  "in-progress": {
-    label: "IN PROGRESS",
-    icon: "◎",
-    color: "#4F8EF7",
-    bg: "rgba(79,142,247,0.10)",
-    border: "rgba(79,142,247,0.20)",
-    pulse: true,
-  },
-  locked: {
-    label: "LOCKED",
-    icon: "⊘",
-    color: "#A371F7",
-    bg: "rgba(163,113,247,0.10)",
-    border: "rgba(163,113,247,0.20)",
-  },
-  "exam-live": {
-    label: "EXAM LIVE",
-    icon: "▲",
-    color: "#EF4444",
-    bg: "rgba(239,68,68,0.10)",
-    border: "rgba(239,68,68,0.25)",
-    livePulse: true,
-  },
-  absent: {
-    label: "ABSENT",
-    icon: "✕",
-    color: "#EF4444",
-    bg: "rgba(239,68,68,0.10)",
-    border: "rgba(239,68,68,0.20)",
-  },
-  present: {
-    label: "PRESENT",
-    icon: "✓",
-    color: "#22C55E",
-    bg: "rgba(34,197,94,0.10)",
-    border: "rgba(34,197,94,0.20)",
-  },
-  partial: {
-    label: "PARTIAL",
-    icon: "◐",
-    color: "#F59E0B",
-    bg: "rgba(245,158,11,0.10)",
-    border: "rgba(245,158,11,0.20)",
-  },
-  pending: {
-    label: "PENDING",
-    icon: "⋯",
-    color: "#8B8BA7",
-    bg: "rgba(255,255,255,0.04)",
-    border: "rgba(255,255,255,0.08)",
-  },
-  graded: {
-    label: "GRADED",
-    icon: "✓",
-    color: "#4F8EF7",
-    bg: "rgba(79,142,247,0.10)",
-    border: "rgba(79,142,247,0.20)",
-  },
-  returned: {
-    label: "RETURNED",
-    icon: "↵",
-    color: "#22C55E",
-    bg: "rgba(34,197,94,0.10)",
-    border: "rgba(34,197,94,0.20)",
-  },
-  draft: {
-    label: "DRAFT",
-    icon: "⋯",
-    color: "#8B8BA7",
-    bg: "rgba(255,255,255,0.04)",
-    border: "rgba(255,255,255,0.08)",
-  },
-  waiting_room: {
-    label: "WAITING ROOM",
-    icon: "⋯",
-    color: "#F59E0B",
-    bg: "rgba(245,158,11,0.12)",
-    border: "rgba(245,158,11,0.25)",
-    pulse: true,
-  },
-  ended: {
-    label: "ENDED",
-    icon: "⊘",
-    color: "#A371F7",
-    bg: "rgba(163,113,247,0.10)",
-    border: "rgba(163,113,247,0.20)",
-  },
+  live: { label: "LIVE", Icon: Circle, token: "accent-live", livePulse: true },
+  active: { label: "ACTIVE", Icon: Check, token: "accent-success", solid: true },
+  idle: { label: "NOT VIEWING", Icon: Circle, token: "accent-warning", pulse: true },
+  offline: { label: "OFFLINE", Icon: Minus, token: "text-muted" },
+  submitted: { label: "SUBMITTED", Icon: Check, token: "accent-info" },
+  "in-progress": { label: "IN PROGRESS", Icon: CircleDot, token: "accent-info", pulse: true },
+  locked: { label: "LOCKED", Icon: Lock, token: "accent-locked" },
+  "exam-live": { label: "EXAM LIVE", Icon: TriangleAlert, token: "accent-critical", livePulse: true },
+  absent: { label: "ABSENT", Icon: X, token: "accent-critical", solid: true },
+  present: { label: "PRESENT", Icon: Check, token: "accent-success", solid: true },
+  partial: { label: "PARTIAL", Icon: Circle, token: "accent-warning" },
+  pending: { label: "PENDING", Icon: MoreHorizontal, token: "text-muted" },
+  graded: { label: "GRADED", Icon: Check, token: "accent-info" },
+  returned: { label: "RETURNED", Icon: Undo2, token: "accent-success" },
+  draft: { label: "DRAFT", Icon: MoreHorizontal, token: "text-muted" },
+  waiting_room: { label: "WAITING ROOM", Icon: MoreHorizontal, token: "accent-warning", pulse: true },
+  ended: { label: "ENDED", Icon: Lock, token: "accent-locked" },
 };
 
 export function StatusBadge({ status, className }) {
   const cfg = statusConfig[status] || {
     label: String(status || "UNKNOWN").toUpperCase(),
-    icon: "⋯",
-    color: "#8B8BA7",
-    bg: "rgba(255,255,255,0.04)",
-    border: "rgba(255,255,255,0.08)",
+    Icon: MoreHorizontal,
+    token: "text-muted",
   };
+  const colorVar = `var(--${cfg.token})`;
+  const Icon = cfg.Icon;
 
   return (
     <span
-      className={cn("inline-flex items-center gap-1.5 font-mono", className)}
+      className={cn("inline-flex items-center gap-1.5 tnum", className)}
       style={{
         padding: "3px 8px",
         fontSize: "11px",
         fontWeight: 600,
         letterSpacing: "0.08em",
         textTransform: "uppercase",
-        borderRadius: "6px",
-        color: cfg.color,
-        background: cfg.bg,
-        border: `1px solid ${cfg.border}`,
+        borderRadius: "var(--radius-sm)",
+        color: cfg.solid ? "#fff" : colorVar,
+        background: cfg.solid ? colorVar : `color-mix(in srgb, ${colorVar} 12%, transparent)`,
+        border: cfg.solid ? "1px solid transparent" : `1px solid color-mix(in srgb, ${colorVar} 28%, transparent)`,
       }}
     >
       <span
-        className={cn(cfg.livePulse && "live-pulse", cfg.pulse && "pulse-dot")}
+        className={cn(
+          "inline-flex items-center justify-center shrink-0",
+          cfg.livePulse && "live-pulse",
+          cfg.pulse && "pulse-dot"
+        )}
         style={{
-          display: "inline-block",
-          fontSize: "9px",
           borderRadius: cfg.livePulse ? "50%" : undefined,
           width: cfg.livePulse ? "7px" : undefined,
           height: cfg.livePulse ? "7px" : undefined,
-          background: cfg.livePulse ? cfg.color : undefined,
-          flexShrink: 0,
+          background: cfg.livePulse ? (cfg.solid ? "#fff" : colorVar) : undefined,
         }}
       >
-        {cfg.livePulse ? null : cfg.icon}
+        {cfg.livePulse ? null : (
+          <Icon className="w-3 h-3" strokeWidth={2.25} />
+        )}
       </span>
       <span>{cfg.label}</span>
     </span>

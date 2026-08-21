@@ -64,7 +64,7 @@ const buildJsSrcdoc = (code, qId) =>
 })();
 <\/script>
 </head>
-<body style="margin:0;background:#1a1a24;color:#f0f0f5;font-family:system-ui;padding:12px">
+<body style="margin:0;background:#17171A;color:#F1F2F5;font-family:system-ui;padding:12px">
 <script>
 try{
 ${code}
@@ -504,7 +504,7 @@ export function ExamScreen() {
       <div className="h-screen bg-bg-base flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-5">
           <div className="w-16 h-16 mx-auto rounded-full bg-accent-success/10 border-2 border-accent-success/30 flex items-center justify-center">
-            <FileText className="w-8 h-8 text-accent-success" />
+            <FileText className="w-8 h-8 text-accent-success" strokeWidth={1.75} />
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-text-primary mb-2">Exam Submitted</h1>
@@ -512,16 +512,16 @@ export function ExamScreen() {
               Your answers have been recorded. Results will be available after grading.
             </p>
           </div>
-          <div className="p-4 bg-bg-surface border border-border rounded-lg text-sm space-y-2">
+          <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-md)] text-sm space-y-2">
             <div className="flex justify-between">
               <span className="text-text-secondary">Questions Answered</span>
-              <span className="font-mono text-text-primary">
+              <span className="tnum text-text-primary">
                 {answeredCount} / {questions.length}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-secondary">Submitted At</span>
-              <span className="font-mono text-text-primary">
+              <span className="tnum text-text-primary">
                 {new Date().toLocaleTimeString()}
               </span>
             </div>
@@ -536,9 +536,9 @@ export function ExamScreen() {
     return (
       <div className="h-screen bg-bg-base flex flex-col items-center justify-center gap-4 p-6">
         {loadingQuestions ? (
-          <Loader2 className="w-8 h-8 text-accent-info animate-spin" />
+          <Loader2 className="w-12 h-12 text-accent-info animate-spin" strokeWidth={1.75} />
         ) : (
-          <ShieldCheck className="w-12 h-12 text-accent-info" />
+          <ShieldCheck className="w-12 h-12 text-accent-info" strokeWidth={1.75} />
         )}
         <h1 className="text-xl font-semibold text-text-primary">
           {loadingQuestions ? "Loading exam..." : "Waiting for exam to begin"}
@@ -548,9 +548,9 @@ export function ExamScreen() {
             ? "Fetching your question set..."
             : "Your teacher will start the exam shortly. Stay on this page. Do not switch tabs or exit fullscreen once the exam begins."}
         </p>
-        <div className="mt-4 p-3 bg-bg-surface border border-border rounded-lg flex items-center gap-2 text-xs text-text-muted">
-          <Clock className="w-4 h-4" />
-          <span>Exam ID: {examId}</span>
+        <div className="mt-4 p-3 bg-bg-surface border border-border rounded-[var(--radius-md)] flex items-center gap-1.5 text-xs text-text-muted">
+          <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />
+          <span>Exam ID: <span className="tnum">{examId}</span></span>
         </div>
       </div>
     );
@@ -567,25 +567,22 @@ export function ExamScreen() {
 
   return (
     <div ref={containerRef} className="h-screen flex flex-col bg-bg-base">
-      {/* Top bar */}
-      <div
-        className={`h-14 px-6 border-b flex items-center justify-between flex-shrink-0 transition-colors ${
-          isCritical
-            ? "bg-accent-critical/10 border-accent-critical/20"
-            : "bg-bg-surface border-border"
-        }`}
-      >
+      {/* Top bar — deliberately quiet by default. The timer's own color/pulse
+          carries the time-critical signal; only genuine security interruptions
+          (fullscreen exit, violations) get bold treatment here. */}
+      <div className="h-14 px-6 bg-bg-surface border-b border-border flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
-          <div className="px-2 py-1 bg-accent-locked/10 border border-accent-locked/20 rounded-sm">
-            <span className="text-xs font-mono text-accent-locked">⊘ SECURE MODE</span>
-          </div>
+          <span className="flex items-center gap-1.5 text-xs text-text-muted">
+            <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} />
+            Secure mode
+          </span>
           {!hasFocus && (
-            <div className="px-2 py-1 bg-accent-critical/15 border border-accent-critical/30 rounded text-xs text-accent-critical font-semibold">
+            <div className="px-2 py-1 bg-accent-critical/15 border border-accent-critical/30 rounded-[var(--radius-sm)] text-xs text-accent-critical font-semibold">
               ⚠ Return to fullscreen
             </div>
           )}
           {violationCount > 0 && (
-            <span className="text-xs font-mono text-accent-warning">
+            <span className="tnum text-xs text-accent-warning">
               {violationCount}/{violationLimit} warnings
             </span>
           )}
@@ -593,14 +590,14 @@ export function ExamScreen() {
 
         <div className="flex items-center gap-6">
           {isCritical && (
-            <span className="text-xs font-semibold text-accent-critical animate-pulse">
-              TIME CRITICAL
+            <span className="text-xs font-semibold text-accent-critical">
+              Time critical
             </span>
           )}
           {secondsRemaining !== null && (
             <Timer seconds={secondsRemaining} size="lg" onExpire={handleTimerExpire} />
           )}
-          <span className="text-sm font-mono text-text-secondary">
+          <span className="tnum text-sm text-text-secondary">
             {currentIdx + 1} / {questions.length}
           </span>
         </div>
@@ -612,13 +609,13 @@ export function ExamScreen() {
         <div className="flex-1 overflow-y-auto p-8">
           {!question ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
+              <Loader2 className="w-6 h-6 text-text-muted animate-spin" strokeWidth={1.75} />
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
               {/* Question header */}
               <div className="flex items-start gap-3">
-                <span className="px-3 py-1.5 bg-accent-info/10 border border-accent-info/20 rounded font-mono text-sm text-accent-info flex-shrink-0">
+                <span className="tnum px-3 py-1.5 bg-accent-info/10 border border-accent-info/20 rounded-[var(--radius-sm)] text-sm font-medium text-accent-info flex-shrink-0">
                   Q{currentIdx + 1}
                 </span>
                 <div>
@@ -649,7 +646,7 @@ export function ExamScreen() {
                     return (
                       <div
                         key={oi}
-                        className={`relative flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                        className={`relative flex items-center gap-3 p-4 rounded-[var(--radius-md)] border cursor-pointer transition-all ${
                           isSelected
                             ? "bg-accent-info/10 border-accent-info/50"
                             : "bg-bg-surface border-border hover:border-accent-info/30"
@@ -663,7 +660,7 @@ export function ExamScreen() {
                           htmlFor={`q${question.id}-opt${oi}`}
                           className="flex-1 text-sm text-text-primary cursor-pointer"
                         >
-                          <span className="font-mono text-text-muted mr-2">
+                          <span className="text-text-muted mr-2 font-medium">
                             {["A", "B", "C", "D"][oi]}.
                           </span>
                           {opt}
@@ -678,7 +675,7 @@ export function ExamScreen() {
               {question.type === "code" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary font-mono capitalize">
+                    <span className="text-xs text-text-secondary capitalize">
                       Language: {question.language || "python"}
                     </span>
                     <Button
@@ -690,28 +687,28 @@ export function ExamScreen() {
                         phase === "submitted" ||
                         phase === "locked"
                       }
-                      className="bg-accent-info hover:bg-accent-info/90 text-white flex items-center gap-1.5 h-8 text-xs font-semibold"
+                      className="bg-accent-700 hover:bg-accent-700/90 text-white flex items-center gap-1.5 h-8 text-xs font-semibold"
                     >
                       {pyodideLoading[question.id] ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
                           <span>Loading Pyodide...</span>
                         </>
                       ) : isRunning[question.id] ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
                           <span>Running...</span>
                         </>
                       ) : (
                         <>
-                          <Play className="w-3.5 h-3.5" />
+                          <Play className="w-3.5 h-3.5" strokeWidth={1.75} />
                           <span>Run Code</span>
                         </>
                       )}
                     </Button>
                   </div>
 
-                  <div className="border border-border rounded-lg overflow-hidden" style={{ height: 350 }}>
+                  <div className="border border-border rounded-[var(--radius-md)] overflow-hidden" style={{ height: 350 }}>
                     <Editor
                       height="350px"
                       language={question.language || "python"}
@@ -740,11 +737,11 @@ export function ExamScreen() {
                   )}
 
                   {/* Output Panel */}
-                  <div className="bg-bg-surface border border-border rounded-lg p-4 font-mono text-xs space-y-2">
+                  <div className="bg-bg-surface border border-border rounded-[var(--radius-md)] p-4 text-xs space-y-2">
                     <div className="text-text-muted font-semibold uppercase tracking-wider text-[10px]">
                       Console Output
                     </div>
-                    <pre className="text-text-primary whitespace-pre-wrap min-h-[80px] max-h-[200px] overflow-y-auto bg-bg-base p-3 rounded border border-border/50">
+                    <pre className="text-text-primary whitespace-pre-wrap min-h-[80px] max-h-[200px] overflow-y-auto bg-bg-base p-3 rounded-[var(--radius-sm)] border border-border">
                       {textOutput[question.id] || "(click Run to see output)"}
                     </pre>
                   </div>
@@ -758,17 +755,17 @@ export function ExamScreen() {
                   onClick={() => setCurrentIdx((i) => i - 1)}
                   disabled={currentIdx === 0}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
+                  <ChevronLeft className="w-4 h-4 mr-2" strokeWidth={1.75} />
                   Previous
                 </Button>
 
                 {currentIdx < questions.length - 1 ? (
                   <Button
                     onClick={() => setCurrentIdx((i) => i + 1)}
-                    className="bg-accent-info hover:bg-accent-info/90"
+                    className="bg-accent-700 hover:bg-accent-700/90"
                   >
                     Next
-                    <ChevronRight className="w-4 h-4 ml-2" />
+                    <ChevronRight className="w-4 h-4 ml-2" strokeWidth={1.75} />
                   </Button>
                 ) : (
                   <Button
@@ -777,7 +774,7 @@ export function ExamScreen() {
                     className="bg-accent-success hover:bg-accent-success/90"
                   >
                     {submitting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={1.75} />
                     ) : null}
                     Submit Exam
                   </Button>
@@ -804,9 +801,9 @@ export function ExamScreen() {
                   <button
                     key={q.id}
                     onClick={() => setCurrentIdx(idx)}
-                    className={`aspect-square rounded flex items-center justify-center text-xs font-mono transition-all ${
+                    className={`tnum aspect-square rounded-[var(--radius-sm)] flex items-center justify-center text-xs transition-all ${
                       isCurrent
-                        ? "bg-accent-info text-white"
+                        ? "bg-accent-700 text-white"
                         : isAnswered
                         ? "bg-accent-success/20 border border-accent-success/50 text-accent-success"
                         : "bg-bg-base border border-border text-text-muted hover:border-accent-info/40"
@@ -820,15 +817,15 @@ export function ExamScreen() {
 
             <div className="mt-5 space-y-1.5 text-xs">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-accent-info" />
+                <div className="w-3 h-3 rounded-[var(--radius-sm)] bg-accent-700" />
                 <span className="text-text-secondary">Current</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-accent-success/20 border border-accent-success/50" />
+                <div className="w-3 h-3 rounded-[var(--radius-sm)] bg-accent-success/20 border border-accent-success/50" />
                 <span className="text-text-secondary">Answered</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-bg-base border border-border" />
+                <div className="w-3 h-3 rounded-[var(--radius-sm)] bg-bg-base border border-border" />
                 <span className="text-text-secondary">Unanswered</span>
               </div>
             </div>
@@ -836,7 +833,7 @@ export function ExamScreen() {
             <div className="mt-5 pt-4 border-t border-border text-xs text-text-muted">
               <div className="flex justify-between">
                 <span>Answered</span>
-                <span className="font-mono text-text-primary">
+                <span className="tnum text-text-primary">
                   {totalAnswered}/{questions.length}
                 </span>
               </div>
@@ -853,14 +850,14 @@ export function ExamScreen() {
           onClick={requestFullscreen}
         >
           <div className="w-16 h-16 rounded-full bg-accent-warning/10 border-2 border-accent-warning/30 flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 text-accent-warning" />
+            <ShieldCheck className="w-8 h-8 text-accent-warning" strokeWidth={1.75} />
           </div>
           <p className="text-text-primary font-semibold">Fullscreen required</p>
           <p className="text-text-secondary text-sm">
             Click anywhere to re-enter fullscreen and continue
           </p>
           {violationCount > 0 && (
-            <p className="text-accent-warning text-xs font-mono">
+            <p className="tnum text-accent-warning text-xs">
               {violationCount}/{violationLimit} warnings used
             </p>
           )}

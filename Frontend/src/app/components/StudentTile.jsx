@@ -6,13 +6,16 @@ export function StudentTile({ student, onClick, className, children }) {
   const getTileStyle = () => {
     switch (student.status) {
       case "idle":
-        return { border: "1.5px solid rgba(245,158,11,0.35)", background: "rgba(245,158,11,0.03)" };
+        return {
+          border: "1.5px solid color-mix(in srgb, var(--accent-warning) 35%, transparent)",
+          background: "color-mix(in srgb, var(--accent-warning) 3%, transparent)",
+        };
       case "offline":
-        return { border: "1px solid rgba(255,255,255,0.06)" };
+        return { border: "1px solid var(--border)" };
       case "submitted":
-        return { border: "1px solid rgba(34,197,94,0.25)" };
+        return { border: "1px solid color-mix(in srgb, var(--accent-success) 25%, transparent)" };
       default:
-        return { border: "1px solid rgba(255,255,255,0.06)" };
+        return { border: "1px solid var(--border)" };
     }
   };
 
@@ -30,18 +33,14 @@ export function StudentTile({ student, onClick, className, children }) {
     <div
       onClick={onClick}
       className={cn(
-        "relative flex flex-col bg-bg-surface overflow-hidden group card-hover",
+        "relative flex flex-col bg-bg-surface overflow-hidden group card-hover rounded-[var(--radius-lg)]",
         onClick && "cursor-pointer",
         className
       )}
-      style={{
-        borderRadius: "12px",
-        ...getTileStyle(),
-        transition: "transform 200ms cubic-bezier(0.4,0,0.2,1), box-shadow 200ms cubic-bezier(0.4,0,0.2,1)",
-      }}
+      style={getTileStyle()}
     >
       {/* Screen Preview */}
-      <div className="relative h-24 bg-bg-base flex items-center justify-center" style={{ borderRadius: "12px 12px 0 0" }}>
+      <div className="relative h-24 bg-bg-base flex items-center justify-center rounded-t-[var(--radius-lg)]">
         {student.screenPreview ? (
           <img
             src={student.screenPreview}

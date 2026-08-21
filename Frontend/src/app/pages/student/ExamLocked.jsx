@@ -35,10 +35,10 @@ export function ExamLocked({
 
   return (
     <div className="h-screen bg-bg-base flex items-center justify-center p-6">
-      <div className="max-w-md w-full text-center space-y-6">
+      <div className="page-enter max-w-md w-full text-center space-y-6">
         {/* Lock Icon */}
         <div className="w-20 h-20 mx-auto rounded-full bg-accent-locked/10 border-2 border-accent-locked/30 flex items-center justify-center">
-          <ShieldOff className="w-10 h-10 text-accent-locked" />
+          <ShieldOff className="w-10 h-10 text-accent-locked" strokeWidth={1.75} />
         </div>
 
         {/* Heading */}
@@ -48,7 +48,7 @@ export function ExamLocked({
         </div>
 
         {/* Details card */}
-        <div className="p-6 bg-bg-surface border border-border rounded-lg">
+        <div className="p-6 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
           <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-text-secondary">Exam</span>
@@ -57,7 +57,7 @@ export function ExamLocked({
             {answeredCount !== undefined && questionCount !== undefined && (
               <div className="flex items-center justify-between">
                 <span className="text-text-secondary">Questions Answered</span>
-                <span className="font-mono font-medium text-text-primary">
+                <span className="tnum font-medium text-text-primary">
                   {answeredCount} / {questionCount}
                 </span>
               </div>
@@ -65,18 +65,18 @@ export function ExamLocked({
             {violationCount !== undefined && violationCount > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-text-secondary">Violations</span>
-                <span className="font-mono font-medium text-accent-warning">
+                <span className="tnum font-medium text-accent-warning">
                   {violationCount}
                 </span>
               </div>
             )}
             <div className="flex items-center justify-between">
               <span className="text-text-secondary">Locked At</span>
-              <span className="font-mono font-medium text-text-primary">{lockedTime}</span>
+              <span className="tnum font-medium text-text-primary">{lockedTime}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-text-secondary">Status</span>
-              <span className="px-2 py-0.5 text-xs font-mono border border-accent-locked/20 bg-accent-locked/10 text-accent-locked rounded-sm">
+              <span className="px-2 py-0.5 text-xs font-semibold border border-accent-locked/20 bg-accent-locked/10 text-accent-locked rounded-[var(--radius-sm)]">
                 ⊘ LOCKED
               </span>
             </div>
@@ -84,7 +84,7 @@ export function ExamLocked({
         </div>
 
         {/* Message */}
-        <div className="p-4 bg-accent-info/5 border border-accent-info/15 rounded-lg">
+        <div className="p-4 bg-accent-info/5 border border-accent-info/15 rounded-[var(--radius-md)]">
           <p className="text-sm text-text-primary">
             Your responses have been automatically saved and submitted. Results will be
             available once grading is complete.

@@ -293,8 +293,8 @@ export function CodeEditor({
     <div className="h-full flex flex-col bg-bg-base overflow-hidden">
       <style>{`
         .monaco-hint-line-highlight {
-          background: rgba(79, 142, 247, 0.15) !important;
-          border-left: 4px solid #4F8EF7 !important;
+          background: color-mix(in srgb, var(--accent-500) 15%, transparent) !important;
+          border-left: 2px solid var(--accent-500) !important;
         }
       `}</style>
 
