@@ -20,9 +20,33 @@ export function StudentMonitor() {
   const { sessionInfo } = useOutletContext();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [filter, setFilter] = useState("all");
   const [gridSize, setGridSize] = useState(5);
   const [selectedStudent, setSelectedStudent] = useState(null);
+
+  const fetchStudents = async () => {
+    if (!sessionInfo) return;
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/sessions/${sessionInfo.id}/students`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(data.students || []);
+        setError(false);
+      } else {
+        setError(true);
+      }
+    } catch (err) {
+      console.error("Failed to fetch students:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!sessionInfo) {
@@ -30,23 +54,6 @@ export function StudentMonitor() {
       return;
     }
 
-    const fetchStudents = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem("edusync_token");
-        const res = await fetch(`${API_BASE_URL}/sessions/${sessionInfo.id}/students`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setStudents(data.students || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch students:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchStudents();
 
     let socket = getSocket();
@@ -160,11 +167,16 @@ export function StudentMonitor() {
             </button>
           </div>
 
+          <div className="h-6 w-px bg-border shrink-0" aria-hidden="true" />
+
           {/* Grid Size Toggle */}
           <div className="flex items-center gap-1 border border-border rounded-[var(--radius-sm)]">
             <button
+              type="button"
               onClick={() => setGridSize(4)}
-              className={`p-2 transition-colors ${
+              aria-label="Show 4 students per row"
+              aria-pressed={gridSize === 4}
+              className={`p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
                 gridSize === 4
                   ? "bg-accent-info/10 text-accent-info"
                   : "text-text-secondary hover:text-text-primary"
@@ -173,8 +185,11 @@ export function StudentMonitor() {
               <Grid2x2 className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={() => setGridSize(5)}
-              className={`p-2 transition-colors ${
+              aria-label="Show 5 students per row"
+              aria-pressed={gridSize === 5}
+              className={`p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
                 gridSize === 5
                   ? "bg-accent-info/10 text-accent-info"
                   : "text-text-secondary hover:text-text-primary"
@@ -198,6 +213,17 @@ export function StudentMonitor() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : error ? (
+          <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
+            <p className="text-sm text-text-secondary">Couldn't load the student roster.</p>
+            <button
+              type="button"
+              onClick={fetchStudents}
+              className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            >
+              Try again
+            </button>
           </div>
         ) : students.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16">

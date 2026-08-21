@@ -172,121 +172,132 @@ export function TeacherSettings() {
     <div className="p-6 space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-semibold text-text-primary">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-text-secondary mt-1">
           Manage your account profile and password settings.
         </p>
       </div>
 
-      {/* Section 1: Profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <User className="h-5 w-5 text-primary" /> Profile
-          </CardTitle>
-          <CardDescription>
-            View and update your profile information.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-                className="opacity-70 cursor-not-allowed bg-muted"
-              />
-            </div>
-            <Button type="submit" disabled={savingProfile}>
-              {savingProfile ? "Saving..." : "Save Changes"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Sections 1 &amp; 2: Profile &amp; Change Password — two genuinely equivalent,
+          independent forms, paired side-by-side on wide viewports (matches
+          StudentSettings.jsx's identical structural decision). */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <Card className="h-full flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <User className="h-5 w-5 text-accent-500" /> Profile
+            </CardTitle>
+            <CardDescription>
+              View and update your profile information.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    disabled
+                    className="opacity-70 cursor-not-allowed text-text-muted"
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <Button type="submit" disabled={savingProfile}>
+                  {savingProfile ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
 
-      {/* Section 2: Change Password */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Key className="h-5 w-5 text-primary" /> Change Password
-          </CardTitle>
-          <CardDescription>
-            Update your account password.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min 8 characters)"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                required
-              />
-            </div>
-            <Button type="submit" disabled={savingPassword}>
-              {savingPassword ? "Updating..." : "Update Password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        <Card className="h-full flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Key className="h-5 w-5 text-accent-500" /> Change Password
+            </CardTitle>
+            <CardDescription>
+              Update your account password.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 8 characters)"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="pt-2">
+                <Button type="submit" disabled={savingPassword}>
+                  {savingPassword ? "Updating..." : "Update Password"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Section 3: Timetable Management */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5 text-emerald-400" /> Weekly Timetable
+            <Calendar className="h-5 w-5 text-accent-info" /> Weekly Timetable
           </CardTitle>
           <CardDescription>
             Configure or edit your recurring weekly teaching timetable and email reminder preferences.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-text-secondary mb-4">
             Use the conversational setup wizard to customize your day-by-day class schedule and automated broadcast reminders.
           </p>
           <Button
             type="button"
             onClick={() => navigate("/teacher/timetable")}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+            className="flex items-center gap-2 bg-accent-700 hover:bg-accent-700/90 text-white"
           >
             <Calendar className="h-4 w-4" />
             Edit Timetable Wizard
@@ -298,14 +309,14 @@ export function TeacherSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <HelpCircle className="h-5 w-5 text-primary" /> App Tour
+            <HelpCircle className="h-5 w-5 text-accent-500" /> App Tour
           </CardTitle>
           <CardDescription>
             Replay the guided feature tour for your role.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-muted-foreground mb-4">
+          <p className="text-xs text-text-secondary mb-4">
             Need a refresher on how to navigate EduSync? Launch the interactive spotlight tour anytime.
           </p>
           <Button

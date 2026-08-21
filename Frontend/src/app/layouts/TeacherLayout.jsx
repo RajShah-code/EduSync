@@ -275,7 +275,7 @@ export function TeacherLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-bg-base">
+    <div className="flex h-screen bg-bg-base" data-role="teacher">
       {/* Sidebar */}
       <aside
         className="flex flex-col bg-bg-surface border-r border-border"

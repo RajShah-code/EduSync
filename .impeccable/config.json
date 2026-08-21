@@ -38,6 +38,141 @@
         ],
         "createdAt": "2026-08-21T16:16:12.771Z",
         "reason": "Pre-existing app-wide micro/hint-text convention (10px labels, LAB badge), not introduced by this polish edit; same documentation gap already disclosed for AdminUsers.jsx and AttendanceHistory.jsx"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/teacher/ExamCreation.jsx"
+        ],
+        "createdAt": "2026-08-21T17:02:14.079Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/teacher/TeacherDashboard.jsx"
+        ],
+        "createdAt": "2026-08-21T17:02:27.411Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "files": [
+          "Frontend/src/app/pages/teacher/TeacherDashboard.jsx"
+        ],
+        "createdAt": "2026-08-21T17:02:27.710Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/teacher/LiveBroadcast.jsx"
+        ],
+        "createdAt": "2026-08-21T17:02:51.247Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "files": [
+          "Frontend/src/app/pages/teacher/LiveBroadcast.jsx"
+        ],
+        "createdAt": "2026-08-21T17:02:51.615Z",
+        "reason": "Pre-existing app-wide micro-label convention (matches DESIGN.md's Micro/badge-label step), not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "15px",
+        "files": [
+          "Frontend/src/app/layouts/TeacherLayout.jsx"
+        ],
+        "createdAt": "2026-08-21T17:10:19.139Z",
+        "reason": "Pre-existing font size, not introduced by this data-role attribute edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "files": [
+          "Frontend/src/app/layouts/TeacherLayout.jsx"
+        ],
+        "createdAt": "2026-08-21T17:10:19.434Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/layouts/TeacherLayout.jsx"
+        ],
+        "createdAt": "2026-08-21T17:10:19.701Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "15px",
+        "files": [
+          "Frontend/src/app/layouts/AdminLayout.jsx"
+        ],
+        "createdAt": "2026-08-21T17:10:37.807Z",
+        "reason": "Pre-existing font size, not introduced by this data-role attribute edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/layouts/AdminLayout.jsx"
+        ],
+        "createdAt": "2026-08-21T17:10:38.080Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "files": [
+          "Frontend/src/app/layouts/AdminLayout.jsx"
+        ],
+        "createdAt": "2026-08-21T17:10:38.324Z",
+        "reason": "Pre-existing app-wide micro-text convention, not introduced by this edit"
+      },
+      {
+        "rule": "side-tab",
+        "value": "border-l-4",
+        "files": [
+          "Frontend/src/app/pages/teacher/SubmissionReview.jsx"
+        ],
+        "createdAt": "2026-08-21T17:11:47.332Z",
+        "reason": "Functional list-row selection state (submission sidebar), not a decorative card border — same judgment already made for the identical pattern in AttendanceHistory.jsx and TeacherDashboard.jsx's border-l-2 variant during this session's critique"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(52, 199, 123, 0.7)",
+        "files": [
+          "Frontend/src/styles/theme.css"
+        ],
+        "createdAt": "2026-08-21T17:18:39.168Z",
+        "reason": "Pre-existing live-pulse keyframe color, not introduced by this role-accent-alias fix"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(232, 85, 107, 0.3)",
+        "files": [
+          "Frontend/src/styles/theme.css"
+        ],
+        "createdAt": "2026-08-21T17:18:39.444Z",
+        "reason": "Pre-existing glow-critical keyframe color, not introduced by this role-accent-alias fix"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(232, 85, 107, 0.6)",
+        "files": [
+          "Frontend/src/styles/theme.css"
+        ],
+        "createdAt": "2026-08-21T17:18:39.722Z",
+        "reason": "Pre-existing glow-critical keyframe color, not introduced by this role-accent-alias fix"
       }
     ]
   }

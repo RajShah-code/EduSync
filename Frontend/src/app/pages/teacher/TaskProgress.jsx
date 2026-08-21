@@ -386,7 +386,7 @@ export function TaskProgress() {
                   setActiveTaskId(t.id);
                   activeTaskIdRef.current = t.id;
                 }}
-                className={`w-full text-left p-3 rounded-lg flex items-center justify-between border transition-all ${
+                className={`w-full text-left p-3 rounded-[var(--radius-lg)] flex items-center justify-between border transition-all ${
                   isSelected 
                     ? "bg-accent-info/10 border-accent-info/30" 
                     : "hover:bg-bg-elevated border-transparent"
@@ -416,7 +416,7 @@ export function TaskProgress() {
             {expiredAlerts.map(alert => (
               <div 
                 key={alert.task_id} 
-                className="p-4 bg-accent-warning/10 border border-accent-warning/20 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                className="p-4 bg-accent-warning/10 border border-accent-warning/20 rounded-[var(--radius-lg)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
               >
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-accent-warning mt-0.5 flex-shrink-0" />
@@ -567,14 +567,14 @@ export function TaskProgress() {
 
         {/* ── Doubt Resolution Queue ─────────────────────────────────── */}
         {activeTask && (
-          <div className="border border-border rounded-lg bg-bg-surface shadow-sm mt-6">
+          <div className="border border-border rounded-[var(--radius-lg)] bg-bg-surface mt-6">
 
             {/* Panel header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-bg-elevated rounded-t-lg">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-bg-elevated rounded-t-[var(--radius-lg)]">
               <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary flex items-center gap-1.5">
                 <HelpCircle className="w-4 h-4 text-accent-info flex-shrink-0" />
                 Doubt Resolution Queue
-                <span className="ml-1 px-1.5 py-0.5 bg-accent-info/15 text-accent-info border border-accent-info/25 rounded text-[10px] font-mono">
+                <span className="ml-1 px-1.5 py-0.5 bg-accent-info/15 text-accent-info border border-accent-info/25 rounded-[var(--radius-sm)] text-[10px] font-mono">
                   {doubts.filter(d => d.status === "pending").length} pending
                 </span>
               </h3>
@@ -651,8 +651,8 @@ export function TaskProgress() {
                     </div>
 
                     {/* Monaco code snapshot — untouched */}
-                    <div className="h-64 border border-border rounded overflow-hidden relative">
-                      <div className="absolute top-2 right-2 z-10 px-2 py-0.5 bg-black/60 text-[9px] font-mono text-white rounded">
+                    <div className="h-64 border border-border rounded-[var(--radius-md)] overflow-hidden relative">
+                      <div className="absolute top-2 right-2 z-10 px-2 py-0.5 bg-black/60 text-[9px] font-mono text-white rounded-[var(--radius-sm)]">
                         Read-only Snapshot
                       </div>
                       <Editor
@@ -727,11 +727,11 @@ export function TaskProgress() {
                         </Button>
                       </form>
                     ) : (
-                      <div className="p-3 bg-bg-base border border-border rounded text-xs text-text-secondary space-y-1">
+                      <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] text-xs text-text-secondary space-y-1">
                         <div className="font-semibold text-accent-success flex items-center gap-1.5 mb-1">
                           <Check className="w-4 h-4" /> Resolved Hint
                         </div>
-                        <div className="font-mono bg-bg-surface p-2 border border-border/40 rounded text-text-primary">
+                        <div className="font-mono bg-bg-surface p-2 border border-border/40 rounded-[var(--radius-sm)] text-text-primary">
                           {selectedDoubt.teacher_response_text}
                         </div>
                         {selectedDoubt.hint_line_start && (

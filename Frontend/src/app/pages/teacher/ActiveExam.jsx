@@ -6,6 +6,16 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { Timer } from "../../components/Timer";
 import { Button } from "../../components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "../../components/ui/alert-dialog";
+import {
   AlertTriangle,
   Lock,
   FileText,
@@ -24,6 +34,7 @@ export function ActiveExam() {
   const [studentAttempts, setStudentAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ending, setEnding] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   // Seconds remaining — derived from server-side start + time_limit
   const [secondsRemaining, setSecondsRemaining] = useState(null);
@@ -130,7 +141,7 @@ export function ActiveExam() {
 
   // ── End exam early ──────────────────────────────────────────────────────────
   const handleEndExam = async () => {
-    if (!window.confirm("End the exam for all students now? This cannot be undone.")) return;
+    setShowEndConfirm(false);
     setEnding(true);
     try {
       const res = await fetch(`${API_BASE_URL}/exams/${examId}/end`, {
@@ -244,7 +255,7 @@ export function ActiveExam() {
                 size="sm"
                 variant="outline"
                 className="border-accent-locked text-accent-locked hover:bg-accent-locked/10"
-                onClick={handleEndExam}
+                onClick={() => setShowEndConfirm(true)}
                 disabled={ending}
               >
                 {ending ? (
@@ -358,6 +369,31 @@ export function ActiveExam() {
           </div>
         )}
       </div>
+
+      {/* ── End Exam Confirmation ────────────────────────────────────────────── */}
+      <AlertDialog open={showEndConfirm} onOpenChange={setShowEndConfirm}>
+        <AlertDialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-text-primary">
+              End the exam for all students now?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-text-secondary">
+              This cannot be undone. All students will be locked out immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-text-secondary hover:bg-bg-elevated bg-transparent">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleEndExam}
+              className="bg-accent-critical hover:bg-accent-critical/90 text-white border-0"
+            >
+              End Exam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

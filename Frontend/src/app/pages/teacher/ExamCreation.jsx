@@ -645,6 +645,7 @@ export function ExamCreation() {
                         onClick={() => deleteQuestionLocally(activeSet, q.id)}
                         className="text-text-muted hover:text-accent-critical transition-colors flex-shrink-0"
                         title="Remove from list"
+                        aria-label={`Remove question ${idx + 1} from list: ${q.question_text}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -914,9 +915,7 @@ export function ExamCreation() {
                       Open Exam
                     </Button>
                   ) : (
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold bg-accent-warning/15 text-accent-warning border border-accent-warning/20 animate-pulse">
-                      ● Waiting Room Open
-                    </span>
+                    <StatusBadge status="waiting_room" />
                   )}
                   <Button
                     data-tour="teacher-start-exam-now"

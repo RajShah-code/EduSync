@@ -50,7 +50,7 @@ export function AdminLayout() {
   if (!adminUser) return null; // Guard loading state
 
   return (
-    <div className="flex h-screen bg-bg-base">
+    <div className="flex h-screen bg-bg-base" data-role="admin">
       {/* Sidebar */}
       <aside
         className="flex flex-col bg-bg-surface"

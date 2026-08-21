@@ -61,31 +61,38 @@ export function Analytics() {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetchingClass, setFetchingClass] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch target classes on mount
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const token = localStorage.getItem("edusync_token");
-        const res = await fetch(`${API_BASE_URL}/classes`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const classList = data.classes || [];
-          setClasses(classList);
-          if (classList.length > 0) {
-            setSelectedClassId(classList[0].id.toString());
-          }
+  const fetchClasses = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/classes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const classList = data.classes || [];
+        setClasses(classList);
+        if (classList.length > 0) {
+          setSelectedClassId(classList[0].id.toString());
         }
-      } catch (err) {
-        console.error("Failed to fetch classes:", err);
-      } finally {
-        setLoading(false);
+        setError(null);
+      } else {
+        setError("We couldn't load your classes. Please try again.");
       }
-    };
-    fetchClasses();
+    } catch (err) {
+      console.error("Failed to fetch classes:", err);
+      setError("A network error occurred while loading your classes. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
 
   // Fetch analytics for selected class
   const fetchAnalytics = useCallback(async (classId, silent = false) => {
@@ -99,11 +106,14 @@ export function Analytics() {
       if (res.ok) {
         const data = await res.json();
         setAnalyticsData(data);
+        setError(null);
       } else {
         console.error("Failed to fetch class analytics");
+        if (!silent) setError("We couldn't load analytics for this class. Please try again.");
       }
     } catch (err) {
       console.error("Error fetching class analytics:", err);
+      if (!silent) setError("A network error occurred while loading analytics. Please try again.");
     } finally {
       if (!silent) setFetchingClass(false);
     }
@@ -161,6 +171,24 @@ export function Analytics() {
           <Skeleton className="h-8 w-48" />
         </div>
         <AnalyticsContentSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <h1 className="text-2xl font-semibold text-text-primary mb-4">Analytics Dashboard</h1>
+        <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
+          <p className="text-sm text-text-secondary text-center max-w-sm">{error}</p>
+          <button
+            type="button"
+            onClick={() => (selectedClassId ? fetchAnalytics(selectedClassId) : fetchClasses())}
+            className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
@@ -286,28 +314,29 @@ export function Analytics() {
               </h3>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={attendanceTrend} id="attendance-trend-chart">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3A" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis
                     dataKey="date"
-                    stroke="#8B8BA7"
+                    stroke="var(--text-secondary)"
                     style={{ fontSize: 11 }}
-                    tick={{ fontFamily: "JetBrains Mono" }}
+                    tick={{ fontFamily: "var(--font-sans)" }}
                   />
                   <YAxis
-                    stroke="#8B8BA7"
-                    style={{ fontSize: 11 }}
-                    tick={{ fontFamily: "JetBrains Mono" }}
+                    stroke="var(--text-secondary)"
+                    style={{ fontSize: 11, fontVariantNumeric: "tabular-nums" }}
+                    tick={{ fontFamily: "var(--font-sans)" }}
                     domain={[0, 100]}
                   />
                   <Tooltip
-                    cursor={{ stroke: "rgba(255,255,255,0.1)", strokeWidth: 1 }}
+                    cursor={{ stroke: "color-mix(in srgb, var(--text-primary) 10%, transparent)", strokeWidth: 1 }}
                     contentStyle={{
-                      backgroundColor: "#111118",
-                      border: "1px solid #2A2A3A",
+                      backgroundColor: "var(--bg-elevated)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
-                      color: "#F0F0F5",
-                      fontFamily: "JetBrains Mono",
+                      color: "var(--text-primary)",
+                      fontFamily: "var(--font-sans)",
                       fontSize: 12,
+                      fontVariantNumeric: "tabular-nums",
                     }}
                     formatter={(value) => [`${value}%`, "Attendance Rate"]}
                   />
@@ -315,9 +344,9 @@ export function Analytics() {
                     type="monotone"
                     dataKey="rate"
                     name="attendance-rate"
-                    stroke="#4F8EF7"
+                    stroke="var(--accent-info)"
                     strokeWidth={2.5}
-                    dot={{ fill: "#4F8EF7", r: 4 }}
+                    dot={{ fill: "var(--accent-info)", r: 4 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -332,35 +361,36 @@ export function Analytics() {
               </div>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={examPerformance} id="exam-performance-chart">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2A2A3A" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis
                     dataKey="exam"
-                    stroke="#8B8BA7"
+                    stroke="var(--text-secondary)"
                     style={{ fontSize: 11 }}
-                    tick={{ fontFamily: "JetBrains Mono" }}
+                    tick={{ fontFamily: "var(--font-sans)" }}
                   />
                   <YAxis
-                    stroke="#8B8BA7"
-                    style={{ fontSize: 11 }}
-                    tick={{ fontFamily: "JetBrains Mono" }}
+                    stroke="var(--text-secondary)"
+                    style={{ fontSize: 11, fontVariantNumeric: "tabular-nums" }}
+                    tick={{ fontFamily: "var(--font-sans)" }}
                     domain={[0, 100]}
                   />
                   <Tooltip
-                    cursor={{ fill: "rgba(255,255,255,0.06)" }}
+                    cursor={{ fill: "color-mix(in srgb, var(--text-primary) 6%, transparent)" }}
                     contentStyle={{
-                      backgroundColor: "#111118",
-                      border: "1px solid #2A2A3A",
+                      backgroundColor: "var(--bg-elevated)",
+                      border: "1px solid var(--border)",
                       borderRadius: "8px",
-                      color: "#F0F0F5",
-                      fontFamily: "JetBrains Mono",
+                      color: "var(--text-primary)",
+                      fontFamily: "var(--font-sans)",
                       fontSize: 12,
+                      fontVariantNumeric: "tabular-nums",
                     }}
                     formatter={(value, name, item) => [
                       `${value}% (${item.payload.graded_count}/${item.payload.total_count} graded)`,
                       "Exam Avg Score",
                     ]}
                   />
-                  <Bar dataKey="avg" name="exam-avg-score" fill="#22C55E" />
+                  <Bar dataKey="avg" name="exam-avg-score" fill="var(--accent-success)" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -378,6 +408,7 @@ export function Analytics() {
             </div>
 
             <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-bg-elevated">
@@ -444,6 +475,7 @@ export function Analytics() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
             <p className="text-xs text-text-muted italic text-right mt-1">
               * = exam not yet fully graded, score may change
