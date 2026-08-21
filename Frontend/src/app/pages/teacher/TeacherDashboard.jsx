@@ -2,13 +2,13 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useOutletContext } from "react-router";
 import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
 import {
   Play,
   Square,
   Calendar,
   BookOpen,
   School,
-  Loader2,
   Bell,
   Sparkles,
   Plus,
@@ -349,9 +349,16 @@ export function TeacherDashboard() {
         </div>
 
         {loadingTimetable ? (
-          <div className="p-8 bg-bg-surface border border-border rounded-[var(--radius-lg)] flex items-center justify-center gap-2 text-text-muted">
-            <Loader2 className="w-5 h-5 animate-spin text-accent-success" />
-            <span className="text-sm">Loading today's schedule...</span>
+          <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] divide-y divide-border overflow-hidden">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="pl-4 pr-4 py-3.5 flex items-center gap-4">
+                <Skeleton className="w-[100px] h-11 rounded-[var(--radius-md)] shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : !hasAnyTimetable ? (
           /* EMPTY STATE 1: No Timetable Configured At All */

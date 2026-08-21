@@ -1,0 +1,44 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "files": [
+          "Frontend/src/app/pages/admin/AdminUsers.jsx"
+        ],
+        "createdAt": "2026-08-21T14:54:56.551Z",
+        "reason": "Pre-existing app-wide micro-label convention (table header caps, badge text), not introduced by this harden edit; matches DESIGN.md's Micro/badge-label step, used identically across the codebase"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/admin/AdminUsers.jsx"
+        ],
+        "createdAt": "2026-08-21T14:54:56.826Z",
+        "reason": "Pre-existing app-wide hint/meta-text convention (optional-field hints, credential labels, table badges), not introduced by this harden edit; DESIGN.md's type ramp omits this step, which is a documentation gap not a code defect"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/student/AttendanceHistory.jsx"
+        ],
+        "createdAt": "2026-08-21T15:50:59.028Z",
+        "reason": "Filter-count badge uses the same pre-existing app-wide micro/hint-text convention (10px) already established elsewhere in the codebase (e.g. AdminUsers.jsx); DESIGN.md's type ramp omits this step, a documentation gap not a code defect"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/student/StudentDashboard.jsx"
+        ],
+        "createdAt": "2026-08-21T16:16:12.771Z",
+        "reason": "Pre-existing app-wide micro/hint-text convention (10px labels, LAB badge), not introduced by this polish edit; same documentation gap already disclosed for AdminUsers.jsx and AttendanceHistory.jsx"
+      }
+    ]
+  }
+}

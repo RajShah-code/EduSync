@@ -3,8 +3,9 @@ import { useState, useEffect, useRef } from "react";
 import { useOutletContext, useParams, useNavigate } from "react-router";
 import { CodeEditor } from "./CodeEditor";
 import { getSocket } from "../../store/socket";
-import { Lock, Unlock, CheckCircle, FileCode, AlertCircle, Loader2 } from "lucide-react";
+import { Lock, Unlock, CheckCircle, FileCode, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Skeleton } from "../../components/ui/skeleton";
 
 export function TaskWorkspace() {
   const { joinedSession } = useOutletContext();
@@ -14,6 +15,7 @@ export function TaskWorkspace() {
   const [tasks, setTasks] = useState([]);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [taskFetchError, setTaskFetchError] = useState(false);
 
   // Active task's editor state
   const [activeCode, setActiveCode] = useState("");
@@ -36,6 +38,7 @@ export function TaskWorkspace() {
         const data = await res.json();
         const sortedTasks = data.tasks || [];
         setTasks(sortedTasks);
+        setTaskFetchError(false);
 
         if (sortedTasks.length > 0) {
           // Determine which task to select
@@ -75,9 +78,12 @@ export function TaskWorkspace() {
             }
           }
         }
+      } else {
+        setTaskFetchError(true);
       }
     } catch (err) {
       console.error("[TaskWorkspace] Error fetching tasks:", err);
+      setTaskFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -305,8 +311,54 @@ export function TaskWorkspace() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-bg-base flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-accent-info animate-spin" />
+      <div className="h-screen flex bg-bg-base overflow-hidden">
+        {/* Task Queue Left Sidebar */}
+        <aside className="w-64 border-r border-border bg-bg-surface flex flex-col flex-shrink-0">
+          <div className="p-4 border-b border-border flex-shrink-0 space-y-2">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-40" />
+          </div>
+          <div className="flex-1 p-2 space-y-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="p-3 rounded-lg space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        {/* Editor area */}
+        <div className="flex-1 flex flex-col">
+          <div className="p-4 border-b border-border flex items-center justify-between gap-4">
+            <Skeleton className="h-5 w-56" />
+            <Skeleton className="h-8 w-24" />
+          </div>
+          <div className="flex-1 p-4">
+            <Skeleton className="h-full w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (taskFetchError) {
+    return (
+      <div className="h-screen bg-bg-base flex flex-col items-center justify-center gap-3">
+        <AlertCircle className="w-12 h-12 text-accent-critical" />
+        <h3 className="text-base font-medium text-text-primary">
+          Couldn't load your tasks
+        </h3>
+        <p className="text-sm text-text-secondary">
+          A network error occurred. Please try again.
+        </p>
+        <button
+          type="button"
+          onClick={() => { setLoading(true); fetchTasks(); }}
+          className="mt-2 px-4 py-2 bg-accent-info hover:bg-accent-info/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -352,7 +404,7 @@ export function TaskWorkspace() {
         </div>
 
         {allTasksCompleted && (
-          <div className="mx-3 my-2 p-2.5 bg-accent-success/15 border border-accent-success/30 rounded flex gap-2 items-center">
+          <div className="mx-2 mb-2 p-2.5 bg-accent-success/15 border border-accent-success/30 rounded flex gap-2 items-center">
             <CheckCircle className="w-4 h-4 text-accent-success flex-shrink-0" />
             <span className="text-[10px] font-semibold text-accent-success">
               All tasks completed!
@@ -371,9 +423,9 @@ export function TaskWorkspace() {
                 key={t.id}
                 disabled={isLocked}
                 onClick={() => selectTask(t)}
-                className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-all ${
-                  isLocked 
-                    ? "opacity-40 cursor-not-allowed" 
+                className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
+                  isLocked
+                    ? "opacity-40 cursor-not-allowed"
                     : isSelected
                       ? "bg-accent-info/10 border border-accent-info/30"
                       : "hover:bg-bg-elevated border border-transparent"

@@ -391,7 +391,7 @@ export function CodeEditor({
         {/* Left Sidebar: Task Description */}
         <div
           className={`border-r border-border bg-bg-surface transition-all duration-200 overflow-y-auto ${
-            sidebarOpen ? "w-80" : "w-0"
+            sidebarOpen ? "w-80 max-w-[26vw]" : "w-0"
           }`}
         >
           {sidebarOpen && (
@@ -408,9 +408,10 @@ export function CodeEditor({
               {/* Resolved Doubt Banner / Hint Display */}
               {hintRange && (
                 <div className="p-3 bg-accent-info/10 border border-accent-info/20 rounded-md relative space-y-2">
-                  <button 
+                  <button
                     onClick={onDismissHint}
-                    className="absolute top-2 right-2 text-text-muted hover:text-text-primary"
+                    aria-label="Dismiss instructor hint"
+                    className="absolute top-2 right-2 text-text-muted hover:text-text-primary rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -433,7 +434,9 @@ export function CodeEditor({
         {/* Toggle Description Sidebar */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="w-5 bg-bg-surface border-r border-border hover:bg-bg-elevated transition-colors flex items-center justify-center flex-shrink-0"
+          aria-label={sidebarOpen ? "Collapse task description" : "Expand task description"}
+          aria-expanded={sidebarOpen}
+          className="w-5 bg-bg-surface border-r border-border hover:bg-bg-elevated transition-colors flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-inset"
         >
           {sidebarOpen ? (
             <ChevronLeft className="w-3.5 h-3.5 text-text-muted" />
@@ -471,7 +474,9 @@ export function CodeEditor({
         {/* Toggle Output Sidebar */}
         <button
           onClick={() => setOutputOpen(!outputOpen)}
-          className="w-5 bg-bg-surface border-l border-border hover:bg-bg-elevated transition-colors flex items-center justify-center flex-shrink-0"
+          aria-label={outputOpen ? "Collapse console output" : "Expand console output"}
+          aria-expanded={outputOpen}
+          className="w-5 bg-bg-surface border-l border-border hover:bg-bg-elevated transition-colors flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-inset"
         >
           {outputOpen ? (
             <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
@@ -483,7 +488,7 @@ export function CodeEditor({
         {/* Right Sidebar: Execution Console/Output Drawer */}
         <div
           className={`border-l border-border bg-bg-surface transition-all duration-200 flex flex-col ${
-            outputOpen ? "w-96" : "w-0"
+            outputOpen ? "w-96 max-w-[30vw]" : "w-0"
           }`}
         >
           {outputOpen && (

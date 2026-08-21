@@ -11,8 +11,49 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { BarChart2, Users, CheckCircle2, Award, AlertTriangle, Loader2 } from "lucide-react";
+import { BarChart2, Users, CheckCircle2, Award, AlertTriangle } from "lucide-react";
 import { getSocket } from "../../store/socket";
+import { Skeleton } from "../../components/ui/skeleton";
+
+function AnalyticsContentSkeleton() {
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="p-4 bg-bg-surface border border-border rounded-lg space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-7 w-16" />
+            <Skeleton className="h-3 w-32" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {[0, 1].map((i) => (
+          <div key={i} className="p-6 bg-bg-surface border border-border rounded-lg space-y-4">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-[220px] w-full" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-4">
+        <Skeleton className="h-5 w-32" />
+        <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+          <div className="divide-y divide-border">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export function Analytics() {
   const [classes, setClasses] = useState([]);
@@ -111,9 +152,15 @@ export function Analytics() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24 text-text-muted gap-2">
-        <Loader2 className="w-5 h-5 animate-spin" />
-        <span>Loading Analytics Dashboard...</span>
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <Skeleton className="h-8 w-48" />
+        </div>
+        <AnalyticsContentSkeleton />
       </div>
     );
   }
@@ -151,10 +198,7 @@ export function Analytics() {
       </div>
 
       {fetchingClass ? (
-        <div className="flex items-center justify-center py-16 text-text-muted gap-2">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Fetching class insights...</span>
-        </div>
+        <AnalyticsContentSkeleton />
       ) : !hasData ? (
         /* Preserved Empty State */
         <div className="flex flex-col items-center justify-center py-20 gap-3">

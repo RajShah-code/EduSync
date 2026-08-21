@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-21T00:00:00Z",
+  "title": "Design System: EduSync",
+  "extensions": {
+    "colorMeta": {
+      "student-500": { "role": "primary", "displayName": "Student Orange", "canonical": "#E6802D", "tonalRamp": ["#571F05", "#BA5500", "#E6802D", "#FFAC68", "#FEE6D4"] },
+      "teacher-500": { "role": "primary", "displayName": "Teacher Royal Violet", "canonical": "#A799FF", "tonalRamp": ["#27154F", "#5A37C5", "#A799FF", "#BFBBFF", "#E4E5FF"] },
+      "admin-500": { "role": "primary", "displayName": "Admin Ink Blue", "canonical": "#4895DF", "tonalRamp": ["#012854", "#096DBA", "#4895DF", "#89C4FB", "#DBEAF8"] },
+      "accent-success": { "role": "semantic", "displayName": "Live/Success Forest Green", "canonical": "#15803D" },
+      "accent-warning": { "role": "semantic", "displayName": "Warning Amber", "canonical": "#DDA53D" },
+      "accent-critical": { "role": "semantic", "displayName": "Critical Flag Red", "canonical": "#DC2626" },
+      "accent-locked": { "role": "semantic", "displayName": "Locked Slate", "canonical": "#7A8699" },
+      "bg-base": { "role": "neutral", "displayName": "True Black", "canonical": "#000000", "tonalRamp": ["#000000", "#111113", "#17171A", "#1D1D21"] },
+      "text-primary": { "role": "neutral", "displayName": "Primary Text", "canonical": "#F1F2F5" },
+      "text-secondary": { "role": "neutral", "displayName": "Secondary Text", "canonical": "#93969F" },
+      "text-muted": { "role": "neutral", "displayName": "Muted Text", "canonical": "#585C68" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display / Inter Tight", "purpose": "Page titles and section headers (h1/h2/h3) only." },
+      "body": { "displayName": "Body / Inter", "purpose": "Default reading size for the whole app; buttons and inputs share it." },
+      "label": { "displayName": "Label", "purpose": "Form labels and small UI text." }
+    },
+    "shadows": [
+      { "name": "modal", "value": "0 4px 6px rgba(0,0,0,0.4), 0 24px 48px rgba(0,0,0,0.5)", "purpose": "The only surface allowed to lift with a true shadow." },
+      { "name": "focus", "value": "0 0 0 2px rgba(72,149,223,0.4)", "purpose": "Keyboard/focus-visible ring, distinct from hover." }
+    ],
+    "motion": [
+      { "name": "page-enter", "value": "220ms ease-out, opacity 0→1 + translateY(8px)→0", "purpose": "Route/page mount entrance." },
+      { "name": "transition-std", "value": "160ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default interactive-element transition." },
+      { "name": "badge-enter", "value": "200ms cubic-bezier(0.23, 1, 0.32, 1), opacity 0→1 + scale(0.95)→1", "purpose": "A status badge appearing in response to a real state change." },
+      { "name": "live-pulse", "value": "2s cubic-bezier(0.4, 0, 0.6, 1) infinite, ripple box-shadow", "purpose": "LIVE / EXAM LIVE badge indicator." },
+      { "name": "pulse-dot", "value": "1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite, opacity 1↔0.4", "purpose": "Idle / in-progress / waiting-room badge indicator." },
+      { "name": "glow-critical", "value": "1.5s ease-in-out infinite, box-shadow 0.3↔0.6 alpha", "purpose": "Restrained glow for critical timers/states, no bloom." },
+      { "name": "nav-hover-shift", "value": "150ms cubic-bezier(0.4, 0, 0.2, 1), translateX(2px)", "purpose": "Inactive nav row hover nudge." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default call-to-action button; role-accent filled.",
+      "html": "<button class=\"ds-btn-primary\">Save Changes</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 8px; border: none; background: var(--accent-700, #096DBA); color: #ffffff; font-size: 14px; font-weight: 500; transition: background 160ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: color-mix(in srgb, var(--accent-700, #096DBA) 90%, white); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-500, #4895DF) 50%, transparent); } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action button; hairline border, transparent fill.",
+      "html": "<button class=\"ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 8px; border: 1px solid #232327; background: #000000; color: #F1F2F5; font-size: 14px; font-weight: 500; transition: background 160ms cubic-bezier(0.4,0,0.2,1), border-color 160ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-outline:hover { background: #17171A; border-color: #2E2E33; } .ds-btn-outline:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(72,149,223,0.3); }"
+    },
+    {
+      "name": "Status Badge (wash)",
+      "kind": "chip",
+      "refersTo": "status-badge-wash",
+      "description": "Signature component. Default tinted status chip — idle/warning/info-class states read as a wash, not a solid fill.",
+      "html": "<span class=\"ds-status-badge ds-status-badge--warning\"><svg class=\"ds-status-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg><span>NOT VIEWING</span></span>",
+      "css": ".ds-status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; font-variant-numeric: tabular-nums; } .ds-status-icon { width: 12px; height: 12px; flex-shrink: 0; } .ds-status-badge--warning { color: #DDA53D; background: color-mix(in srgb, #DDA53D 12%, transparent); border: 1px solid color-mix(in srgb, #DDA53D 28%, transparent); }"
+    },
+    {
+      "name": "Status Badge (solid, decisive)",
+      "kind": "chip",
+      "refersTo": "status-badge-solid",
+      "description": "Signature component. Solid-fill variant reserved for decisive present/absent/active states (The Solid-Means-Decisive Rule).",
+      "html": "<span class=\"ds-status-badge ds-status-badge--solid-success\"><svg class=\"ds-status-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\"><path d=\"M20 6L9 17l-5-5\"/></svg><span>PRESENT</span></span>",
+      "css": ".ds-status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; font-variant-numeric: tabular-nums; } .ds-status-icon { width: 12px; height: 12px; flex-shrink: 0; } .ds-status-badge--solid-success { color: #ffffff; background: #15803D; border: 1px solid transparent; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Base container. Flat at rest; hover brightens the hairline border only, never lifts.",
+      "html": "<div class=\"ds-card\"><h4 class=\"ds-card-title\">Session Overview</h4><p class=\"ds-card-desc\">12 students connected</p></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 24px; background: #111113; color: #F1F2F5; border: 1px solid #232327; border-radius: 12px; padding: 24px; transition: border-color 180ms cubic-bezier(0.4,0,0.2,1); } .ds-card:hover { border-color: #2E2E33; } .ds-card-title { font-family: 'Inter Tight', Inter, system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; margin: 0; } .ds-card-desc { color: #93969F; font-size: 14px; margin: 4px 0 0; }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text field. Hairline border, true-black fill, accent-ring focus (no glow/lift).",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search students…\" />",
+      "css": ".ds-input { height: 36px; width: 100%; padding: 4px 12px; border-radius: 8px; border: 1px solid #232327; background: #000000; color: #F1F2F5; font-size: 14px; outline: none; transition: border-color 160ms, box-shadow 160ms; } .ds-input::placeholder { color: #93969F; } .ds-input:focus-visible { border-color: var(--accent-500, #4895DF); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-500, #4895DF) 20%, transparent); }"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Signature pattern. Active = flat accent tint + bold label, no rail/gradient/chip. Inactive hovers with a 2px nudge.",
+      "html": "<a class=\"ds-nav-item ds-nav-item--active\"><svg class=\"ds-nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/></svg><span>Dashboard</span></a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 2px; text-decoration: none; transition: background 150ms cubic-bezier(0.4,0,0.2,1), color 150ms cubic-bezier(0.4,0,0.2,1), transform 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-icon { width: 18px; height: 18px; opacity: 0.75; transition: opacity 150ms cubic-bezier(0.4,0,0.2,1); } .ds-nav-item--active { background: color-mix(in srgb, var(--accent-500, #4895DF) 13%, transparent); color: var(--accent-500, #4895DF); font-weight: 500; } .ds-nav-item--active .ds-nav-icon { opacity: 1; } .ds-nav-item--inactive { color: #93969F; } .ds-nav-item--inactive:hover { background: #1D1D21; color: #F1F2F5; transform: translateX(2px); } .ds-nav-item--inactive:hover .ds-nav-icon { opacity: 1; }"
+    },
+    {
+      "name": "Student Tile",
+      "kind": "custom",
+      "refersTo": "student-tile",
+      "description": "Signature component. Screen-preview grid tile for teacher monitoring; status-tinted border/overlay reflects live student state.",
+      "html": "<div class=\"ds-student-tile ds-student-tile--idle\"><div class=\"ds-tile-preview\"><span class=\"ds-status-badge ds-status-badge--warning\" style=\"position:absolute;top:8px;right:8px;\">NOT VIEWING</span></div><div class=\"ds-tile-info\"><div class=\"ds-tile-name\">Aditi Sharma</div><div class=\"ds-tile-meta\">Away since: 10:42:03</div></div></div>",
+      "css": ".ds-student-tile { position: relative; display: flex; flex-direction: column; background: #111113; overflow: hidden; border-radius: 12px; transition: border-color 180ms cubic-bezier(0.4,0,0.2,1); } .ds-student-tile--idle { border: 1.5px solid color-mix(in srgb, #DDA53D 35%, transparent); background: color-mix(in srgb, #DDA53D 3%, transparent); } .ds-tile-preview { position: relative; height: 96px; background: #000000; border-radius: 12px 12px 0 0; } .ds-tile-info { padding: 12px; display: flex; flex-direction: column; gap: 4px; } .ds-tile-name { font-size: 14px; font-weight: 500; color: #F1F2F5; } .ds-tile-meta { font-size: 12px; font-family: inherit; font-variant-numeric: tabular-nums; color: #DDA53D; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Lab",
+    "overview": "EduSync renders as a dark, instrumented computer-lab environment, not a themeable dashboard that happens to default to dark. The base is true black (#000000) by direct decision, with surfaces built from three tightly-stepped near-black layers (bg-surface, bg-elevated, bg-surface-3) instead of shadows — elevation is a lightness shift, never a drop shadow. Color is spent deliberately: role identity (student/teacher/admin) lives in exactly one accent scale that repaints shared primitives via a [data-role] scope, and semantic status (live, idle, locked, critical) is a completely separate palette so a role's brand color and a status's meaning never compete for the same pixel.\n\nStatus is the star of this system. Because the product's whole value proposition is trustworthy, real-time visibility into who's present, focused, or at risk, the interface is built to make status legible at a glance — through the StatusBadge and StudentTile vocabulary — while everything else (buttons, cards, forms) stays deliberately quiet so it never competes with that signal.\n\nConfirmed rejections: no light theme, no theme toggle (dark is the only mode this app renders), no drop-shadow-driven elevation, no decorative motion, no monospace type anywhere.",
+    "keyCharacteristics": [
+      "True-black base with near-black tonal steps for surface hierarchy, not shadows",
+      "One shared accent slot (--accent-*) repainted per role via [data-role], so every primitive is role-aware without per-component branching",
+      "Status color is a separate, fixed semantic palette — never reused as a role's brand color",
+      "Flat by default; hairline borders brighten on hover instead of lifting",
+      "Motion is restrained and meaningful, and every animation has a prefers-reduced-motion fallback"
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Only one role accent is ever live in a given scope ([data-role=\"student|teacher|admin\"]). Shared primitives all read --accent-* and inherit whichever role they render inside — never hardcode a role's hex into a shared component.", "section": "colors" },
+      { "name": "The Solid-Means-Decisive Rule", "body": "A status chip defaults to a tinted wash. Solid fill (white text on a solid token background) is reserved for statuses that must read as decisive and high-stakes — present, absent, active — never applied by default just for emphasis.", "section": "colors" },
+      { "name": "The No-Mono Rule", "body": "Digits that need to align in a column use .tnum tabular-nums on Inter, never a second monospace typeface.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Cards and tiles never cast a shadow at rest; hover brightens the hairline border, it never adds elevation.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep role accent and semantic status color on two completely separate palettes — never let a role's brand color double as a status meaning.",
+      "Do default status communication to a tinted wash; reserve solid fill for present/absent/active-class decisive states only.",
+      "Do convey elevation through the bg-surface → bg-elevated → bg-surface-3 lightness steps, not shadows.",
+      "Do use .tnum tabular-nums for any column of digits instead of introducing a monospace font.",
+      "Do gate every non-essential animation behind a prefers-reduced-motion fallback.",
+      "Do use a content-shaped skeleton with a shimmer sweep (.skeleton-shimmer) for initial page/section data loading, not a spinner — a spinner is reserved for an in-flight action, a skeleton for content on its way."
+    ],
+    "donts": [
+      "Don't add a light theme or theme toggle — dark is the only mode this app renders.",
+      "Don't introduce drop shadows on cards/tiles at rest, or use elevation for anything but modals and focus rings.",
+      "Don't hardcode a role's hex value into a shared primitive — read --accent-* so the component stays role-portable.",
+      "Don't add decorative or looping motion outside status communication or the skeleton-loading sweep.",
+      "Don't introduce a second typeface for numerals or code-like content; use Inter + tabular-nums."
+    ]
+  }
+}

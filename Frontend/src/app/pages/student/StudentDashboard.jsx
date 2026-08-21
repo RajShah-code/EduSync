@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useOutletContext } from "react-router";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
+import { Skeleton } from "../../components/ui/skeleton";
 import { Button } from "../../components/ui/button";
-import { FileText, Clock, Calendar, WifiOff, BookOpen, User, School, Loader2 } from "lucide-react";
+import { FileText, Clock, Calendar, WifiOff, BookOpen, User, School } from "lucide-react";
 import { cn } from "../../components/ui/utils";
 import { getSocket } from "../../store/socket";
 import { toast } from "sonner";
@@ -78,8 +79,11 @@ export function StudentDashboard() {
   const { setShowJoinModal, hasJoinedSession, activeSessions, joinedSession, wasKicked, setWasKicked } = useOutletContext();
 
   const [attendance, setAttendance] = useState([]);
-  const [totalLectures, setTotalLectures] = useState(0);
+  const [totalSessions, setTotalSessions] = useState(0);
+  const [loadingAttendance, setLoadingAttendance] = useState(true);
+  const [attendanceError, setAttendanceError] = useState(false);
   const [exams, setExams] = useState([]);
+  const [loadingExams, setLoadingExams] = useState(true);
 
   // Timetable State
   const [timetableData, setTimetableData] = useState({ entries: [], today_day_of_week: 0, class_assigned: true });
@@ -146,6 +150,8 @@ export function StudentDashboard() {
         }
       } catch (err) {
         console.error("Failed to fetch available exams:", err);
+      } finally {
+        setLoadingExams(false);
       }
     };
     fetchAvailableExams();
@@ -189,13 +195,20 @@ export function StudentDashboard() {
   // Fetch student attendance on mount
   useEffect(() => {
     const fetchAttendance = async () => {
+      setLoadingAttendance(true);
       try {
         const token = localStorage.getItem("edusync_token");
-        if (!token) return;
-        
+        if (!token) {
+          setAttendanceError(true);
+          return;
+        }
+
         const payload = JSON.parse(atob(token.split(".")[1]));
         const studentId = payload.id;
-        if (!studentId) return;
+        if (!studentId) {
+          setAttendanceError(true);
+          return;
+        }
 
         const res = await fetch(`${API_BASE_URL}/attendance/student/${studentId}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -203,10 +216,16 @@ export function StudentDashboard() {
         if (res.ok) {
           const data = await res.json();
           setAttendance(data.records || []);
-          setTotalLectures(data.totalLectures || 0);
+          setTotalSessions(data.totalLectures || 0);
+          setAttendanceError(false);
+        } else {
+          setAttendanceError(true);
         }
       } catch (err) {
         console.error(err);
+        setAttendanceError(true);
+      } finally {
+        setLoadingAttendance(false);
       }
     };
     fetchAttendance();
@@ -239,17 +258,11 @@ export function StudentDashboard() {
     };
   }, []);
 
+  const presentCount = attendance.filter((a) => a.status === "present").length;
   const stats = {
-    total: totalLectures || 12,
-    present: attendance.filter((a) => a.status === "present").length || 11,
-    rate:
-      totalLectures > 0
-        ? (
-            (attendance.filter((a) => a.status === "present").length /
-              totalLectures) *
-            100
-          ).toFixed(1)
-        : "91.7",
+    total: totalSessions,
+    present: presentCount,
+    rate: totalSessions > 0 ? ((presentCount / totalSessions) * 100).toFixed(1) : "0.0",
   };
 
   const todayDayOfWeek = timetableData.today_day_of_week;
@@ -304,7 +317,7 @@ export function StudentDashboard() {
           </div>
           <button
             onClick={() => setWasKicked(false)}
-            className="text-xs text-text-secondary hover:text-text-primary cursor-pointer transition-colors"
+            className="text-xs text-text-secondary hover:text-text-primary cursor-pointer transition-colors rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
           >
             Dismiss
           </button>
@@ -327,7 +340,7 @@ export function StudentDashboard() {
             {activeSessions.length > 0 ? (
               <button
                 onClick={() => navigate('/student/sessions')}
-                className="flex items-center gap-2 text-xs cursor-pointer group"
+                className="flex items-center gap-2 text-xs cursor-pointer group rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-accent-live pulse-dot" />
@@ -348,9 +361,13 @@ export function StudentDashboard() {
         </CardHeader>
         <CardContent className="pt-4">
           {loadingTimetable ? (
-            <div className="py-6 flex items-center justify-center gap-1.5 text-text-secondary text-xs">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-500" strokeWidth={1.75} />
-              <span>Loading today's schedule...</span>
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="pl-3 pr-3 py-2.5 border-l-2 border-l-border space-y-1.5">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              ))}
             </div>
           ) : !timetableData.class_assigned ? (
             <div className="py-6 text-center">
@@ -440,19 +457,32 @@ export function StudentDashboard() {
       {/* ═════════════════════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* Dedicated Exams Card */}
-        <Card data-tour="student-exams" className="bg-bg-surface border-border h-full flex flex-col justify-between">
+        <Card
+          data-tour="student-exams"
+          className={cn(
+            "h-full flex flex-col justify-between",
+            hasActiveExam
+              ? "bg-accent-success/[0.03] border-accent-success/30"
+              : "bg-bg-surface border-border"
+          )}
+        >
           <CardHeader>
             <CardTitle className="text-sm font-semibold text-text-primary flex items-center justify-between">
               <span className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-text-secondary" />
                 Exams
               </span>
-              {hasActiveExam && <Badge variant="locked">ACTIVE NOW</Badge>}
+              {hasActiveExam && <Badge variant="success">ACTIVE NOW</Badge>}
               {!hasActiveExam && waitingRoomExams.length > 0 && <Badge variant="warning">WAITING ROOM</Badge>}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-between">
-            {hasActiveExam ? (
+            {loadingExams ? (
+              <div className="space-y-2 my-auto">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+            ) : hasActiveExam ? (
               <div className="space-y-4 my-auto">
                 {activeExams.map((exam) => (
                   <div key={exam.id} className="space-y-3">
@@ -508,26 +538,41 @@ export function StudentDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
-            <div className="grid grid-cols-3 gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)] text-center">
-              <div>
-                <div className="text-[10px] text-text-secondary mb-1">Present</div>
-                <div className="text-lg tnum font-semibold text-accent-success">
-                  {stats.present}
+            {loadingAttendance ? (
+              <div className="grid grid-cols-3 gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)]">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-1.5 flex flex-col items-center">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-6 w-8" />
+                  </div>
+                ))}
+              </div>
+            ) : attendanceError ? (
+              <div className="p-3 bg-bg-base border border-accent-critical/25 rounded-[var(--radius-md)] text-center">
+                <p className="text-xs text-accent-critical">Couldn't load your attendance.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)] text-center">
+                <div>
+                  <div className="text-[10px] text-text-secondary mb-1">Present</div>
+                  <div className="text-lg tnum font-semibold text-accent-success">
+                    {stats.present}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-text-secondary mb-1">Sessions</div>
+                  <div className="text-lg tnum font-semibold text-text-primary">
+                    {stats.total}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-text-secondary mb-1">Rate</div>
+                  <div className="text-lg tnum font-semibold text-text-primary">
+                    {stats.rate}%
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="text-[10px] text-text-secondary mb-1">Sessions</div>
-                <div className="text-lg tnum font-semibold text-text-primary">
-                  {stats.total}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-secondary mb-1">Rate</div>
-                <div className="text-lg tnum font-semibold text-text-primary">
-                  {stats.rate}%
-                </div>
-              </div>
-            </div>
+            )}
 
             <Button
               variant="outline"

@@ -8,6 +8,7 @@ import { sessionStore } from "../../store/sessionStore";
 import { getSocket } from "../../store/socket";
 import { useFocusGuard } from "../../hooks/useFocusGuard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { StatusBadge } from "../../components/StatusBadge";
 
 // ─── ICE / STUN Configuration ─────────────────────────────────────────────────
 // Must match LiveBroadcast.jsx exactly.
@@ -862,7 +863,7 @@ export function LiveSession() {
               setRejoinStatus("idle");
               navigate("/student");
             }}
-            className="px-6 py-2.5 bg-bg-surface border border-border hover:border-accent-info/40 text-text-primary text-sm font-medium rounded-lg transition-all"
+            className="px-6 py-2.5 bg-bg-surface border border-border hover:border-accent-info/40 text-text-primary text-sm font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
           >
             Return to Dashboard
           </button>
@@ -890,7 +891,7 @@ export function LiveSession() {
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); requestFullscreen(); }}
-            className="flex items-center gap-2 px-6 py-2.5 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-lg transition-all"
+            className="flex items-center gap-2 px-6 py-2.5 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
           >
             <Maximize2 className="w-4 h-4" strokeWidth={1.75} />
             Enter Fullscreen
@@ -919,7 +920,7 @@ export function LiveSession() {
           </div>
           <button
             onClick={requestFullscreen}
-            className="flex items-center gap-2 px-6 py-2.5 bg-accent-warning hover:bg-accent-warning/90 text-white text-sm font-medium rounded-lg transition-all"
+            className="flex items-center gap-2 px-6 py-2.5 bg-accent-warning hover:bg-accent-warning/90 text-white text-sm font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
           >
             <Maximize2 className="w-4 h-4" strokeWidth={1.75} />
             Return to Session
@@ -942,9 +943,7 @@ export function LiveSession() {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] px-2 py-0.5 rounded bg-accent-live/10 text-accent-live border border-accent-live/20 font-semibold">
-                  LIVE
-                </span>
+                <StatusBadge status="live" />
               </div>
             </div>
 
@@ -1011,7 +1010,7 @@ export function LiveSession() {
                   {broadcastStatus === "live" && isMuted && (
                     <button
                       onClick={handleUnmute}
-                      className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-bg-surface/90 backdrop-blur border border-border rounded-full text-sm text-text-secondary hover:text-text-primary hover:border-accent-info/40 transition-all shadow-lg"
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-bg-surface/90 backdrop-blur border border-border rounded-full text-sm text-text-secondary hover:text-text-primary hover:border-accent-info/40 transition-all shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                     >
                       <Mic className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
                       Click to enable sound
@@ -1034,14 +1033,14 @@ export function LiveSession() {
                       </span>
                       <button
                         onClick={handleLoadLatest}
-                        className="text-xs font-semibold text-accent-info hover:underline flex-shrink-0"
+                        className="text-xs font-semibold text-accent-info hover:underline flex-shrink-0 rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                       >
                         Load latest
                       </button>
                       <span className="text-text-muted text-xs flex-shrink-0">·</span>
                       <button
                         onClick={handleKeepMine}
-                        className="text-xs text-text-muted hover:text-text-secondary flex-shrink-0"
+                        className="text-xs text-text-muted hover:text-text-secondary flex-shrink-0 rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                       >
                         Keep mine
                       </button>
@@ -1088,7 +1087,7 @@ export function LiveSession() {
                           setStudentConsoleLines([]);
                           setStudentTextOutput("");
                         }}
-                        className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded transition-colors"
+                        className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
                       >
                         Clear output
                       </button>
@@ -1099,7 +1098,7 @@ export function LiveSession() {
                       <button
                         onClick={handleStudentRunCode}
                         disabled={studentPyodideLoading}
-                        className="h-7 px-3 text-xs font-medium bg-accent-700 hover:bg-accent-700/90 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                        className="h-7 px-3 text-xs font-medium bg-accent-700 hover:bg-accent-700/90 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
                       >
                         {studentPyodideLoading ? (
                           <>
@@ -1224,7 +1223,7 @@ export function LiveSession() {
           </div>
         ) : (
           /* No active session */
-          <div className="text-center flex flex-col items-center justify-center gap-3">
+          <div className="h-full text-center flex flex-col items-center justify-center gap-3">
             <Monitor className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
             <h3 className="text-base font-medium text-text-primary">No active broadcast</h3>
             <p className="text-sm text-text-secondary">

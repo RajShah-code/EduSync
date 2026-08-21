@@ -10,6 +10,7 @@ import {
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
 import { Download, CalendarCheck, AlertTriangle, Check, X, Loader2 } from "lucide-react";
+import { Skeleton } from "../../components/ui/skeleton";
 
 const formatDuration = (secs) => {
   if (secs < 60) return `${secs}s`;
@@ -151,8 +152,43 @@ export function Attendance() {
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="w-8 h-8 text-accent-info animate-spin" />
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+        </div>
+        <div className="p-4 bg-bg-surface border border-border rounded-lg">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-4 w-14" />
+              <Skeleton className="h-9 w-64" />
+            </div>
+            <div className="flex items-center gap-6">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-40" />
+          <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+            <div className="divide-y divide-border">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-10" />
+                  <Skeleton className="h-4 w-10" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

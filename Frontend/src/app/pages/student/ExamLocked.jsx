@@ -1,4 +1,5 @@
 import { ShieldOff } from "lucide-react";
+import { StatusBadge } from "../../components/StatusBadge";
 
 const REASON_LABELS = {
   violation_limit_reached: "Access revoked — violation limit exceeded",
@@ -76,9 +77,7 @@ export function ExamLocked({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-text-secondary">Status</span>
-              <span className="px-2 py-0.5 text-xs font-semibold border border-accent-locked/20 bg-accent-locked/10 text-accent-locked rounded-[var(--radius-sm)]">
-                ⊘ LOCKED
-              </span>
+              <StatusBadge status="locked" />
             </div>
           </div>
         </div>

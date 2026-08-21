@@ -20,13 +20,15 @@
   --text-muted: #585C68;
 
   /* Semantic states — separate from role accents, never reused as one.
-     success/critical pulled from real reference tonal scales (deep flag
-     red / forest green), not a computed guess — both pass AA (4.5:1+)
-     as white-text solid fills, which is how present/absent render. */
-  --accent-live: #3B8132;
-  --accent-success: #3B8132;
+     Both pass AA (4.5:1+) as white-text solid fills (StatusBadge's solid
+     variant), AND as direct text on true black (bg-base) at large sizes
+     (stat numbers) — the prior critical red (#9A0000) only hit ~2.3:1
+     against #000 as text and read as dull/murky; this red and green were
+     picked to stay vivid and legible in both roles. */
+  --accent-live: #15803D;
+  --accent-success: #15803D;
   --accent-warning: #DDA53D;
-  --accent-critical: #9A0000;
+  --accent-critical: #DC2626;
   --accent-locked: #7A8699;
 
   /* Role accent scales — one OKLCH formula per role (hue is what changes),
@@ -419,6 +421,28 @@
   background: color-mix(in srgb, var(--text-primary) 2.5%, transparent);
 }
 
+/* Skeleton loading — decided pattern (design system proposal): a shimmer
+   sweep across a content-shaped placeholder, not a spinner and not a plain
+   opacity pulse. Reads as "content incoming," not "something's wrong." */
+@keyframes skeleton-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-surface-3);
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  animation: skeleton-shimmer 1.6s infinite;
+}
+
 /* Input focus ring */
 .input-focus:focus {
   border-color: var(--accent-500);
@@ -441,5 +465,8 @@
   .card-hover {
     animation: none;
     transform: none;
+  }
+  .skeleton-shimmer::after {
+    animation: none;
   }
 }
