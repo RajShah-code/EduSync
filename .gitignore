@@ -39,6 +39,9 @@ lerna-debug.log*
 *.sln
 *.sw?
 .agents/
+.claude/
+.codex/
+skills-lock.json
 scratch/
 
 # OS files
