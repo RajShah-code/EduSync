@@ -239,7 +239,7 @@ export function SubmissionReview() {
                       Reviewing: {selectedSubmission.student_name}
                     </h2>
                     <div className="flex items-center gap-3 text-xs text-text-secondary">
-                      <span className="font-mono bg-bg-base/60 px-1.5 py-0.5 rounded text-[10px] uppercase">
+                      <span className="font-mono bg-bg-base/60 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[10px] uppercase">
                         {selectedSubmission.language || "Plain Text"}
                       </span>
                       {selectedSubmission.submitted_at && (
@@ -251,7 +251,7 @@ export function SubmissionReview() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 bg-bg-elevated border border-border px-3 py-1 rounded">
+                  <div className="flex items-center gap-1.5 bg-bg-elevated border border-border px-3 py-1 rounded-[var(--radius-sm)]">
                     <span className="text-xs text-text-muted">Status:</span>
                     <span className="text-xs font-semibold capitalize text-text-primary">
                       {selectedSubmission.status.replace('_', ' ')}
@@ -309,7 +309,7 @@ export function SubmissionReview() {
                   </form>
 
                   {selectedSubmission.score !== null && (
-                    <div className="flex items-center gap-2 text-accent-success font-semibold text-sm bg-accent-success/5 border border-accent-success/20 px-3 py-1.5 rounded">
+                    <div className="flex items-center gap-2 text-accent-success font-semibold text-sm bg-accent-success/5 border border-accent-success/20 px-3 py-1.5 rounded-[var(--radius-sm)]">
                       <CheckCircle className="w-4 h-4" />
                       <span>Graded: {selectedSubmission.score} / 100</span>
                     </div>

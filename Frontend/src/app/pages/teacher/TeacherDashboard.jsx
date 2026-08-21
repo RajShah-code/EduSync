@@ -82,6 +82,7 @@ export function TeacherDashboard() {
   // Timetable State
   const [timetableEntries, setTimetableEntries] = useState([]);
   const [loadingTimetable, setLoadingTimetable] = useState(true);
+  const [timetableError, setTimetableError] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("edusync_user");
@@ -99,28 +100,37 @@ export function TeacherDashboard() {
   }, [location.state]);
 
   // Fetch timetable on mount
-  useEffect(() => {
-    const fetchTimetable = async () => {
-      const token = localStorage.getItem("edusync_token");
-      if (!token) return;
+  const fetchTimetable = async () => {
+    setLoadingTimetable(true);
+    const token = localStorage.getItem("edusync_token");
+    if (!token) {
+      setTimetableError(true);
+      setLoadingTimetable(false);
+      return;
+    }
 
-      try {
-        const res = await fetch(`${API_BASE_URL}/timetable/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setTimetableEntries(data.entries || []);
-        }
-      } catch (err) {
-        console.error("Failed to load timetable on dashboard:", err);
-      } finally {
-        setLoadingTimetable(false);
+    try {
+      const res = await fetch(`${API_BASE_URL}/timetable/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTimetableEntries(data.entries || []);
+        setTimetableError(false);
+      } else {
+        setTimetableError(true);
       }
-    };
+    } catch (err) {
+      console.error("Failed to load timetable on dashboard:", err);
+      setTimetableError(true);
+    } finally {
+      setLoadingTimetable(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTimetable();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const {
     broadcastState,
@@ -303,10 +313,12 @@ export function TeacherDashboard() {
           </div>
         </div>
 
-        {/* Live student roster — real counts, only shown once a session exists */}
+        {/* Live student roster — real counts, only shown once a session exists.
+            Dividers float (inset top/bottom) rather than running edge-to-edge,
+            matching the stat-row treatment on the student/teacher dashboards. */}
         {sessionActive && (
-          <div className="grid grid-cols-3 divide-x divide-border border-t border-border">
-            <div className="text-center py-4 px-4">
+          <div className="grid grid-cols-3 border-t border-border">
+            <div className="relative text-center py-4 px-4">
               <div className="text-2xl font-mono font-semibold text-text-primary tabular-nums">
                 {liveStats.connected}
               </div>
@@ -314,13 +326,15 @@ export function TeacherDashboard() {
                 Connected
               </div>
             </div>
-            <div className="text-center py-4 px-4">
+            <div className="relative text-center py-4 px-4">
+              <span className="absolute left-0 top-3 bottom-3 w-px bg-border" aria-hidden="true" />
               <div className="text-2xl font-mono font-semibold text-accent-success tabular-nums">
                 {liveStats.active}
               </div>
               <div className="text-xs text-text-secondary uppercase tracking-wider mt-1">Active</div>
             </div>
-            <div className="text-center py-4 px-4">
+            <div className="relative text-center py-4 px-4">
+              <span className="absolute left-0 top-3 bottom-3 w-px bg-border" aria-hidden="true" />
               <div className="text-2xl font-mono font-semibold text-accent-warning tabular-nums">
                 {liveStats.idle}
               </div>
@@ -359,6 +373,17 @@ export function TeacherDashboard() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : timetableError ? (
+          <div className="p-6 bg-bg-surface border border-accent-critical/25 rounded-[var(--radius-lg)] text-center space-y-3">
+            <p className="text-sm text-text-secondary">Couldn't load today's schedule.</p>
+            <button
+              type="button"
+              onClick={fetchTimetable}
+              className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-xs font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            >
+              Try again
+            </button>
           </div>
         ) : !hasAnyTimetable ? (
           /* EMPTY STATE 1: No Timetable Configured At All */

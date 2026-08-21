@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "border-l-4",
+        "files": [
+          "src/app/pages/teacher/SubmissionReview.jsx"
+        ],
+        "createdAt": "2026-08-21T17:25:31.025Z",
+        "reason": "Functional list-row selection state (submission sidebar), not decorative — same judgment already made this session for AttendanceHistory.jsx and TeacherDashboard.jsx's border-l-2 variant; re-added with path format matching this invocation's cwd"
+      }
+    ]
+  }
+}

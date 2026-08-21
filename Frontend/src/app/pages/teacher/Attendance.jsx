@@ -269,6 +269,7 @@ export function Attendance() {
           <div className="space-y-3">
             <h2 className="text-md font-semibold text-text-primary">Attendance Records</h2>
             <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-bg-elevated">
@@ -356,6 +357,7 @@ export function Attendance() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </>

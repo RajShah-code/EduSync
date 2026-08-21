@@ -117,21 +117,38 @@
 
 /* Active-role accent — the ONE thing that changes per role. Everything else
    (Button, Badge, Card, focus rings, nav) reads --accent-* and inherits
-   whichever role scope it renders inside, so shared primitives stay shared. */
+   whichever role scope it renders inside, so shared primitives stay shared.
+
+   IMPORTANT: --primary/--ring/--chart-1/--accent-info are ALIASES that
+   reference --accent-500/700. A custom property inherits its computed
+   value, not a live token stream — so an alias declared only once (e.g.
+   at :root) freezes to whatever --accent-* resolved to at that one
+   declaration site and never re-resolves in a descendant scope, even
+   though --accent-500/700 themselves do. Every role block below must
+   therefore redeclare the aliases too, not just the primitives, or every
+   shared component using bg-primary/ring-ring/accent-info (which is most
+   of them — Button's default variant, the global focus ring, badges)
+   silently renders the fallback role's color everywhere. */
 [data-role="student"] {
   --accent-50: var(--student-50); --accent-300: var(--student-300);
   --accent-500: var(--student-500); --accent-700: var(--student-700);
   --accent-900: var(--student-900);
+  --primary: var(--accent-700); --ring: var(--accent-500);
+  --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 }
 [data-role="admin"] {
   --accent-50: var(--admin-50); --accent-300: var(--admin-300);
   --accent-500: var(--admin-500); --accent-700: var(--admin-700);
   --accent-900: var(--admin-900);
+  --primary: var(--accent-700); --ring: var(--accent-500);
+  --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 }
 [data-role="teacher"] {
   --accent-50: var(--teacher-50); --accent-300: var(--teacher-300);
   --accent-500: var(--teacher-500); --accent-700: var(--teacher-700);
   --accent-900: var(--teacher-900);
+  --primary: var(--accent-700); --ring: var(--accent-500);
+  --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 }
 /* Fallback so nothing renders unstyled outside a role scope */
 :root {

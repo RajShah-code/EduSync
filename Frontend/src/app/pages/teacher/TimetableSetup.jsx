@@ -458,7 +458,7 @@ export function TimetableSetup() {
   if (loading) {
     return (
       <div className="w-full p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5">
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
             <Skeleton className="h-4 w-80" />
@@ -470,7 +470,7 @@ export function TimetableSetup() {
           </div>
         </div>
 
-        <div className="bg-bg-surface border border-border rounded-2xl p-5 shadow-2xl overflow-x-auto w-full">
+        <div className="bg-bg-surface border border-border rounded-xl p-5 overflow-x-auto w-full">
           <div className="min-w-[900px] space-y-3">
             <div className="grid grid-cols-[64px_repeat(6,1fr)] gap-2">
               <Skeleton className="h-8 w-8 mx-auto rounded-lg" />
@@ -504,7 +504,7 @@ export function TimetableSetup() {
       />
 
       {/* A. HEADER ROW */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5 shadow-lg">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5">
         <div>
           <h1 className="text-[length:var(--text-xl)] font-bold text-text-primary tracking-tight flex items-center gap-2.5">
             <Calendar className="w-6 h-6 text-accent-info" />
@@ -518,7 +518,7 @@ export function TimetableSetup() {
         <div className="flex items-center gap-3 shrink-0">
           <Button
             onClick={() => handleOpenAddModal(defaultDay)}
-            className="bg-accent-info hover:bg-accent-info/90 text-white font-medium flex items-center gap-2 cursor-pointer text-[length:var(--text-sm)] h-9 shadow-md shadow-accent-info/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            className="bg-accent-info hover:bg-accent-info/90 text-white font-medium flex items-center gap-2 cursor-pointer text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
           >
             <Plus className="w-4 h-4" />
             Add Lecture
@@ -553,7 +553,7 @@ export function TimetableSetup() {
 
       {/* Empty-state banner for first-time setup */}
       {entries.length === 0 && showEmptyBanner && (
-        <div className="bg-accent-info/10 border border-accent-info/20 rounded-xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-accent-info/10 border border-accent-info/20 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
             <div className="p-2.5 rounded-lg bg-accent-info/20 border border-accent-info/30 text-accent-info shrink-0 mt-0.5 sm:mt-0">
               <Calendar className="w-5 h-5" />
@@ -590,7 +590,7 @@ export function TimetableSetup() {
       )}
 
       {/* B. WEEKLY GRID (SERIAL NUMBER ROWS 1, 2, 3...) */}
-      <div className="bg-bg-surface border border-border rounded-2xl p-5 shadow-2xl overflow-x-auto w-full">
+      <div className="bg-bg-surface border border-border rounded-xl p-5 overflow-x-auto w-full">
         <table className="w-full border-collapse min-w-[900px]">
           <thead>
             <tr>
@@ -615,7 +615,7 @@ export function TimetableSetup() {
                     >
                       <span
                         className={`w-2 h-2 rounded-full ${
-                          isToday ? "bg-accent-info animate-pulse" : "bg-text-secondary"
+                          isToday ? "bg-accent-info pulse-dot" : "bg-text-secondary"
                         }`}
                       />
                       <span>{day.fullName}</span>
@@ -663,7 +663,7 @@ export function TimetableSetup() {
                       ) : (
                         /* Filled Cell Card */
                         <div
-                          className={`group/card relative rounded-xl p-3 border transition-all shadow-md flex flex-col justify-between min-h-28 h-auto gap-2 ${
+                          className={`group/card relative rounded-xl p-3 border transition-all flex flex-col justify-between min-h-28 h-auto gap-2 ${
                             entry.session_type === "lab"
                               ? "bg-accent-live/10 border-accent-live/30 hover:border-accent-live/60 text-accent-live"
                               : "bg-accent-info/10 border-accent-info/30 hover:border-accent-info/60 text-accent-info"
@@ -675,6 +675,7 @@ export function TimetableSetup() {
                               onClick={(e) => handleOpenEditModal(entry, e)}
                               className="p-1.5 hover:text-accent-info text-text-secondary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Edit lecture"
+                              aria-label="Edit lecture"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
@@ -682,6 +683,7 @@ export function TimetableSetup() {
                               onClick={(e) => handleDeleteEntry(entry.id, e)}
                               className="p-1.5 hover:text-accent-critical text-text-secondary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Delete lecture"
+                              aria-label="Delete lecture"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -763,7 +765,7 @@ export function TimetableSetup() {
       {/* C. LATE WARNING DELAY & REMINDER SUPPRESSION DATES PANEL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Late Warning Delay Card (Teacher setting) */}
-        <div className="bg-bg-surface border border-border rounded-xl p-5 shadow-lg space-y-4 flex flex-col justify-between">
+        <div className="bg-bg-surface border border-border rounded-xl p-5 space-y-4 flex flex-col justify-between">
           <div className="space-y-0.5">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
               <Sliders className="w-4 h-4 text-accent-warning" />
@@ -794,7 +796,7 @@ export function TimetableSetup() {
         </div>
 
         {/* Reminder Suppression Dates Card */}
-        <div className="bg-bg-surface border border-border rounded-xl p-5 shadow-lg space-y-4">
+        <div className="bg-bg-surface border border-border rounded-xl p-5 space-y-4">
           <div className="space-y-0.5">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
               <CalendarOff className="w-4 h-4 text-accent-warning" />
@@ -841,6 +843,7 @@ export function TimetableSetup() {
                     onClick={() => handleDeleteException(ex.id)}
                     className="hover:text-accent-critical text-accent-warning transition-colors cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                     title="Remove suppression date"
+                    aria-label="Remove suppression date"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -870,6 +873,7 @@ export function TimetableSetup() {
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1075,7 +1079,7 @@ export function TimetableSetup() {
               <Button
                 onClick={handleSaveModalEntry}
                 disabled={saving || !isFormValid}
-                className="bg-accent-info hover:bg-accent-info/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[length:var(--text-sm)] h-9 flex items-center gap-1.5 shadow-md shadow-accent-info/20 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                className="bg-accent-info hover:bg-accent-info/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[length:var(--text-sm)] h-9 flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 {saving ? (
                   <>
@@ -1103,6 +1107,7 @@ export function TimetableSetup() {
               <button
                 onClick={() => setImportReport(null)}
                 className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
