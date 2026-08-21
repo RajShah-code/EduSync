@@ -20,20 +20,15 @@ function CustomTooltip({
   return (
     <div
       {...tooltipProps}
-      className="bg-bg-surface border border-border rounded-xl shadow-2xl p-5 max-w-sm w-full font-sans text-text-primary animate-in fade-in zoom-in duration-150 z-[10000]"
-      style={{
-        backgroundColor: "var(--bg-surface, #111118)",
-        borderColor: "var(--border, #2A2A3A)",
-        boxShadow: "0 20px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08)",
-      }}
+      className="bg-bg-elevated border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] p-5 max-w-sm w-full font-sans text-text-primary animate-in fade-in zoom-in duration-150 z-[10000]"
     >
       {/* Step Title */}
       {step.title && (
         <div className="flex items-center justify-between gap-2 mb-1.5">
-          <h3 className="text-base font-semibold text-text-primary tracking-tight">
+          <h3 className="font-display text-base font-semibold text-text-primary tracking-tight">
             {step.title}
           </h3>
-          <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-bg-base border border-border/80 text-text-muted">
+          <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded-[var(--radius-sm)] bg-bg-base border border-border text-text-muted">
             {index + 1} / {size}
           </span>
         </div>
@@ -45,7 +40,7 @@ function CustomTooltip({
       </div>
 
       {/* Footer / Controls */}
-      <div className="flex items-center justify-between border-t border-border/60 pt-3 mt-1">
+      <div className="flex items-center justify-between border-t border-border pt-3 mt-1">
         {/* Skip Link */}
         <button
           {...skipProps}
@@ -59,7 +54,7 @@ function CustomTooltip({
           {index > 0 && (
             <button
               {...backProps}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-text-secondary hover:text-text-primary bg-bg-base hover:bg-white/5 border border-border/80 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-[var(--radius-sm)] text-xs font-medium text-text-secondary hover:text-text-primary bg-bg-base hover:bg-bg-surface-3 border border-border transition-all cursor-pointer"
             >
               Back
             </button>
@@ -67,7 +62,7 @@ function CustomTooltip({
 
           <button
             {...primaryProps}
-            className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-accent-info text-white hover:bg-accent-info/90 shadow-sm transition-all cursor-pointer"
+            className="px-4 py-1.5 rounded-[var(--radius-sm)] text-xs font-semibold bg-accent-info text-white hover:bg-accent-info/90 transition-all cursor-pointer"
           >
             {isLastStep ? "Finish" : "Next"}
           </button>
@@ -146,11 +141,12 @@ export function AppTour({ steps, run, onFinish, isManualReplay = false, stepInde
     styles: {
       options: {
         zIndex: 10000,
-        primaryColor: "#4F8EF7",
-        backgroundColor: "#111118",
-        textColor: "#F0F0F5",
-        overlayColor: "rgba(0, 0, 0, 0.75)",
-        spotlightShadow: "0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 15px rgba(79, 142, 247, 0.5)",
+        primaryColor: "var(--accent-info)",
+        backgroundColor: "var(--bg-elevated)",
+        textColor: "var(--text-primary)",
+        overlayColor: "color-mix(in srgb, var(--bg-base) 80%, transparent)",
+        // Hairline ring instead of a blurred glow — matches the no-glow direction.
+        spotlightShadow: "0 0 0 9999px color-mix(in srgb, var(--bg-base) 80%, transparent), 0 0 0 2px var(--accent-info)",
       },
       spotlight: {
         borderRadius: 8,

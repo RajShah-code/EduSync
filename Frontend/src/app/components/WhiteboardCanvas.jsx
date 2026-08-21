@@ -30,7 +30,10 @@ const PRESET_COLORS = [
 ];
 
 const PEN_SIZES = [2, 4, 8, 16];
-const ERASER_SIZES = [10, 20, 40, 60];
+const ERASER_SIZES = [10, 20, 40, 60, 100];
+const ERASER_MIN_SIZE = 10;
+const ERASER_MAX_SIZE = 100;
+const ERASER_STEP = 5;
 
 export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   {
@@ -41,7 +44,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     onSnapshotEmit,
     onSyncEmit,
     initialStrokes = [],
-    initialBgColor = "#111118",
+    initialBgColor = "#17171A",
   },
   ref
 ) {
@@ -173,6 +176,22 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         e.preventDefault();
         e.stopPropagation();
         handleClearAllInternal();
+      } else if (
+        isCtrlOrCmd &&
+        (keyLower === "=" || keyLower === "+" || code === "Equal" || code === "NumpadAdd")
+      ) {
+        // Ctrl/Cmd + '=' (i.e. Ctrl+Plus) — grow the eraser, capped at ERASER_MAX_SIZE.
+        e.preventDefault();
+        e.stopPropagation();
+        setEraserSize((prev) => Math.min(ERASER_MAX_SIZE, prev + ERASER_STEP));
+      } else if (
+        isCtrlOrCmd &&
+        (keyLower === "-" || keyLower === "_" || code === "Minus" || code === "NumpadSubtract")
+      ) {
+        // Ctrl/Cmd + '-' — shrink the eraser, floored at ERASER_MIN_SIZE.
+        e.preventDefault();
+        e.stopPropagation();
+        setEraserSize((prev) => Math.max(ERASER_MIN_SIZE, prev - ERASER_STEP));
       } else if (keyLower === "e" || code === "KeyE") {
         setTool("eraser");
       } else if (keyLower === "b" || code === "KeyB" || keyLower === "p" || code === "KeyP") {
@@ -553,13 +572,13 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   };
 
   const handleBgToggle = () => {
-    const newBg = bgColor === "#111118" ? "#FFFFFF" : "#111118";
+    const newBg = bgColor === "#17171A" ? "#FFFFFF" : "#17171A";
     setBgColor(newBg);
 
     // If text color matches background, flip stroke color automatically
     if (newBg === "#FFFFFF" && color === "#FFFFFF") {
       setColor("#000000");
-    } else if (newBg === "#111118" && color === "#000000") {
+    } else if (newBg === "#17171A" && color === "#000000") {
       setColor("#FFFFFF");
     }
   };
@@ -572,14 +591,14 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       {!readOnly && (
         <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-bg-elevated border-b border-border text-xs flex-wrap z-10 flex-shrink-0">
           {/* Tool selectors */}
-          <div className="flex items-center gap-1 bg-bg-surface p-1 rounded-md border border-border">
+          <div className="flex items-center gap-0.5 bg-bg-surface p-1 rounded-[var(--radius-md)] border border-border">
             <button
               type="button"
               onClick={() => setTool("pen")}
-              className={`p-1.5 rounded transition-all ${
+              className={`btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 ${
                 tool === "pen"
                   ? "bg-accent-info text-white"
-                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+                  : "text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               }`}
               title="Pen"
             >
@@ -588,22 +607,22 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             <button
               type="button"
               onClick={() => setTool("eraser")}
-              className={`p-1.5 rounded transition-all ${
+              className={`btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 ${
                 tool === "eraser"
                   ? "bg-accent-info text-white"
-                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+                  : "text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               }`}
-              title="Eraser"
+              title="Eraser (E) — Ctrl+/Ctrl- to resize"
             >
               <Eraser className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setTool("line")}
-              className={`p-1.5 rounded transition-all ${
+              className={`btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 ${
                 tool === "line"
                   ? "bg-accent-info text-white"
-                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+                  : "text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               }`}
               title="Straight Line"
             >
@@ -612,10 +631,10 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             <button
               type="button"
               onClick={() => setTool("rectangle")}
-              className={`p-1.5 rounded transition-all ${
+              className={`btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 ${
                 tool === "rectangle"
                   ? "bg-accent-info text-white"
-                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+                  : "text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               }`}
               title="Rectangle"
             >
@@ -624,10 +643,10 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             <button
               type="button"
               onClick={() => setTool("circle")}
-              className={`p-1.5 rounded transition-all ${
+              className={`btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 ${
                 tool === "circle"
                   ? "bg-accent-info text-white"
-                  : "text-text-muted hover:text-text-primary hover:bg-white/5"
+                  : "text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               }`}
               title="Circle / Ellipse"
             >
@@ -637,14 +656,14 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
           {/* Color Palette */}
           {tool !== "eraser" && (
-            <div className="flex items-center gap-1.5 bg-bg-surface px-2 py-1 rounded-md border border-border">
+            <div className="flex items-center gap-1.5 bg-bg-surface px-2 py-1 rounded-[var(--radius-md)] border border-border">
               {PRESET_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`w-4 h-4 rounded-full border transition-all ${
-                    color === c ? "scale-125 border-white shadow" : "border-border/60 hover:scale-110"
+                  className={`w-4 h-4 rounded-full border transition-transform duration-150 ${
+                    color === c ? "scale-125 border-text-primary" : "border-border hover:scale-110"
                   }`}
                   style={{ backgroundColor: c }}
                   title={c}
@@ -654,14 +673,14 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="w-4 h-4 rounded cursor-pointer bg-transparent border-0 p-0"
+                className="w-4 h-4 rounded-[var(--radius-sm)] cursor-pointer bg-transparent border-0 p-0"
                 title="Custom Color"
               />
             </div>
           )}
 
           {/* Requirement 2: Dedicated Size selector — binds dynamically to tool === 'eraser' ? eraserSize : thickness */}
-          <div className="flex items-center gap-1 bg-bg-surface px-2 py-1 rounded-md border border-border">
+          <div className="flex items-center gap-1 bg-bg-surface px-2 py-1 rounded-[var(--radius-md)] border border-border">
             <span className="text-[10px] text-text-muted mr-1 font-mono">
               {isEraserActive ? "Eraser Size:" : "Pen Size:"}
             </span>
@@ -670,24 +689,30 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
                 key={sz}
                 type="button"
                 onClick={() => (isEraserActive ? setEraserSize(sz) : setThickness(sz))}
-                className={`px-1.5 py-0.5 text-[11px] font-mono rounded transition-all ${
+                className={`btn-press px-1.5 py-0.5 text-[11px] font-mono rounded-[var(--radius-sm)] transition-colors duration-150 ${
                   (isEraserActive ? eraserSize : thickness) === sz
                     ? "bg-accent-info text-white font-bold"
-                    : "text-text-muted hover:text-text-primary hover:bg-white/5"
+                    : "text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
                 }`}
               >
                 {sz}px
               </button>
             ))}
+            {/* Live readout when Ctrl+/Ctrl- has moved the eraser off every preset */}
+            {isEraserActive && !ERASER_SIZES.includes(eraserSize) && (
+              <span className="px-1.5 py-0.5 text-[11px] font-mono font-bold text-accent-info">
+                {eraserSize}px
+              </span>
+            )}
           </div>
 
           {/* Requirement 1: Undo / Redo controls — disabled when stack is empty */}
-          <div className="flex items-center gap-1 bg-bg-surface p-1 rounded-md border border-border">
+          <div className="flex items-center gap-0.5 bg-bg-surface p-1 rounded-[var(--radius-md)] border border-border">
             <button
               type="button"
               onClick={handleUndoInternal}
               disabled={!canUndo}
-              className="p-1.5 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text-primary hover:bg-white/5"
+              className="btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               title="Undo (Ctrl+Z / Cmd+Z)"
             >
               <Undo2 className="w-3.5 h-3.5" />
@@ -696,7 +721,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               type="button"
               onClick={handleRedoInternal}
               disabled={!canRedo}
-              className="p-1.5 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text-primary hover:bg-white/5"
+              className="btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               title="Redo (Ctrl+Y / Cmd+Shift+Z)"
             >
               <Redo2 className="w-3.5 h-3.5" />
@@ -708,10 +733,10 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             <button
               type="button"
               onClick={handleBgToggle}
-              className="px-2.5 py-1 text-xs font-medium border border-border rounded-md text-text-secondary hover:text-text-primary hover:bg-white/5 transition-all flex items-center gap-1.5"
+              className="btn-press px-2.5 py-1 text-xs font-medium border border-border rounded-[var(--radius-md)] text-text-secondary hover:text-text-primary hover:bg-bg-surface-3 transition-colors duration-150 flex items-center gap-1.5"
               title="Toggle Board Background"
             >
-              {bgColor === "#111118" ? (
+              {bgColor === "#17171A" ? (
                 <>
                   <Sun className="w-3.5 h-3.5 text-accent-warning" /> Light Board
                 </>
@@ -725,7 +750,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             <button
               type="button"
               onClick={handleClearAllInternal}
-              className="px-2.5 py-1 text-xs font-medium border border-accent-danger/30 bg-accent-danger/10 text-accent-danger hover:bg-accent-danger/20 rounded-md transition-all flex items-center gap-1.5"
+              className="btn-press px-2.5 py-1 text-xs font-medium border border-accent-critical/30 bg-accent-critical/10 text-accent-critical hover:bg-accent-critical/20 rounded-[var(--radius-md)] transition-colors duration-150 flex items-center gap-1.5"
               title="Wipe Canvas"
             >
               <Trash2 className="w-3.5 h-3.5" /> Clear All
@@ -755,21 +780,21 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         {/* Eraser Cursor Size Border Overlay */}
         {!readOnly && isEraserActive && eraserPos.visible && (
           <div
-            className="pointer-events-none absolute z-30 rounded-full border-2 border-accent-danger -translate-x-1/2 -translate-y-1/2 transition-transform duration-75"
+            className="pointer-events-none absolute z-30 rounded-full border-2 border-accent-critical -translate-x-1/2 -translate-y-1/2 transition-transform duration-75"
             style={{
               left: `${eraserPos.x}px`,
               top: `${eraserPos.y}px`,
               width: `${eraserSize}px`,
               height: `${eraserSize}px`,
-              boxShadow: "0 0 0 1.5px rgba(255, 255, 255, 0.9), 0 0 8px rgba(239, 68, 68, 0.5)",
-              backgroundColor: "rgba(239, 68, 68, 0.15)",
+              boxShadow: "0 0 0 1.5px rgba(255, 255, 255, 0.9), 0 0 8px rgba(232, 85, 107, 0.5)",
+              backgroundColor: "rgba(232, 85, 107, 0.15)",
             }}
           />
         )}
 
         {/* Read-Only Indicator Overlay on Student side */}
         {readOnly && (
-          <div className="absolute top-2 right-2 px-2.5 py-1 bg-black/60 backdrop-blur border border-white/10 rounded text-[11px] font-mono text-text-muted pointer-events-none">
+          <div className="absolute top-2 right-2 px-2.5 py-1 bg-bg-base/80 backdrop-blur border border-border rounded-[var(--radius-sm)] text-[11px] font-mono text-text-muted pointer-events-none">
             Live Whiteboard (View Only)
           </div>
         )}

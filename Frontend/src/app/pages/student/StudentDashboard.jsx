@@ -10,7 +10,6 @@ import { getSocket } from "../../store/socket";
 import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { studentTourSteps } from "../../tours/studentTourSteps";
-import { motion } from "motion/react";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -60,11 +59,18 @@ function formatTime12h(timeStr) {
   return `${h}:${m} ${ampm}`;
 }
 
-// ⚠️ TEMP DEMO DATA — FOR VISUAL REVIEW ONLY. REMOVE BEFORE MERGING TO MAIN. ⚠️
-const mockRecentSubmissions = [
-  { id: "sub1", title: "Array Manipulation Lab", submittedAt: "10 mins ago", status: "graded", score: "95/100" },
-  { id: "sub2", title: "Linked List Reversal", submittedAt: "2 hours ago", status: "submitted" },
-];
+/**
+ * Formats minutes-until as a compact countdown, e.g. "starts in 12m" / "starts in 1h 5m"
+ */
+function formatStartsIn(startTimeStr) {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const diff = parseTimeToMinutes(startTimeStr) - currentMinutes;
+  if (diff <= 0) return "";
+  const h = Math.floor(diff / 60);
+  const m = diff % 60;
+  return h > 0 ? `starts in ${h}h ${m}m` : `starts in ${m}m`;
+}
 
 export function StudentDashboard() {
   const navigate = useNavigate();
@@ -289,16 +295,16 @@ export function StudentDashboard() {
     <div className="p-6 space-y-6 w-full">
       {/* Kick banner — shown when instructor ended the session the student was in */}
       {wasKicked && (
-        <div className="p-4 bg-accent-critical/10 border border-accent-critical/30 rounded flex items-center justify-between">
+        <div className="px-4 py-3 bg-bg-surface border border-accent-critical/40 rounded-[var(--radius-md)] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-critical" />
-            <span className="text-sm font-medium text-text-primary">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-critical" />
+            <span className="text-sm text-text-primary">
               Your session was ended by the instructor.
             </span>
           </div>
           <button
             onClick={() => setWasKicked(false)}
-            className="text-xs text-text-secondary hover:text-text-primary cursor-pointer"
+            className="text-xs text-text-secondary hover:text-text-primary cursor-pointer transition-colors"
           >
             Dismiss
           </button>
@@ -306,136 +312,139 @@ export function StudentDashboard() {
       )}
 
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* SECTION 1 — Session Availability Banner (Renders FIRST)               */}
+      {/* HERO — Today's Schedule, with live-broadcast status folded into the   */}
+      {/* header. This is the page's primary focus.                             */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
-      {activeSessions.length > 0 ? (
-        <div
-          className="p-4 bg-accent-info/10 border border-accent-info/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-accent-info/15 transition-colors"
-          onClick={() => navigate('/student/sessions')}
-        >
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-accent-success animate-pulse" />
-            <div>
-              <div className="text-sm font-semibold text-text-primary">
-                {activeSessions.length} Live {activeSessions.length === 1 ? 'Session' : 'Sessions'} in Progress
-              </div>
-              <div className="text-xs text-text-secondary">
-                Click to view and join your lab session
-              </div>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-accent-info">VIEW SESSIONS →</span>
-        </div>
-      ) : (
-        <div className="p-4 bg-bg-surface border border-border rounded-lg flex items-center gap-3">
-          <WifiOff className="w-4 h-4 text-text-muted" />
-          <div>
-            <div className="text-sm font-semibold text-text-primary">No live sessions right now</div>
-            <div className="text-xs text-text-secondary">Your instructor hasn't started a broadcast yet.</div>
-          </div>
-        </div>
-      )}
-
-      {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* SECTION 2 — SCHEDULE & EXAMS GRID ROW                                */}
-      {/* ═════════════════════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        {/* Today's Schedule Card */}
-        <Card className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold text-text-primary flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-accent-info" />
-                Today's Schedule ({todayName})
-              </span>
+      <Card className="bg-bg-surface border-border">
+        <CardHeader className="border-b border-border pb-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <CardTitle className="font-display text-[length:var(--text-lg)] font-semibold text-text-primary flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-accent-500" strokeWidth={1.75} />
+              Today's Schedule
+              <span className="text-text-muted font-normal">— {todayName}</span>
             </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col justify-between">
-            {loadingTimetable ? (
-              <div className="py-6 flex items-center justify-center gap-2 text-text-secondary text-xs my-auto">
-                <Loader2 className="w-4 h-4 animate-spin text-accent-info" />
-                <span>Loading today's schedule...</span>
-              </div>
-            ) : !timetableData.class_assigned ? (
-              <div className="py-6 text-center my-auto">
-                <p className="text-xs text-text-secondary">
-                  You're not yet assigned to a class — contact your admin
-                </p>
-              </div>
-            ) : todayLectures.length === 0 ? (
-              <div className="py-6 text-center my-auto">
-                <p className="text-xs text-text-secondary">
-                  No lectures scheduled today.
-                </p>
-              </div>
+
+            {activeSessions.length > 0 ? (
+              <button
+                onClick={() => navigate('/student/sessions')}
+                className="flex items-center gap-2 text-xs cursor-pointer group"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-accent-live pulse-dot" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-live" />
+                </span>
+                <span className="font-medium text-text-primary">
+                  {activeSessions.length} live {activeSessions.length === 1 ? 'session' : 'sessions'}
+                </span>
+                <span className="text-accent-500 group-hover:underline">View →</span>
+              </button>
             ) : (
-              <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
-                {todayLectures.map((entry) => {
-                  const status = getLectureStatus(entry.start_time, entry.end_time);
+              <span className="flex items-center gap-1.5 text-xs text-text-muted">
+                <WifiOff className="w-3.5 h-3.5" strokeWidth={1.75} />
+                No live sessions
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-4">
+          {loadingTimetable ? (
+            <div className="py-6 flex items-center justify-center gap-1.5 text-text-secondary text-xs">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-accent-500" strokeWidth={1.75} />
+              <span>Loading today's schedule...</span>
+            </div>
+          ) : !timetableData.class_assigned ? (
+            <div className="py-6 text-center">
+              <p className="text-xs text-text-secondary">
+                You're not yet assigned to a class — contact your admin
+              </p>
+            </div>
+          ) : todayLectures.length === 0 ? (
+            <div className="py-6 text-center">
+              <p className="text-xs text-text-secondary">
+                No lectures scheduled today.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+              {todayLectures.map((entry) => {
+                const status = getLectureStatus(entry.start_time, entry.end_time);
+                const startsIn = status === "UPCOMING" ? formatStartsIn(entry.start_time) : "";
 
-                  return (
-                    <div
-                      key={entry.id}
-                      className={cn(
-                        "p-3 rounded-lg border flex items-center justify-between gap-4 transition-all",
-                        status === "ACTIVE"
-                          ? "bg-bg-elevated border-accent-info/50 shadow-[var(--glow-accent-info)]"
-                          : "bg-bg-base border-border",
-                        status === "PAST" && "opacity-60"
-                      )}
-                    >
-                      {/* Screen reader cue */}
-                      <span className="sr-only">
-                        {status === "PAST" ? "Past lecture" : status === "ACTIVE" ? "Active lecture" : "Upcoming lecture"}
-                      </span>
+                return (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      "pl-3 pr-3 py-2.5 border-l-2 flex items-center justify-between gap-4 transition-colors",
+                      status === "ACTIVE" && "border-l-accent-live bg-bg-elevated rounded-r-[var(--radius-sm)]",
+                      status === "UPCOMING" && "border-l-border",
+                      status === "PAST" && "border-l-border opacity-50"
+                    )}
+                  >
+                    {/* Screen reader cue */}
+                    <span className="sr-only">
+                      {status === "PAST" ? "Past lecture" : status === "ACTIVE" ? "Active lecture" : "Upcoming lecture"}
+                    </span>
 
-                      {/* Left: Lecture Details */}
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-text-primary flex items-center gap-1.5 truncate">
-                            <BookOpen className="w-3.5 h-3.5 text-accent-info shrink-0" />
-                            <span className="truncate">{entry.subject}</span>
+                    {/* Left: Lecture Details */}
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        {status === "ACTIVE" && (
+                          <span className="relative flex h-1.5 w-1.5 shrink-0">
+                            <span className="absolute inline-flex h-full w-full rounded-full bg-accent-live pulse-dot" />
+                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent-live" />
                           </span>
-                          {entry.session_type === "lab" && (
-                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 shrink-0">
-                              LAB
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-text-secondary truncate">
-                          <span className="flex items-center gap-1 truncate">
-                            <User className="w-3 h-3 text-text-muted shrink-0" />
-                            <span className="truncate">{entry.teacher_name}</span>
-                          </span>
-                          {entry.room && (
-                            <span className="flex items-center gap-1 shrink-0">
-                              <School className="w-3 h-3 text-text-muted shrink-0" />
-                              {entry.room}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right: Time Range */}
-                      <div className="shrink-0 text-right">
-                        <span className="text-xs font-mono font-medium text-text-secondary">
-                          {formatTime12h(entry.start_time)} – {formatTime12h(entry.end_time)}
+                        )}
+                        <span className="text-sm font-medium text-text-primary flex items-center gap-2 truncate">
+                          <BookOpen className="w-4 h-4 text-text-muted shrink-0" strokeWidth={1.75} />
+                          <span className="truncate">{entry.subject}</span>
                         </span>
+                        {entry.session_type === "lab" && (
+                          <Badge variant="outline" className="text-[10px] py-0 px-1.5 shrink-0">
+                            LAB
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-text-secondary truncate pl-0">
+                        <span className="flex items-center gap-1.5 truncate">
+                          <User className="w-3.5 h-3.5 text-text-muted shrink-0" strokeWidth={1.75} />
+                          <span className="truncate">{entry.teacher_name}</span>
+                        </span>
+                        {entry.room && (
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            <School className="w-3.5 h-3.5 text-text-muted shrink-0" strokeWidth={1.75} />
+                            {entry.room}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
+                    {/* Right: Time Range */}
+                    <div className="shrink-0 text-right space-y-0.5">
+                      <div className="text-xs tnum font-medium text-text-secondary">
+                        {formatTime12h(entry.start_time)} – {formatTime12h(entry.end_time)}
+                      </div>
+                      {startsIn && (
+                        <div className="text-[10px] tnum text-text-muted">{startsIn}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      {/* SECONDARY ROW — Exams, Attendance, Submissions. Calm, equal weight.   */}
+      {/* ═════════════════════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* Dedicated Exams Card */}
-        <Card data-tour="student-exams" className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
+        <Card data-tour="student-exams" className="bg-bg-surface border-border h-full flex flex-col justify-between">
           <CardHeader>
-            <CardTitle className="text-base font-semibold text-text-primary flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold text-text-primary flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-accent-locked" />
+                <Clock className="w-4 h-4 text-text-secondary" />
                 Exams
               </span>
               {hasActiveExam && <Badge variant="locked">ACTIVE NOW</Badge>}
@@ -456,18 +465,9 @@ export function StudentDashboard() {
                       </p>
                     </div>
 
-                    <div className="w-full bg-bg-base h-1.5 rounded-full overflow-hidden border border-border">
-                      <motion.div
-                        initial={{ width: "0%" }}
-                        animate={{ width: "100%" }}
-                        transition={{ duration: 2, ease: "easeInOut" }}
-                        className="h-full bg-accent-locked rounded-full"
-                      />
-                    </div>
-
                     <Button
                       onClick={() => navigate(`/student/exam/${exam.id}`)}
-                      className="bg-accent-locked hover:bg-accent-locked/90 text-white font-semibold text-xs"
+                      className="bg-accent-700 hover:bg-accent-700/90 text-white font-semibold text-xs"
                     >
                       Enter Exam
                     </Button>
@@ -475,7 +475,7 @@ export function StudentDashboard() {
                 ))}
               </div>
             ) : waitingRoomExams.length > 0 ? (
-              <div className="p-3 bg-bg-base border border-accent-warning/30 rounded-lg flex items-center justify-between my-auto">
+              <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] flex items-center justify-between my-auto">
                 <div className="space-y-0.5">
                   <div className="text-xs font-medium text-text-primary">
                     {waitingRoomExams[0].title}
@@ -487,125 +487,79 @@ export function StudentDashboard() {
                   onClick={() => handleJoinExam(waitingRoomExams[0].id)}
                   className="bg-accent-warning hover:bg-accent-warning/90 text-black font-semibold text-xs"
                 >
-                  Join Waiting Room
+                  Join
                 </Button>
               </div>
             ) : (
               <div className="py-6 text-center space-y-2 my-auto">
-                <Clock className="w-8 h-8 text-text-muted mx-auto" />
+                <Clock className="w-5 h-5 text-text-muted mx-auto" strokeWidth={1.75} />
                 <p className="text-xs text-text-secondary">No active or upcoming exams.</p>
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* ═════════════════════════════════════════════════════════════════════ */}
-      {/* SECTION 4 — "YOUR ACTIVITY" (Attendance + Recent Submissions Grid)     */}
-      {/* ═════════════════════════════════════════════════════════════════════ */}
-      <section className="space-y-3 pt-2">
-        <h2 className="text-xs uppercase tracking-wide text-text-muted font-medium font-mono">
-          YOUR ACTIVITY
-        </h2>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-          {/* Attendance Card */}
-          <Card data-tour="student-attendance" className="bg-bg-surface border-border shadow-[var(--shadow-card)] h-full flex flex-col justify-between">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold text-text-primary flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-text-secondary" />
-                Attendance
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
-              {/* Compact inline stat row */}
-              <div className="grid grid-cols-3 gap-3 p-4 bg-bg-base border border-border rounded-lg text-center">
-                <div>
-                  <div className="text-xs text-text-secondary mb-1">Present</div>
-                  <div className="text-2xl font-mono font-bold text-accent-success">
-                    {stats.present}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-text-secondary mb-1">Total Sessions</div>
-                  <div className="text-2xl font-mono font-bold text-text-primary">
-                    {stats.total}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-text-secondary mb-1">Attendance Rate</div>
-                  <div className="text-2xl font-mono font-bold text-text-primary">
-                    {stats.rate}%
-                  </div>
+        {/* Attendance Card */}
+        <Card data-tour="student-attendance" className="bg-bg-surface border-border h-full flex flex-col justify-between">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold text-text-primary flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-text-secondary" />
+              Attendance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
+            <div className="grid grid-cols-3 gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)] text-center">
+              <div>
+                <div className="text-[10px] text-text-secondary mb-1">Present</div>
+                <div className="text-lg tnum font-semibold text-accent-success">
+                  {stats.present}
                 </div>
               </div>
-
-              <Button
-                variant="outline"
-                onClick={() => navigate("/student/attendance")}
-                className="w-full text-xs"
-              >
-                View History
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Recent Submissions Card */}
-          <Card className="bg-bg-surface border-border flex flex-col shadow-[var(--shadow-card)] h-full justify-between">
-            <CardHeader>
-              <CardTitle className="text-base font-semibold text-text-primary flex items-center gap-2">
-                <FileText className="w-4 h-4 text-text-secondary" />
-                Recent Submissions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {mockRecentSubmissions.length > 0 ? (
-                <div className="space-y-3">
-                  {mockRecentSubmissions.map((submission) => (
-                    <div
-                      key={submission.id}
-                      className="p-3 bg-bg-base border border-border rounded-lg hover:border-accent-info/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-text-primary">
-                            {submission.title}
-                          </div>
-                          <div className="text-xs text-text-secondary mt-1">
-                            {submission.submittedAt}
-                          </div>
-                        </div>
-                        <div className="text-right flex flex-col items-end gap-1">
-                          {submission.status === "graded" ? (
-                            <Badge variant="success">GRADED</Badge>
-                          ) : (
-                            <Badge variant="info">SUBMITTED</Badge>
-                          )}
-                          {submission.status === "graded" && (
-                            <div className="text-xs font-mono text-accent-success">
-                              {submission.score}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              <div>
+                <div className="text-[10px] text-text-secondary mb-1">Sessions</div>
+                <div className="text-lg tnum font-semibold text-text-primary">
+                  {stats.total}
                 </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
-                  <FileText className="w-10 h-10 text-text-muted" />
-                  <h3 className="text-sm font-medium text-text-primary">
-                    No recent submissions
-                  </h3>
-                  <p className="text-xs text-text-secondary">
-                    Your submitted tasks will appear here.
-                  </p>
+              </div>
+              <div>
+                <div className="text-[10px] text-text-secondary mb-1">Rate</div>
+                <div className="text-lg tnum font-semibold text-text-primary">
+                  {stats.rate}%
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={() => navigate("/student/attendance")}
+              className="w-full text-xs"
+            >
+              View History
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Recent Submissions Card */}
+        <Card className="bg-bg-surface border-border flex flex-col h-full justify-between">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold text-text-primary flex items-center gap-2">
+              <FileText className="w-4 h-4 text-text-secondary" />
+              Recent Submissions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
+              <FileText className="w-8 h-8 text-text-muted" strokeWidth={1.75} />
+              <h3 className="text-sm font-medium text-text-primary">
+                No recent submissions
+              </h3>
+              <p className="text-xs text-text-secondary">
+                Your submitted tasks will appear here.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <AppTour
         steps={studentTourSteps}

@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Home, FolderOpen, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail, Settings, Sun, Moon, CircleUserRound } from "lucide-react";
+import { Home, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail, Settings, GraduationCap } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { sessionStore } from "../store/sessionStore"; // kept in place but no longer source of truth
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
@@ -16,7 +16,8 @@ import {
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
+import { Toaster } from "../components/ui/sonner";
 
 const navigation = [
   { name: "Dashboard", href: "/student", icon: Home, dataTour: "student-dashboard-link" },
@@ -31,22 +32,6 @@ export function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("edusync_theme") || "dark";
-  });
-
-  useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    localStorage.setItem("edusync_theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
 
   const [activeExam, setActiveExam] = useState(null); // { examId, title } | null
 
@@ -449,7 +434,7 @@ export function StudentLayout() {
           </Button>
         )}
         <div className="px-2 py-1 bg-accent-success/10 border border-accent-success/20 rounded-sm h-8 flex items-center justify-center">
-          <span className="text-xs font-mono text-accent-success">
+          <span className="text-xs font-medium text-accent-success">
             ✓ PRESENT
           </span>
         </div>
@@ -513,7 +498,7 @@ export function StudentLayout() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-[50%] -translate-y-[50%] text-text-secondary hover:text-text-primary"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
                   </button>
                 </div>
                 {passwordError && (
@@ -538,7 +523,7 @@ export function StudentLayout() {
                   type="submit"
                   disabled={!password}
                   className={cn(
-                    "bg-accent-info hover:bg-accent-info/90 text-white font-medium",
+                    "bg-accent-700 hover:bg-accent-700/90 text-white font-medium",
                     !password && "opacity-50 pointer-events-none"
                   )}
                 >
@@ -554,7 +539,7 @@ export function StudentLayout() {
 
   if (isImmersiveView) {
     return (
-      <div className="h-screen flex flex-col bg-bg-base overflow-hidden">
+      <div className="h-screen flex flex-col bg-bg-base overflow-hidden" data-role="student">
         <div className="flex-1 overflow-auto">
           <Outlet context={{
             hasJoinedSession,
@@ -580,25 +565,35 @@ export function StudentLayout() {
     );
   }
 
+  const initials = (displayUser.name || "Student")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
-    <div className="flex h-screen bg-bg-base">
-      {/* Sidebar */}
-      <aside className="w-16 min-w-16 md:w-[240px] md:min-w-[240px] flex flex-col bg-bg-surface border-r border-border transition-all duration-200">
+    <div className="flex h-screen bg-bg-base" data-role="student">
+      {/* Sidebar — 3 distinct rounded blocks (brand / nav / user), tight gap
+          between them, rather than one continuous panel with dividers. */}
+      <aside className="w-16 min-w-16 md:w-[230px] md:min-w-[230px] flex flex-col gap-2 p-2 bg-bg-base transition-all duration-200">
         {/* Brand */}
-        <div className="px-3 md:px-5 py-4 border-b border-border flex items-center gap-2.5 justify-center md:justify-start">
-          <div className="w-7 h-7 bg-bg-surface-3 border border-border rounded-md shrink-0" />
-          <span className="font-mono font-semibold text-text-primary text-[15px] tracking-tight hidden md:inline">
+        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface px-3 md:px-4 py-3.5 flex items-center gap-2.5 justify-center md:justify-start shrink-0">
+          <div
+            className="w-[26px] h-[26px] rounded-lg shrink-0 flex items-center justify-center"
+            style={{ background: "linear-gradient(155deg, var(--accent-700), color-mix(in srgb, var(--accent-700) 55%, var(--bg-base)))" }}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+          </div>
+          <span className="font-display font-semibold text-text-primary text-[14.5px] tracking-tight hidden md:inline">
             EduSync
           </span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-2 md:p-3 space-y-1">
-          {[
-            ...navigation,
-            ...(activeExam ? [{ name: "Exam", href: `/student/exam/${activeExam.examId}`, icon: FileText }] : []),
-            ...(joinedSession ? [{ name: "Tasks", href: "/student/tasks", icon: Code }] : [])
-          ].map((item) => {
+        <nav className="flex-1 min-h-0 rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 space-y-0.5 overflow-y-auto">
+          {navigation.map((item) => {
             const isActive =
               location.pathname === item.href ||
               (item.href !== "/student" &&
@@ -611,50 +606,77 @@ export function StudentLayout() {
                 data-tour={item.dataTour}
                 title={item.name}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 text-[13.5px] rounded-lg transition-colors mb-0.5 justify-center md:justify-start",
-                  isActive
-                    ? "bg-accent-info/15 text-accent-info font-medium nav-active"
-                    : "text-text-secondary font-normal hover:bg-bg-surface-3 hover:text-text-primary nav-inactive"
+                  "flex items-center gap-2.5 pr-3 py-2 text-[13px] rounded-[var(--radius-md)] justify-center md:justify-start",
+                  isActive ? "nav-active" : "nav-inactive"
                 )}
               >
-                <item.icon className={cn("w-4 h-4 shrink-0", isActive && "text-accent-info")} />
+                <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
                 <span className="hidden md:inline">{item.name}</span>
               </Link>
             );
           })}
+
+          {(activeExam || joinedSession) && (
+            <>
+              <div className="hidden md:block px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                In Session
+              </div>
+              <div className="md:hidden my-2 mx-2 border-t border-border" />
+              {[
+                ...(activeExam ? [{ name: "Exam", href: `/student/exam/${activeExam.examId}`, icon: FileText }] : []),
+                ...(joinedSession ? [{ name: "Tasks", href: "/student/tasks", icon: Code }] : []),
+              ].map((item) => {
+                const isActive =
+                  location.pathname === item.href ||
+                  location.pathname.startsWith(item.href);
+
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    title={item.name}
+                    className={cn(
+                      "flex items-center gap-2.5 pr-3 py-2 text-[13px] rounded-[var(--radius-md)] justify-center md:justify-start",
+                      isActive ? "nav-active" : "nav-inactive"
+                    )}
+                  >
+                    <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
+                    <span className="hidden md:inline">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         {/* User info & Actions */}
-        <div className="p-2 md:p-3 space-y-1 border-t border-border">
-          {/* Identity & Theme Toggle Row */}
-          <div className="flex items-center justify-center md:justify-between px-2 py-1.5 rounded-lg gap-2">
-            <div className="flex items-center gap-2 overflow-hidden">
-              <CircleUserRound className="w-4 h-4 text-text-secondary shrink-0" />
-              <span className="text-sm font-medium text-text-primary truncate hidden md:inline">
+        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 shrink-0">
+          <div className="hidden md:flex items-center gap-2.5 px-1 py-1">
+            <div className="w-7 h-7 rounded-full bg-bg-surface-3 border border-border flex items-center justify-center text-[10.5px] font-semibold text-text-secondary shrink-0">
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12.5px] font-medium text-text-primary truncate">
                 {displayUser.name || "Student"}
-              </span>
+              </div>
+              <div className="text-[10.5px] text-text-muted truncate">Student</div>
             </div>
             <button
-              onClick={toggleTheme}
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              className="btn-press p-1 text-text-secondary hover:text-text-primary hover:bg-bg-surface-3 rounded-md transition-std shrink-0"
+              onClick={handleLogout}
+              title="Logout"
+              className="btn-press w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 transition-std shrink-0"
             >
-              {theme === "dark" ? (
-                <Sun className="w-4 h-4 text-accent-warning" />
-              ) : (
-                <Moon className="w-4 h-4 text-accent-info" />
-              )}
+              <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
             </button>
           </div>
 
-          {/* Logout button */}
+          {/* Collapsed (mobile) — icon-only logout, name/avatar hidden */}
           <button
             onClick={handleLogout}
             title="Logout"
-            className="btn-press w-full flex items-center gap-2.5 px-2 py-1.5 text-sm text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std justify-center md:justify-start"
+            className="btn-press md:hidden w-full flex items-center justify-center py-2 text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
           >
-            <LogOut className="w-4 h-4 shrink-0" />
-            <span className="hidden md:inline">Logout</span>
+            <LogOut className="w-4 h-4" strokeWidth={1.75} />
           </button>
         </div>
       </aside>

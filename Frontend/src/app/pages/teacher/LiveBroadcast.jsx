@@ -48,6 +48,7 @@ import {
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
 import { Input } from "../../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { getSocket } from "../../store/socket";
 import { toast } from "sonner";
 
@@ -100,7 +101,7 @@ const buildJsSrcdoc = (code) =>
 })();
 <\/script>
 </head>
-<body style="margin:0;background:#1a1a24;color:#f0f0f5;font-family:system-ui;padding:12px">
+<body style="margin:0;background:#17171A;color:#F2F2F4;font-family:system-ui;padding:12px">
 <script>
 try{
 ${code}
@@ -174,7 +175,7 @@ export function LiveBroadcast() {
 
   const whiteboardRef = useRef(null);
   const teacherWhiteboardStrokesRef = useRef([]);
-  const teacherWhiteboardBgColorRef = useRef("#111118");
+  const teacherWhiteboardBgColorRef = useRef("#17171A");
 
   // ── Modal / form state ──────────────────────────────────────────────────────
   const [showSetupModal, setShowSetupModal] = useState(false);
@@ -875,7 +876,7 @@ export function LiveBroadcast() {
           language: editorLanguageRef.current || "javascript",
           code: editorCodeRef.current || "",
           whiteboardStrokes: [...teacherWhiteboardStrokesRef.current],
-          whiteboardBgColor: teacherWhiteboardBgColorRef.current || "#111118",
+          whiteboardBgColor: teacherWhiteboardBgColorRef.current || "#17171A",
         });
       };
 
@@ -1126,7 +1127,7 @@ export function LiveBroadcast() {
           language: editorLanguageRef.current || "javascript",
           code: editorCodeRef.current || "",
           whiteboardStrokes: [...teacherWhiteboardStrokesRef.current],
-          whiteboardBgColor: teacherWhiteboardBgColorRef.current || "#111118",
+          whiteboardBgColor: teacherWhiteboardBgColorRef.current || "#17171A",
         });
         // Emit initial mode so students render the correct view immediately
         // (defaults to 'editor' — teacher switches to screen share manually)
@@ -1868,12 +1869,12 @@ export function LiveBroadcast() {
             {currentLecture ? (
               <button
                 onClick={() => handlePrefillScheduledLecture(currentLecture)}
-                className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-md text-xs text-accent-info font-medium transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-[var(--radius-md)] text-xs text-accent-info font-medium transition-colors flex items-center gap-2"
                 title="Click to pre-fill lecture setup"
               >
                 <Calendar className="w-3.5 h-3.5" />
                 <span>Current Scheduled: <strong className="text-text-primary">{currentLecture.subject || currentLecture.subject_name}</strong> {currentLecture.class_name ? `(${currentLecture.class_name})` : ""}</span>
-                <span className="text-[10px] bg-accent-info/20 px-1.5 py-0.5 rounded text-accent-info font-semibold">Pre-fill</span>
+                <span className="text-[10px] bg-accent-info/20 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-accent-info font-semibold">Pre-fill</span>
               </button>
             ) : (
               <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
@@ -1885,7 +1886,10 @@ export function LiveBroadcast() {
         ) : (
           <>
             <div className="flex items-center gap-2.5">
-              <StatusBadge status="live" />
+              <span className="relative flex h-2.5 w-2.5" title="Live">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-accent-live pulse-dot" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent-live" />
+              </span>
               <span className="font-mono font-medium tabular-nums text-sm text-text-primary">
                 {formatTime(sessionSeconds)}
               </span>
@@ -1895,7 +1899,7 @@ export function LiveBroadcast() {
             </div>
 
             {sessionInfo && (
-              <div className="flex items-center gap-2 px-2.5 py-1 bg-bg-elevated border border-border rounded-md text-xs">
+              <div className="flex items-center gap-2 px-2.5 py-1 bg-bg-elevated border border-border rounded-[var(--radius-md)] text-xs">
                 <span className="text-text-muted">Password:</span>
                 <span className="font-mono font-bold text-text-primary tracking-wider">
                   {showPassword ? sessionInfo.password : "••••••••"}
@@ -1947,7 +1951,7 @@ export function LiveBroadcast() {
             className={`flex-1 bg-bg-surface flex flex-col relative overflow-hidden transition-all ${
               isFullScreen
                 ? "fixed top-0 left-0 right-0 bottom-0 z-[99999] w-full h-full max-w-full max-h-full bg-bg-base border-none rounded-none overflow-hidden"
-                : "border-2 border-border rounded-lg"
+                : "border border-border rounded-[var(--radius-lg)]"
             }`}
           >
             {/* ── SCREEN SHARE MODE ────────────────────────────────────────── */}
@@ -1969,7 +1973,7 @@ export function LiveBroadcast() {
                       <button
                         type="button"
                         onClick={handleToggleFullScreen}
-                        className="p-2 rounded-md bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border shadow-lg transition-colors"
+                        className="p-2 rounded-[var(--radius-md)] bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border transition-colors"
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                       >
                         {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -1982,7 +1986,7 @@ export function LiveBroadcast() {
                       <button
                         type="button"
                         onClick={handleToggleFullScreen}
-                        className="p-2 rounded-md bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border shadow-lg transition-colors"
+                        className="p-2 rounded-[var(--radius-md)] bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border transition-colors"
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                       >
                         {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -2007,18 +2011,18 @@ export function LiveBroadcast() {
                   style={{ height: "44px" }}
                 >
                   {/* Language selector */}
-                  <select
-                    data-tour="broadcast-languages"
-                    value={editorLanguage}
-                    onChange={(e) => handleLanguageChange(e.target.value)}
-                    className="h-7 px-2 bg-bg-surface border border-border rounded text-xs text-text-primary focus:outline-none focus:border-accent-info/50"
-                  >
-                    {LANGUAGES.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={editorLanguage} onValueChange={handleLanguageChange}>
+                    <SelectTrigger data-tour="broadcast-languages" size="sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
                   <div className="flex-1" />
 
@@ -2030,7 +2034,7 @@ export function LiveBroadcast() {
                         setConsoleLines([]);
                         setTextOutput("");
                       }}
-                      className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded transition-colors"
+                      className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded-[var(--radius-sm)] transition-colors"
                     >
                       Clear output
                     </button>
@@ -2040,7 +2044,7 @@ export function LiveBroadcast() {
                   {editorLanguage === "whiteboard" ? (
                     <button
                       onClick={handleSaveWhiteboard}
-                      className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded transition-colors flex items-center gap-1.5"
+                      className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded-[var(--radius-sm)] transition-colors flex items-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Save
@@ -2050,7 +2054,7 @@ export function LiveBroadcast() {
                       <button
                         onClick={handleRunCode}
                         disabled={pyodideLoading}
-                        className="h-7 px-3 text-xs font-medium bg-accent-info hover:bg-accent-info/90 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                        className="h-7 px-3 text-xs font-medium bg-accent-info hover:bg-accent-info/90 text-white rounded-[var(--radius-sm)] transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
                       >
                         {pyodideLoading ? (
                           <>
@@ -2071,7 +2075,7 @@ export function LiveBroadcast() {
                   <button
                     type="button"
                     onClick={handleToggleFullScreen}
-                    className="h-7 px-2.5 text-xs font-medium rounded border border-border bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5 ml-1"
+                    className="h-7 px-2.5 text-xs font-medium rounded-[var(--radius-sm)] border border-border bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5 ml-1"
                     title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                   >
                     {isFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
@@ -2173,7 +2177,7 @@ export function LiveBroadcast() {
               <Button
                 data-tour="teacher-broadcast-start"
                 onClick={handleOpenSetupModal}
-                className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold shadow px-6"
+                className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold px-6"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Start Lecture
@@ -2200,7 +2204,7 @@ export function LiveBroadcast() {
                   <a
                     href={recordingDownloadUrl}
                     download="session-recording.webm"
-                    className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors border border-border rounded-md text-text-primary hover:bg-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors border border-border rounded-[var(--radius-md)] text-text-primary hover:bg-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Download Recording
@@ -2276,7 +2280,7 @@ export function LiveBroadcast() {
           </div>
           {/* Screen share error — shown below control bar */}
           {screenShareError && (
-            <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-accent-critical/10 border border-accent-critical/20 rounded text-xs text-accent-critical">
+            <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-accent-critical/10 border border-accent-critical/20 rounded-[var(--radius-md)] text-xs text-accent-critical">
               <TriangleAlert className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{screenShareError}</span>
               <button onClick={() => setScreenShareError("")} className="ml-auto text-accent-critical/60 hover:text-accent-critical">
@@ -2286,7 +2290,7 @@ export function LiveBroadcast() {
           )}
           {/* Recording error — shown below control bar */}
           {recordingError && (
-            <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-accent-critical/10 border border-accent-critical/20 rounded text-xs text-accent-critical">
+            <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-accent-critical/10 border border-accent-critical/20 rounded-[var(--radius-md)] text-xs text-accent-critical">
               <TriangleAlert className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{recordingError}</span>
               <button onClick={() => setRecordingError("")} className="ml-auto text-accent-critical/60 hover:text-accent-critical">
@@ -2401,7 +2405,7 @@ export function LiveBroadcast() {
                           setSelectedClassIds([...selectedClassIds, cls.id]);
                         }
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-medium border transition-all flex items-center gap-1.5 ${
                         isSelected
                           ? "bg-accent-info/20 border-accent-info text-accent-info"
                           : "bg-bg-elevated border-border text-text-secondary hover:text-text-primary hover:border-border/80"
