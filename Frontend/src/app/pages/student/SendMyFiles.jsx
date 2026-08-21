@@ -100,9 +100,6 @@ export function SendMyFiles() {
     setSendSuccess(null);
     setEmailError("");
 
-    const startTime = performance.now();
-    console.log(`[DEBUG] zip-build start for method: ${currentMethod}...`);
-
     try {
       const zip = new JSZip();
       const countRef = { count: 0 };
@@ -130,8 +127,6 @@ export function SendMyFiles() {
         }
       );
 
-      const endTime = performance.now();
-      const durationMs = Math.round(endTime - startTime);
       const sizeMB = blob.size / (1024 * 1024);
 
       let pkgDisplayName = "";
@@ -142,10 +137,6 @@ export function SendMyFiles() {
       } else {
         pkgDisplayName = `${currentFileHandles.length} file(s)`;
       }
-
-      console.log(
-        `[DEBUG] zip-build complete in ${durationMs} ms, size: ${blob.size} bytes (${sizeMB.toFixed(2)} MB), total files: ${countRef.count}, method: ${currentMethod}`
-      );
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -169,7 +160,7 @@ export function SendMyFiles() {
       reader.readAsDataURL(blob);
     } catch (err) {
       setIsZipping(false);
-      console.error("[DEBUG] Error processing zip selection:", err);
+      console.error("Error processing zip selection:", err);
       toast.error(`Failed to process selection: ${err.message}`);
     }
   };
@@ -186,7 +177,7 @@ export function SendMyFiles() {
       await processSelection(selectedDir, fileHandles);
     } catch (err) {
       if (err.name !== "AbortError") {
-        console.error("[DEBUG] Error selecting folder:", err);
+        console.error("Error selecting folder:", err);
         toast.error(`Failed to select folder: ${err.message}`);
       }
     }
@@ -208,14 +199,13 @@ export function SendMyFiles() {
       await processSelection(dirHandle, updatedFiles);
     } catch (err) {
       if (err.name !== "AbortError") {
-        console.error("[DEBUG] Error selecting files:", err);
+        console.error("Error selecting files:", err);
         toast.error(`Failed to select files: ${err.message}`);
       }
     }
   };
 
   const handleRemoveFolder = async () => {
-    console.log(`[DEBUG] Item removed: folder "${dirHandle?.name}"`);
     setDirHandle(null);
     await processSelection(null, fileHandles);
     toast.info("Folder removed from selection.");
@@ -223,7 +213,6 @@ export function SendMyFiles() {
 
   const handleRemoveFile = async (indexToRemove) => {
     const fileToRemove = fileHandles[indexToRemove];
-    console.log(`[DEBUG] Item removed: file "${fileToRemove?.name}"`);
     const updatedFiles = fileHandles.filter((_, idx) => idx !== indexToRemove);
     setFileHandles(updatedFiles);
     await processSelection(dirHandle, updatedFiles);
@@ -231,7 +220,6 @@ export function SendMyFiles() {
   };
 
   const handleClearAll = () => {
-    console.log("[DEBUG] Clear All triggered — selection reset to empty state");
     setDirHandle(null);
     setFileHandles([]);
     setPickerMethod("");
@@ -277,11 +265,6 @@ export function SendMyFiles() {
     setSendProgressPercent(0);
     setSendSuccess(null);
 
-    const startTime = performance.now();
-    console.log(
-      `[DEBUG] send start for recipient: ${recipientEmail.trim()}, package: ${folderName}, size: ${zipSizeMB.toFixed(2)} MB, picker method: ${pickerMethod}`
-    );
-
     const token = localStorage.getItem("edusync_token");
     const xhr = new XMLHttpRequest();
 
@@ -300,8 +283,6 @@ export function SendMyFiles() {
     };
 
     xhr.onload = () => {
-      const endTime = performance.now();
-      const durationMs = Math.round(endTime - startTime);
       setIsSending(false);
 
       let data;
@@ -312,28 +293,25 @@ export function SendMyFiles() {
       }
 
       if (xhr.status >= 200 && xhr.status < 300) {
-        console.log(
-          `[DEBUG] send complete in ${durationMs} ms, recipient: ${recipientEmail.trim()}, messageId: ${data.messageId || "N/A"}`
-        );
         toast.success("Email sent successfully!");
-        setSendSuccess(`Email delivered to ${recipientEmail.trim()}! (Message ID: ${data.messageId || "Sent"})`);
+        setSendSuccess(
+          `Email delivered to ${recipientEmail.trim()}!${data.messageId ? ` (Message ID: ${data.messageId})` : ""}`
+        );
       } else {
-        console.error(`[DEBUG] send failure (${xhr.status}) in ${durationMs} ms:`, data.message);
+        console.error(`Send failure (${xhr.status}):`, data.message);
         toast.error(data.message || "Failed to send email.");
       }
     };
 
     xhr.onerror = () => {
-      const endTime = performance.now();
-      const durationMs = Math.round(endTime - startTime);
       setIsSending(false);
-      console.error(`[DEBUG] send network failure after ${durationMs} ms`);
+      console.error("Send network failure");
       toast.error("Network error while sending email.");
     };
 
     xhr.ontimeout = () => {
       setIsSending(false);
-      console.error("[DEBUG] send request timed out");
+      console.error("Send request timed out");
       toast.error("Send request timed out.");
     };
 
@@ -376,6 +354,11 @@ export function SendMyFiles() {
 
       {/* Main Card */}
       <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-6 space-y-6">
+        {/* Step 1 and everything it produces (queue, progress, summary) sit in
+            one tighter rhythm — they're all consequences of the same action,
+            not separate steps. The border-t + pt-6 below is the one deliberate
+            generous gap, marking the real step-1 → step-2 boundary. */}
+        <div className="space-y-4">
         {/* Step 1: Select Items */}
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -435,7 +418,7 @@ export function SendMyFiles() {
             <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
               Queued Items for Zip Package:
             </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
               {/* Queued Folder Entry */}
               {dirHandle && (
                 <div className="flex items-center justify-between py-1 px-2.5 bg-bg-surface border border-border rounded-[var(--radius-sm)] text-text-primary">
@@ -448,7 +431,8 @@ export function SendMyFiles() {
                     onClick={handleRemoveFolder}
                     disabled={isZipping || isSending}
                     title="Remove folder"
-                    className="p-1 text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 rounded transition-colors"
+                    aria-label="Remove folder from selection"
+                    className="p-1 text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                   >
                     <X className="w-4 h-4" strokeWidth={1.75} />
                   </button>
@@ -471,7 +455,8 @@ export function SendMyFiles() {
                     onClick={() => handleRemoveFile(idx)}
                     disabled={isZipping || isSending}
                     title="Remove file"
-                    className="p-1 text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 rounded transition-colors"
+                    aria-label={`Remove ${fh.name} from selection`}
+                    className="p-1 text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                   >
                     <X className="w-4 h-4" strokeWidth={1.75} />
                   </button>
@@ -503,7 +488,7 @@ export function SendMyFiles() {
         {/* Zip Summary & Size Badge */}
         {!isZipping && zipBlob && (
           <div
-            className={`p-4 rounded-[var(--radius-md)] border text-sm flex items-center justify-between ${
+            className={`p-4 rounded-[var(--radius-md)] border text-sm flex items-center justify-between gap-3 flex-wrap ${
               zipSizeMB > 20
                 ? "bg-accent-critical/10 border-accent-critical/30 text-text-primary"
                 : "bg-bg-base border-border text-text-primary"
@@ -556,6 +541,7 @@ export function SendMyFiles() {
             </div>
           </div>
         )}
+        </div>
 
         {/* Step 2: Email Input & Submit */}
         <form onSubmit={handleSendEmail} className="space-y-5 pt-6 border-t border-border" data-tour="sendfiles-email">

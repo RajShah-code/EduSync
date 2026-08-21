@@ -26,6 +26,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
+import { Skeleton } from "../../components/ui/skeleton";
 
 // Monday through Saturday (day_of_week 0–5)
 const DAYS = [
@@ -456,9 +457,37 @@ export function TimetableSetup() {
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center text-text-secondary gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-accent-info" />
-        <p className="text-[length:var(--text-base)] font-medium">Loading weekly timetable grid...</p>
+      <div className="w-full p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5 shadow-lg">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-32" />
+            <Skeleton className="h-9 w-40" />
+          </div>
+        </div>
+
+        <div className="bg-bg-surface border border-border rounded-2xl p-5 shadow-2xl overflow-x-auto w-full">
+          <div className="min-w-[900px] space-y-3">
+            <div className="grid grid-cols-[64px_repeat(6,1fr)] gap-2">
+              <Skeleton className="h-8 w-8 mx-auto rounded-lg" />
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-8 w-full rounded-lg" />
+              ))}
+            </div>
+            {[0, 1, 2].map((row) => (
+              <div key={row} className="grid grid-cols-[64px_repeat(6,1fr)] gap-2">
+                <Skeleton className="h-28 w-8 mx-auto" />
+                {[0, 1, 2, 3, 4, 5].map((col) => (
+                  <Skeleton key={col} className="h-28 w-full rounded-xl" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

@@ -9,6 +9,7 @@ import Editor from "@monaco-editor/react";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
 import {
   Clock,
   ShieldCheck,
@@ -64,6 +65,8 @@ const buildJsSrcdoc = (code, qId) =>
 })();
 <\/script>
 </head>
+<!-- Sandboxed iframe doc has no access to the parent's CSS custom properties,
+     so these are literal values kept in sync with --bg-elevated / --text-primary. -->
 <body style="margin:0;background:#17171A;color:#F1F2F5;font-family:system-ui;padding:12px">
 <script>
 try{
@@ -608,8 +611,19 @@ export function ExamScreen() {
         {/* Question area */}
         <div className="flex-1 overflow-y-auto p-8">
           {!question ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-6 h-6 text-text-muted animate-spin" strokeWidth={1.75} />
+            <div className="max-w-3xl mx-auto space-y-6">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-8 w-14 flex-shrink-0 rounded-[var(--radius-sm)]" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-5 w-3/4" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                {[0, 1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-14 w-full rounded-[var(--radius-md)]" />
+                ))}
+              </div>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
@@ -800,8 +814,11 @@ export function ExamScreen() {
                 return (
                   <button
                     key={q.id}
+                    type="button"
                     onClick={() => setCurrentIdx(idx)}
-                    className={`tnum aspect-square rounded-[var(--radius-sm)] flex items-center justify-center text-xs transition-all ${
+                    aria-label={`Question ${idx + 1}${isCurrent ? ", current" : isAnswered ? ", answered" : ", unanswered"}`}
+                    aria-current={isCurrent ? "true" : undefined}
+                    className={`tnum aspect-square rounded-[var(--radius-sm)] flex items-center justify-center text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
                       isCurrent
                         ? "bg-accent-700 text-white"
                         : isAnswered
@@ -815,7 +832,7 @@ export function ExamScreen() {
               })}
             </div>
 
-            <div className="mt-5 space-y-1.5 text-xs">
+            <div className="mt-4 space-y-1.5 text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-[var(--radius-sm)] bg-accent-700" />
                 <span className="text-text-secondary">Current</span>
@@ -830,7 +847,7 @@ export function ExamScreen() {
               </div>
             </div>
 
-            <div className="mt-5 pt-4 border-t border-border text-xs text-text-muted">
+            <div className="mt-4 pt-4 border-t border-border text-xs text-text-muted">
               <div className="flex justify-between">
                 <span>Answered</span>
                 <span className="tnum text-text-primary">
@@ -845,9 +862,18 @@ export function ExamScreen() {
       {/* Re-enter fullscreen overlay (shown when fullscreen exits mid-exam) */}
       {!hasFocus && phase === "in_progress" && (
         <div
-          className="fixed inset-0 bg-bg-base/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4"
+          role="button"
+          tabIndex={0}
+          aria-label="Re-enter fullscreen to continue the exam"
+          className="fixed inset-0 bg-bg-base/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-inset"
           style={{ cursor: "pointer" }}
           onClick={requestFullscreen}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              requestFullscreen();
+            }
+          }}
         >
           <div className="w-16 h-16 rounded-full bg-accent-warning/10 border-2 border-accent-warning/30 flex items-center justify-center">
             <ShieldCheck className="w-8 h-8 text-accent-warning" strokeWidth={1.75} />

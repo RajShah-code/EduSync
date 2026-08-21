@@ -69,6 +69,12 @@ export function AdminUsers() {
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkResults, setBulkResults] = useState(null);
 
+  // Guards against double-submission while a mutating request is in flight
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isResettingPw, setIsResettingPw] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Download template with Data and Instructions sheets
   const handleDownloadTemplate = () => {
     // Sheet 1: Data (Header Row)
@@ -237,6 +243,8 @@ export function AdminUsers() {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
+    if (isCreating) return;
+    setIsCreating(true);
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/admin/users`, {
@@ -286,6 +294,8 @@ export function AdminUsers() {
       fetchData();
     } catch {
       toast.error("Network error. Please try again.");
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -304,7 +314,8 @@ export function AdminUsers() {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedUser) return;
+    if (!selectedUser || isUpdating) return;
+    setIsUpdating(true);
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}`, {
@@ -334,6 +345,8 @@ export function AdminUsers() {
       fetchData();
     } catch {
       toast.error("Network error. Please try again.");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -346,7 +359,8 @@ export function AdminUsers() {
 
   const handleResetSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedUser) return;
+    if (!selectedUser || isResettingPw) return;
+    setIsResettingPw(true);
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}/reset-password`, {
@@ -379,6 +393,8 @@ export function AdminUsers() {
       setSelectedUser(null);
     } catch {
       toast.error("Network error. Please try again.");
+    } finally {
+      setIsResettingPw(false);
     }
   };
 
@@ -389,7 +405,8 @@ export function AdminUsers() {
   };
 
   const handleDeleteSubmit = async () => {
-    if (!selectedUser) return;
+    if (!selectedUser || isDeleting) return;
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/admin/users/${selectedUser.id}`, {
@@ -409,12 +426,18 @@ export function AdminUsers() {
       fetchData();
     } catch {
       toast.error("Network error. Please try again.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Password copied to clipboard!");
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Password copied to clipboard!");
+    } catch {
+      toast.error("Couldn't access the clipboard. Copy the password manually.");
+    }
   };
 
   return (
@@ -573,6 +596,7 @@ export function AdminUsers() {
                           onClick={() => handleEditOpen(user)}
                           className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
                           title="Edit Details"
+                          aria-label={`Edit details for ${user.name || "this user"}`}
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -581,6 +605,7 @@ export function AdminUsers() {
                           onClick={() => handleResetOpen(user)}
                           className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-warning transition-colors cursor-pointer"
                           title="Reset Password"
+                          aria-label={`Reset password for ${user.name || "this user"}`}
                         >
                           <Key className="w-4 h-4" />
                         </button>
@@ -589,6 +614,7 @@ export function AdminUsers() {
                           onClick={() => handleDeleteOpen(user)}
                           className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-critical transition-colors cursor-pointer"
                           title="Delete User"
+                          aria-label={`Delete ${user.name || "this user"}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -613,6 +639,7 @@ export function AdminUsers() {
               <button
                 onClick={() => setIsCreateModalOpen(false)}
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -729,9 +756,10 @@ export function AdminUsers() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-accent-info hover:bg-accent-info/90 text-white rounded-lg text-sm font-medium"
+                  disabled={isCreating}
+                  className="px-4 py-2 bg-accent-info hover:bg-accent-info/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
                 >
-                  Create User
+                  {isCreating ? "Creating…" : "Create User"}
                 </button>
               </div>
             </form>
@@ -750,6 +778,7 @@ export function AdminUsers() {
               <button
                 onClick={() => { setIsEditModalOpen(false); setSelectedUser(null); }}
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -833,9 +862,10 @@ export function AdminUsers() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-accent-info hover:bg-accent-info/90 text-white rounded-lg text-sm font-medium"
+                  disabled={isUpdating}
+                  className="px-4 py-2 bg-accent-info hover:bg-accent-info/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
                 >
-                  Save Changes
+                  {isUpdating ? "Saving…" : "Save Changes"}
                 </button>
               </div>
             </form>
@@ -854,6 +884,7 @@ export function AdminUsers() {
               <button
                 onClick={() => { setIsResetModalOpen(false); setSelectedUser(null); }}
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -887,9 +918,10 @@ export function AdminUsers() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-accent-warning hover:bg-accent-warning/90 text-white rounded-lg text-sm font-medium"
+                  disabled={isResettingPw}
+                  className="px-4 py-2 bg-accent-warning hover:bg-accent-warning/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
                 >
-                  Reset Password
+                  {isResettingPw ? "Resetting…" : "Reset Password"}
                 </button>
               </div>
             </form>
@@ -909,6 +941,7 @@ export function AdminUsers() {
               <button
                 onClick={() => { setIsDeleteModalOpen(false); setSelectedUser(null); }}
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -933,9 +966,10 @@ export function AdminUsers() {
                 </button>
                 <button
                   onClick={handleDeleteSubmit}
-                  className="px-4 py-2 bg-accent-critical hover:bg-accent-critical/90 text-white rounded-lg text-sm font-medium"
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-accent-critical hover:bg-accent-critical/90 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
                 >
-                  Confirm Delete
+                  {isDeleting ? "Deleting…" : "Confirm Delete"}
                 </button>
               </div>
             </div>
@@ -974,6 +1008,7 @@ export function AdminUsers() {
                       onClick={() => copyToClipboard(passwordDisplay.password)}
                       className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-text-secondary hover:text-text-primary transition-colors border border-border"
                       title="Copy Password"
+                      aria-label="Copy password to clipboard"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -1012,6 +1047,7 @@ export function AdminUsers() {
               <button
                 onClick={() => setIsBulkModalOpen(false)}
                 className="p-1 text-text-muted hover:text-text-primary rounded-lg transition-colors"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1100,7 +1136,7 @@ export function AdminUsers() {
                       <span className="text-accent-success font-medium">
                         {bulkResults.filter((r) => r.status === "created").length} Created
                       </span>
-                      <span className="text-accent-danger font-medium">
+                      <span className="text-accent-critical font-medium">
                         {bulkResults.filter((r) => r.status === "failed").length} Failed
                       </span>
                     </div>
@@ -1127,7 +1163,7 @@ export function AdminUsers() {
                                   <Check className="w-3 h-3" /> Created
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-danger/10 text-accent-danger border border-accent-danger/20">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-critical/10 text-accent-critical border border-accent-critical/20">
                                   <X className="w-3 h-3" /> Failed
                                 </span>
                               )}

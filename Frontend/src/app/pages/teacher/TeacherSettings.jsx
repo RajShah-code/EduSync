@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../..
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
 import { useNavigate } from "react-router";
 import { User, Key, HelpCircle, Calendar } from "lucide-react";
 
@@ -13,6 +14,7 @@ export function TeacherSettings() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -20,27 +22,35 @@ export function TeacherSettings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem("edusync_token");
-        if (!token) return;
-        const res = await fetch(`${API_BASE_URL}/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setName(data.name || "");
-          setEmail(data.email || "");
-        } else {
-          toast.error("Failed to load profile settings");
-        }
-      } catch (err) {
-        toast.error("Network error loading profile settings");
-      } finally {
-        setLoading(false);
+  const fetchUser = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("edusync_token");
+      if (!token) {
+        setLoadError(true);
+        return;
       }
-    };
+      const res = await fetch(`${API_BASE_URL}/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setName(data.name || "");
+        setEmail(data.email || "");
+        setLoadError(false);
+      } else {
+        toast.error("Failed to load profile settings");
+        setLoadError(true);
+      }
+    } catch (err) {
+      toast.error("Network error loading profile settings");
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
   }, []);
 
@@ -118,9 +128,42 @@ export function TeacherSettings() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-6 space-y-6 max-w-4xl">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-80" />
+        </div>
+        {[0, 1].map((i) => (
+          <div key={i} className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-48" />
+            </div>
+            <div className="space-y-3 pt-2 max-w-md">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+            <Skeleton className="h-9 w-28" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-6 max-w-4xl">
         <h1 className="text-2xl font-semibold text-text-primary mb-4">Settings</h1>
-        <div className="text-muted-foreground text-sm">Loading settings...</div>
+        <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
+          <p className="text-sm text-text-secondary">Couldn't load your profile settings.</p>
+          <button
+            type="button"
+            onClick={fetchUser}
+            className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }

@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { StudentTile } from "../../components/StudentTile";
 import { StatusBadge } from "../../components/StatusBadge";
-import { Filter, Grid3x3, Grid2x2, Monitor, Loader2 } from "lucide-react";
+import { Filter, Grid3x3, Grid2x2, Monitor } from "lucide-react";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 import {
   Dialog,
@@ -188,8 +189,15 @@ export function StudentMonitor() {
       {/* Student Grid */}
       <div className="flex-1 overflow-auto p-6">
         {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="w-8 h-8 text-accent-info animate-spin" />
+          <div className={`grid gap-4 ${gridSize === 4 ? "grid-cols-4" : "grid-cols-5"}`}>
+            {Array.from({ length: gridSize }).map((_, i) => (
+              <div key={i} className="rounded-[var(--radius-lg)] bg-bg-surface border border-border overflow-hidden">
+                <Skeleton className="h-24 w-full rounded-none" />
+                <div className="p-3">
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : students.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16">

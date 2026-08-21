@@ -39,15 +39,15 @@ export function StatusBadge({ status, className }) {
     <span
       className={cn("inline-flex items-center gap-1.5 tnum", className)}
       style={{
-        padding: "3px 8px",
+        padding: "3px 10px",
         fontSize: "11px",
         fontWeight: 600,
         letterSpacing: "0.08em",
         textTransform: "uppercase",
-        borderRadius: "var(--radius-sm)",
+        borderRadius: "var(--radius-pill)",
         color: cfg.solid ? "#fff" : colorVar,
         background: cfg.solid ? colorVar : `color-mix(in srgb, ${colorVar} 12%, transparent)`,
-        border: cfg.solid ? "1px solid transparent" : `1px solid color-mix(in srgb, ${colorVar} 28%, transparent)`,
+        border: cfg.solid ? "1px solid color-mix(in srgb, black 15%, transparent)" : `1px solid color-mix(in srgb, ${colorVar} 28%, transparent)`,
       }}
     >
       <span

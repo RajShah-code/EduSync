@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router";
 import { StatusBadge } from "../../components/StatusBadge";
 import { StudentTile } from "../../components/StudentTile";
+import { Skeleton } from "../../components/ui/skeleton";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -497,7 +498,19 @@ export function TaskProgress() {
         </div>
 
         {/* Roster & Progress Status Grid */}
-        {activeTask ? (
+        {activeTask && loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="rounded-[var(--radius-lg)] border border-border bg-bg-surface overflow-hidden">
+                <Skeleton className="h-24 w-full rounded-none" />
+                <div className="p-3 space-y-1.5">
+                  <Skeleton className="h-3.5 w-3/4" />
+                  <Skeleton className="h-2.5 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activeTask ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {progressGrid.map(row => {
               const subStatus = row.submission.status;

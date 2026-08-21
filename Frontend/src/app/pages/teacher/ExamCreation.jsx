@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { StatusBadge } from "../../components/StatusBadge";
+import { Skeleton } from "../../components/ui/skeleton";
 import Editor from "@monaco-editor/react";
 import {
   Plus,
@@ -945,7 +946,20 @@ export function ExamCreation() {
             </div>
 
             {loadingExams ? (
-              <div className="p-12 text-center text-text-muted">Loading exams...</div>
+              <div className="divide-y divide-border">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="p-4 flex items-center justify-between">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-64" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                      <Skeleton className="h-8 w-24" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : myExams.length === 0 ? (
               <div className="p-12 text-center text-text-muted italic">
                 No exams created yet.

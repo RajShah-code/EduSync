@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { cn } from "../components/ui/utils";
 import { StatusBadge } from "./StatusBadge";
 import { User } from "lucide-react";
 
 export function StudentTile({ student, onClick, className, children }) {
+  const [previewFailed, setPreviewFailed] = useState(false);
+  const displayName = student.name?.trim() || "Unnamed student";
+  const showPreview = student.screenPreview && !previewFailed;
+
   const getTileStyle = () => {
     switch (student.status) {
       case "idle":
@@ -29,26 +34,29 @@ export function StudentTile({ student, onClick, className, children }) {
     return "";
   };
 
+  const Container = onClick ? "button" : "div";
+
   return (
-    <div
-      onClick={onClick}
+    <Container
+      {...(onClick && { type: "button", onClick, "aria-label": `View ${displayName}'s screen — ${student.status || "unknown"}` })}
       className={cn(
-        "relative flex flex-col bg-bg-surface overflow-hidden group card-hover rounded-[var(--radius-lg)]",
-        onClick && "cursor-pointer",
+        "relative flex flex-col text-left bg-bg-surface overflow-hidden group card-hover rounded-[var(--radius-lg)]",
+        onClick && "cursor-pointer w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface",
         className
       )}
       style={getTileStyle()}
     >
       {/* Screen Preview */}
       <div className="relative h-24 bg-bg-base flex items-center justify-center rounded-t-[var(--radius-lg)]">
-        {student.screenPreview ? (
+        {showPreview ? (
           <img
             src={student.screenPreview}
-            alt={`${student.name}'s screen`}
+            alt={`${displayName}'s screen`}
             className="w-full h-full object-cover"
+            onError={() => setPreviewFailed(true)}
           />
         ) : (
-          <User className="w-8 h-8 text-text-muted" />
+          <User className="w-8 h-8 text-text-muted" aria-hidden="true" />
         )}
         {getOverlay() && (
           <div className={cn("absolute inset-0", getOverlay())} />
@@ -62,21 +70,21 @@ export function StudentTile({ student, onClick, className, children }) {
 
       {/* Student Info */}
       <div className="p-3 space-y-1">
-        <div className="font-medium text-sm text-text-primary truncate">
-          {student.name}
+        <div className="font-medium text-sm text-text-primary truncate" title={displayName}>
+          {displayName}
         </div>
         {student.joinedAt && (
-          <div className="text-xs text-text-muted font-mono">
+          <div className="text-xs text-text-muted font-mono tnum">
             Joined: {new Date(student.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
         )}
         {student.status === "idle" && student.lastExitAt && (
-          <div className="text-xs font-mono text-accent-warning">
+          <div className="text-xs font-mono text-accent-warning tnum">
             Away since: {new Date(student.lastExitAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
         )}
         {student.status === "idle" && student.idleTime !== undefined && (
-          <div className="text-xs font-mono text-accent-warning">
+          <div className="text-xs font-mono text-accent-warning tnum">
             Not Viewing: {Math.floor(student.idleTime / 60)}m {student.idleTime % 60}s
           </div>
         )}
@@ -90,6 +98,6 @@ export function StudentTile({ student, onClick, className, children }) {
       {onClick && (
         <div className="absolute inset-0 bg-accent-info/0 group-hover:bg-accent-info/5 transition-colors pointer-events-none" />
       )}
-    </div>
+    </Container>
   );
 }

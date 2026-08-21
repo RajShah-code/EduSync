@@ -6,6 +6,7 @@ import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { CodeOutputPanel } from "../../components/CodeOutputPanel";
 import { Button } from "../../components/ui/button";
 import { StatusBadge } from "../../components/StatusBadge";
+import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 import {
   Pause,
@@ -229,6 +230,7 @@ export function LiveBroadcast() {
 
   // ── Timetable & Schedule Auto-Detection ──────────────────────────────────────
   const [timetableEntries, setTimetableEntries] = useState([]);
+  const [loadingTimetable, setLoadingTimetable] = useState(true);
 
   useEffect(() => {
     const fetchTimetable = async () => {
@@ -244,6 +246,8 @@ export function LiveBroadcast() {
         }
       } catch (err) {
         console.error("Failed to fetch timetable:", err);
+      } finally {
+        setLoadingTimetable(false);
       }
     };
     fetchTimetable();
@@ -1866,7 +1870,9 @@ export function LiveBroadcast() {
       <div className="px-6 border-b border-border bg-bg-surface flex items-center justify-between gap-4 h-14 flex-shrink-0">
         {!isBroadcasting ? (
           <div className="flex items-center gap-3">
-            {currentLecture ? (
+            {loadingTimetable ? (
+              <Skeleton className="h-7 w-56 rounded-[var(--radius-md)]" />
+            ) : currentLecture ? (
               <button
                 onClick={() => handlePrefillScheduledLecture(currentLecture)}
                 className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-[var(--radius-md)] text-xs text-accent-info font-medium transition-colors flex items-center gap-2"

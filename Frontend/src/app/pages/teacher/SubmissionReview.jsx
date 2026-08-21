@@ -5,9 +5,10 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { StatusBadge } from "../../components/StatusBadge";
-import { 
-  ChevronLeft, Code, FileCode, CheckCircle, 
-  Award, Clock, Loader2, RefreshCw 
+import { Skeleton } from "../../components/ui/skeleton";
+import {
+  ChevronLeft, Code, FileCode, CheckCircle,
+  Award, Clock, RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
@@ -136,8 +137,35 @@ export function SubmissionReview() {
 
       {/* Main Panel splitting List & Code viewer */}
       {loading && submissions.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-accent-info animate-spin" />
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar skeleton */}
+          <aside className="w-72 border-r border-border bg-bg-surface flex flex-col flex-shrink-0">
+            <div className="p-3 border-b border-border bg-bg-elevated">
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <div className="flex-1 divide-y divide-border/60">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="p-3.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-4 w-14 rounded-full" />
+                  </div>
+                  <Skeleton className="h-2.5 w-32" />
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          {/* Main panel skeleton */}
+          <div className="flex-1 flex flex-col min-w-0 bg-bg-base">
+            <div className="p-4 bg-bg-surface border-b border-border space-y-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-64" />
+            </div>
+            <div className="flex-1 p-4">
+              <Skeleton className="h-full w-full" />
+            </div>
+          </div>
         </div>
       ) : submissions.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">

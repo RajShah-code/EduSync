@@ -4,6 +4,7 @@ import { useParams } from "react-router";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
+import { Skeleton } from "../../components/ui/skeleton";
 import {
   FileText,
   Loader2,
@@ -95,8 +96,31 @@ export function ExamResults() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
+      <div className="h-full overflow-auto">
+        <div className="max-w-6xl mx-auto p-6 space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <div className="grid grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="p-4 bg-bg-surface border border-border rounded-lg space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-7 w-12" />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3 bg-bg-surface border border-border rounded-lg">
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
