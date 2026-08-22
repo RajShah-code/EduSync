@@ -126,7 +126,7 @@ export function StudentMonitor() {
           <h1 className="text-lg font-semibold text-text-primary">
             Student Monitor
           </h1>
-          <p className="text-sm text-text-secondary font-mono">
+          <p className="text-sm text-text-secondary tnum">
             {filteredStudents.length} of {students.length} students shown
           </p>
         </div>
@@ -137,7 +137,8 @@ export function StudentMonitor() {
             <Filter className="w-4 h-4 text-text-secondary" />
             <button
               onClick={() => setFilter("all")}
-              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-colors ${
+              aria-pressed={filter === "all"}
+              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] ${
                 filter === "all"
                   ? "bg-accent-info/10 border-accent-info/30 text-accent-info"
                   : "border-transparent text-text-secondary hover:text-text-primary"
@@ -147,7 +148,8 @@ export function StudentMonitor() {
             </button>
             <button
               onClick={() => setFilter("active")}
-              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-colors ${
+              aria-pressed={filter === "active"}
+              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] ${
                 filter === "active"
                   ? "bg-accent-success/10 border-accent-success/30 text-accent-success"
                   : "border-transparent text-text-secondary hover:text-text-primary"
@@ -157,7 +159,8 @@ export function StudentMonitor() {
             </button>
             <button
               onClick={() => setFilter("idle")}
-              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-colors ${
+              aria-pressed={filter === "idle"}
+              className={`px-3 py-1.5 text-xs font-medium rounded-[var(--radius-sm)] border transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] ${
                 filter === "idle"
                   ? "bg-accent-warning/10 border-accent-warning/30 text-accent-warning"
                   : "border-transparent text-text-secondary hover:text-text-primary"
@@ -176,7 +179,7 @@ export function StudentMonitor() {
               onClick={() => setGridSize(4)}
               aria-label="Show 4 students per row"
               aria-pressed={gridSize === 4}
-              className={`p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
+              className={`p-2 transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
                 gridSize === 4
                   ? "bg-accent-info/10 text-accent-info"
                   : "text-text-secondary hover:text-text-primary"
@@ -189,7 +192,7 @@ export function StudentMonitor() {
               onClick={() => setGridSize(5)}
               aria-label="Show 5 students per row"
               aria-pressed={gridSize === 5}
-              className={`p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
+              className={`p-2 transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
                 gridSize === 5
                   ? "bg-accent-info/10 text-accent-info"
                   : "text-text-secondary hover:text-text-primary"
@@ -220,7 +223,7 @@ export function StudentMonitor() {
             <button
               type="button"
               onClick={fetchStudents}
-              className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-[transform,background-color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               Try again
             </button>
@@ -301,7 +304,7 @@ export function StudentMonitor() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary font-medium">Joined:</span>
-                  <span className="font-mono text-text-primary text-xs">
+                  <span className="tnum text-text-primary text-xs">
                     {new Date(selectedStudent.joined_at).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -330,7 +333,7 @@ export function StudentMonitor() {
                   <span className="text-text-secondary font-medium">
                     Last Exit:
                   </span>
-                  <span className="font-mono text-text-primary text-xs">
+                  <span className="tnum text-text-primary text-xs">
                     {selectedStudent.last_exit_at
                       ? new Date(selectedStudent.last_exit_at).toLocaleTimeString([], {
                           hour: "2-digit",

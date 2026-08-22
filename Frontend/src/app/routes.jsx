@@ -18,7 +18,6 @@ import { TeacherDashboard } from "./pages/teacher/TeacherDashboard";
 import { LiveBroadcast } from "./pages/teacher/LiveBroadcast";
 import { StudentMonitor } from "./pages/teacher/StudentMonitor";
 import { TaskAssignment } from "./pages/teacher/TaskAssignment";
-import { TaskProgress } from "./pages/teacher/TaskProgress";
 import { SubmissionReview } from "./pages/teacher/SubmissionReview";
 import { ExamCreation } from "./pages/teacher/ExamCreation";
 import { ActiveExam } from "./pages/teacher/ActiveExam";
@@ -84,7 +83,6 @@ export const router = createBrowserRouter([
           { path: "broadcast", Component: LiveBroadcast },
           { path: "monitor", Component: StudentMonitor },
           { path: "task/assign", Component: TaskAssignment },
-          { path: "task/progress/:taskId", Component: TaskProgress },
           { path: "task/review/:taskId", Component: SubmissionReview },
           { path: "exam/create", Component: ExamCreation },
           { path: "exam/active/:examId", Component: ActiveExam },

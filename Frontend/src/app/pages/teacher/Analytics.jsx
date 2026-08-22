@@ -14,6 +14,7 @@ import {
 import { BarChart2, Users, CheckCircle2, Award, AlertTriangle } from "lucide-react";
 import { getSocket } from "../../store/socket";
 import { Skeleton } from "../../components/ui/skeleton";
+import PageShell from "../../components/PageShell";
 
 function AnalyticsContentSkeleton() {
   return (
@@ -162,7 +163,7 @@ export function Analytics() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageShell>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4">
           <div className="space-y-2">
             <Skeleton className="h-7 w-56" />
@@ -171,13 +172,13 @@ export function Analytics() {
           <Skeleton className="h-8 w-48" />
         </div>
         <AnalyticsContentSkeleton />
-      </div>
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
+      <PageShell>
         <h1 className="text-2xl font-semibold text-text-primary mb-4">Analytics Dashboard</h1>
         <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
           <p className="text-sm text-text-secondary text-center max-w-sm">{error}</p>
@@ -189,12 +190,12 @@ export function Analytics() {
             Try again
           </button>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <PageShell>
       {/* Header & Class Picker */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4">
         <div>
@@ -250,7 +251,7 @@ export function Analytics() {
                 </span>
                 <Users className="w-4 h-4 text-accent-info" />
               </div>
-              <div className="text-2xl font-bold font-mono text-text-primary">
+              <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.avgAttendance}%
               </div>
               <p className="text-xs text-text-secondary">Across class sessions</p>
@@ -264,7 +265,7 @@ export function Analytics() {
                 </span>
                 <CheckCircle2 className="w-4 h-4 text-accent-info" />
               </div>
-              <div className="text-2xl font-bold font-mono text-text-primary">
+              <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.avgTaskCompletion}%
               </div>
               <p className="text-xs text-text-secondary">Submitted lab tasks</p>
@@ -278,7 +279,7 @@ export function Analytics() {
                 </span>
                 <Award className="w-4 h-4 text-accent-success" />
               </div>
-              <div className="text-2xl font-bold font-mono text-text-primary">
+              <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.avgExamScore}%
               </div>
               <p className="text-xs text-text-secondary">
@@ -298,7 +299,7 @@ export function Analytics() {
                 </span>
                 <AlertTriangle className="w-4 h-4 text-accent-warning" />
               </div>
-              <div className="text-2xl font-bold font-mono text-text-primary">
+              <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.atRiskCount}
               </div>
               <p className="text-xs text-text-secondary">Needs academic support</p>
@@ -402,7 +403,7 @@ export function Analytics() {
               <h2 className="text-lg font-semibold text-text-primary">
                 At-Risk Students
               </h2>
-              <span className="text-xs text-text-muted font-mono">
+              <span className="text-xs text-text-muted tnum">
                 Thresholds: Attn &lt;75% · Task &lt;50% · Exam &lt;40%
               </span>
             </div>
@@ -445,18 +446,18 @@ export function Analytics() {
                         <td className="px-4 py-3 text-sm text-text-primary font-medium">
                           {student.name}
                           {student.roll_no && (
-                            <span className="ml-2 text-xs font-mono text-text-muted">
+                            <span className="ml-2 text-xs tnum text-text-muted">
                               ({student.roll_no})
                             </span>
                           )}
                         </td>
-                        <td className={`px-4 py-3 text-sm font-mono ${student.triggeredRisks?.attendance ? 'text-accent-critical font-semibold' : 'text-text-secondary'}`}>
+                        <td className={`px-4 py-3 text-sm tnum ${student.triggeredRisks?.attendance ? 'text-accent-critical font-semibold' : 'text-text-secondary'}`}>
                           {student.attendance}
                         </td>
-                        <td className={`px-4 py-3 text-sm font-mono ${student.triggeredRisks?.task ? 'text-accent-critical font-semibold' : 'text-text-secondary'}`}>
+                        <td className={`px-4 py-3 text-sm tnum ${student.triggeredRisks?.task ? 'text-accent-critical font-semibold' : 'text-text-secondary'}`}>
                           {student.taskCompletion}
                         </td>
-                        <td className={`px-4 py-3 text-sm font-mono ${student.triggeredRisks?.exam ? 'text-accent-critical font-semibold' : 'text-text-secondary'}`}>
+                        <td className={`px-4 py-3 text-sm tnum ${student.triggeredRisks?.exam ? 'text-accent-critical font-semibold' : 'text-text-secondary'}`}>
                           {student.avgScore}
                         </td>
                         <td className="px-4 py-3">
@@ -483,6 +484,6 @@ export function Analytics() {
           </div>
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

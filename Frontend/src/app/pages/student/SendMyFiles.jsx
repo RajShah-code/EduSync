@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { sendFilesPageTourSteps } from "../../tours/studentTourSteps";
 import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
+import PageShell from "../../components/PageShell";
 
 export function SendMyFiles() {
   const [isSupported, setIsSupported] = useState(true);
@@ -327,7 +328,7 @@ export function SendMyFiles() {
   const hasSelection = Boolean(dirHandle || fileHandles.length > 0);
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <PageShell>
       {/* Header */}
       <div className="border-b border-border pb-4">
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
@@ -611,6 +612,6 @@ export function SendMyFiles() {
           markPageTourSeen("sendfiles");
         }}
       />
-    </div>
+    </PageShell>
   );
 }

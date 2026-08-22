@@ -32,6 +32,15 @@ export function StudentLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Marks the document as "inside a dashboard shell" so html/body suppress
+  // their own scroll (see theme.css's html.app-shell-active rule) — every
+  // scroll region in here is one of this layout's own internal containers.
+  // Must be scoped to this class, not a bare html/body rule, since routes
+  // outside this layout (LandingPage, Login) rely on normal document scroll.
+  useEffect(() => {
+    document.documentElement.classList.add("app-shell-active");
+    return () => document.documentElement.classList.remove("app-shell-active");
+  }, []);
 
   const [activeExam, setActiveExam] = useState(null); // { examId, title } | null
 
@@ -683,7 +692,7 @@ export function StudentLayout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-        <div className="flex-1 overflow-auto page-enter">
+        <main className="flex-1 overflow-y-auto page-enter">
           <Outlet context={{
             hasJoinedSession,
             setHasJoinedSession,
@@ -700,7 +709,7 @@ export function StudentLayout() {
             sessionStateCache,
             setSessionStateCache,
           }} />
-        </div>
+        </main>
         {bottomBarJSX}
         {joinModalJSX}
         <Toaster position="bottom-right" richColors />

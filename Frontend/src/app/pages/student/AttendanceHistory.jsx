@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { AppTour } from "../../components/AppTour";
 import { attendancePageTourSteps } from "../../tours/studentTourSteps";
 import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
+import PageShell from "../../components/PageShell";
 
 export function AttendanceHistory() {
   const [attendance, setAttendance] = useState([]);
@@ -141,7 +142,7 @@ export function AttendanceHistory() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageShell>
         <div className="space-y-2">
           <Skeleton className="h-7 w-56" />
           <Skeleton className="h-4 w-72" />
@@ -176,13 +177,13 @@ export function AttendanceHistory() {
             ))}
           </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageShell>
         <div>
           <h1 className="text-2xl font-semibold text-text-primary mb-1">
             Attendance History
@@ -203,12 +204,12 @@ export function AttendanceHistory() {
             Try again
           </button>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <PageShell>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-text-primary mb-1">
@@ -530,6 +531,6 @@ export function AttendanceHistory() {
           }}
         />
       )}
-    </div>
+    </PageShell>
   );
 }

@@ -24,6 +24,7 @@ import { teacherTourSteps } from "../../tours/teacherTourSteps";
 import { getSocket } from "../../store/socket";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 import { ElapsedTimer } from "../../components/Timer";
+import PageShell from "../../components/PageShell";
 
 // Direct-navigation shortcuts to the rest of the teacher workflow — a calmer,
 // genuinely useful replacement for the old "Recent Activity" panel, which had
@@ -83,6 +84,7 @@ export function TeacherDashboard() {
   const [timetableEntries, setTimetableEntries] = useState([]);
   const [loadingTimetable, setLoadingTimetable] = useState(true);
   const [timetableError, setTimetableError] = useState(false);
+  const [defaultDelayMinutes, setDefaultDelayMinutes] = useState(5);
 
   useEffect(() => {
     const userStr = localStorage.getItem("edusync_user");
@@ -116,6 +118,7 @@ export function TeacherDashboard() {
       if (res.ok) {
         const data = await res.json();
         setTimetableEntries(data.entries || []);
+        setDefaultDelayMinutes(data.default_reminder_delay_minutes ?? 5);
         setTimetableError(false);
       } else {
         setTimetableError(true);
@@ -158,10 +161,12 @@ export function TeacherDashboard() {
   // source for this data) — reused here so the session card shows genuine
   // counts instead of the static placeholder zeros it used to.
   const [students, setStudents] = useState([]);
+  const [studentsError, setStudentsError] = useState(false);
 
   useEffect(() => {
     if (!sessionInfo) {
       setStudents([]);
+      setStudentsError(false);
       return;
     }
 
@@ -174,9 +179,13 @@ export function TeacherDashboard() {
         if (res.ok) {
           const data = await res.json();
           setStudents(data.students || []);
+          setStudentsError(false);
+        } else {
+          setStudentsError(true);
         }
       } catch (err) {
         console.error("Failed to fetch students:", err);
+        setStudentsError(true);
       }
     };
     fetchStudents();
@@ -244,7 +253,7 @@ export function TeacherDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <PageShell>
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold text-text-primary mb-1">
@@ -319,8 +328,8 @@ export function TeacherDashboard() {
         {sessionActive && (
           <div className="grid grid-cols-3 border-t border-border">
             <div className="relative text-center py-4 px-4">
-              <div className="text-2xl font-mono font-semibold text-text-primary tabular-nums">
-                {liveStats.connected}
+              <div className="text-2xl tnum font-semibold text-text-primary">
+                {studentsError ? "—" : liveStats.connected}
               </div>
               <div className="text-xs text-text-secondary uppercase tracking-wider mt-1">
                 Connected
@@ -328,15 +337,15 @@ export function TeacherDashboard() {
             </div>
             <div className="relative text-center py-4 px-4">
               <span className="absolute left-0 top-3 bottom-3 w-px bg-border" aria-hidden="true" />
-              <div className="text-2xl font-mono font-semibold text-accent-success tabular-nums">
-                {liveStats.active}
+              <div className="text-2xl tnum font-semibold text-accent-success">
+                {studentsError ? "—" : liveStats.active}
               </div>
               <div className="text-xs text-text-secondary uppercase tracking-wider mt-1">Active</div>
             </div>
             <div className="relative text-center py-4 px-4">
               <span className="absolute left-0 top-3 bottom-3 w-px bg-border" aria-hidden="true" />
-              <div className="text-2xl font-mono font-semibold text-accent-warning tabular-nums">
-                {liveStats.idle}
+              <div className="text-2xl tnum font-semibold text-accent-warning">
+                {studentsError ? "—" : liveStats.idle}
               </div>
               <div className="text-xs text-text-secondary uppercase tracking-wider mt-1">Not Viewing</div>
             </div>
@@ -380,7 +389,7 @@ export function TeacherDashboard() {
             <button
               type="button"
               onClick={fetchTimetable}
-              className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-xs font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-xs font-medium rounded-[var(--radius-md)] transition-[transform,background-color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               Try again
             </button>
@@ -432,10 +441,10 @@ export function TeacherDashboard() {
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     {/* Time Badge */}
                     <div className="flex flex-col items-center justify-center px-3 py-2 rounded-[var(--radius-md)] bg-bg-base border border-border min-w-[100px] shrink-0">
-                      <span className="text-xs font-mono font-semibold text-text-primary">
+                      <span className="text-xs tnum font-semibold text-text-primary">
                         {entry.start_time.slice(0, 5)}
                       </span>
-                      <span className="text-[10px] text-text-muted font-mono mt-0.5">
+                      <span className="text-[10px] text-text-muted tnum mt-0.5">
                         to {entry.end_time.slice(0, 5)}
                       </span>
                     </div>
@@ -454,7 +463,7 @@ export function TeacherDashboard() {
                           <span className="truncate">{entry.subject}</span>
                         </span>
                         {status === "UPCOMING" && (
-                          <span className="text-[10px] font-medium font-mono px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-bg-base border border-border text-text-muted shrink-0">
+                          <span className="text-[10px] font-medium tracking-wide px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-bg-base border border-border text-text-muted shrink-0">
                             UPCOMING
                           </span>
                         )}
@@ -467,7 +476,7 @@ export function TeacherDashboard() {
                         </span>
                         {entry.reminder_enabled && (
                           <span className="flex items-center gap-1 text-accent-warning text-[11px] shrink-0">
-                            <Bell className="w-3 h-3" /> {entry.reminder_delay_minutes}m alert
+                            <Bell className="w-3 h-3" /> {defaultDelayMinutes} min alert
                           </span>
                         )}
                       </div>
@@ -512,7 +521,7 @@ export function TeacherDashboard() {
             <button
               key={action.href}
               onClick={() => navigate(action.href)}
-              className="flex items-center gap-3 p-4 bg-bg-surface border border-border rounded-[var(--radius-md)] text-left hover:border-border-hover transition-colors cursor-pointer"
+              className="flex items-center gap-3 p-4 bg-bg-surface border border-border rounded-[var(--radius-md)] text-left hover:border-border-hover transition-[transform,border-color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] cursor-pointer"
             >
               <div className="w-9 h-9 rounded-[var(--radius-sm)] bg-bg-base border border-border flex items-center justify-center shrink-0">
                 <action.icon className="w-4 h-4 text-accent-info" />
@@ -529,6 +538,6 @@ export function TeacherDashboard() {
         isManualReplay={isManualReplay}
         onFinish={() => setRunTour(false)}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -1872,7 +1872,7 @@ export function LiveBroadcast() {
             ) : currentLecture ? (
               <button
                 onClick={() => handlePrefillScheduledLecture(currentLecture)}
-                className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-[var(--radius-md)] text-xs text-accent-info font-medium transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-[var(--radius-md)] text-xs text-accent-info font-medium transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] flex items-center gap-2"
                 title="Click to pre-fill lecture setup"
               >
                 <Calendar className="w-3.5 h-3.5" />
@@ -1893,7 +1893,7 @@ export function LiveBroadcast() {
                 <span className="absolute inline-flex h-full w-full rounded-full bg-accent-live pulse-dot" />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent-live" />
               </span>
-              <span className="font-mono font-medium tabular-nums text-sm text-text-primary">
+              <span className="tnum font-medium text-sm text-text-primary">
                 {formatTime(sessionSeconds)}
               </span>
               <span className="text-xs text-text-secondary font-medium">
@@ -1904,12 +1904,12 @@ export function LiveBroadcast() {
             {sessionInfo && (
               <div className="flex items-center gap-2 px-2.5 py-1 bg-bg-elevated border border-border rounded-[var(--radius-md)] text-xs">
                 <span className="text-text-muted">Password:</span>
-                <span className="font-mono font-bold text-text-primary tracking-wider">
+                <span className="tnum font-bold text-text-primary tracking-wider">
                   {showPassword ? sessionInfo.password : "••••••••"}
                 </span>
                 <button
                   onClick={() => setShowPassword((p) => !p)}
-                  className="text-text-muted hover:text-text-primary transition-colors p-0.5"
+                  className="text-text-muted hover:text-text-primary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 p-0.5"
                   title={showPassword ? "Hide password" : "Show password"}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -1931,7 +1931,7 @@ export function LiveBroadcast() {
                       `Log in to the student portal, enter the password, and click "JOIN NOW".`;
                     handleCopy("topInvite", msg);
                   }}
-                  className="text-text-muted hover:text-text-primary transition-colors p-0.5 flex items-center gap-1 text-[11px]"
+                  className="text-text-muted hover:text-text-primary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 p-0.5 flex items-center gap-1 text-[11px]"
                   title="Copy session invite message"
                   aria-label="Copy session invite message"
                 >
@@ -1952,7 +1952,7 @@ export function LiveBroadcast() {
           {/* Content container */}
           <div
             ref={fullScreenContainerRef}
-            className={`flex-1 bg-bg-surface flex flex-col relative overflow-hidden transition-all ${
+            className={`flex-1 bg-bg-surface flex flex-col relative overflow-hidden transition-[background-color,border-color,border-radius] duration-150 ${
               isFullScreen
                 ? "fixed top-0 left-0 right-0 bottom-0 z-[99999] w-full h-full max-w-full max-h-full bg-bg-base border-none rounded-none overflow-hidden"
                 : "border border-border rounded-[var(--radius-lg)]"
@@ -1977,7 +1977,7 @@ export function LiveBroadcast() {
                       <button
                         type="button"
                         onClick={handleToggleFullScreen}
-                        className="p-2 rounded-[var(--radius-md)] bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border transition-colors"
+                        className="p-2 rounded-[var(--radius-md)] bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                         aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                       >
@@ -1991,7 +1991,7 @@ export function LiveBroadcast() {
                       <button
                         type="button"
                         onClick={handleToggleFullScreen}
-                        className="p-2 rounded-[var(--radius-md)] bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border transition-colors"
+                        className="p-2 rounded-[var(--radius-md)] bg-bg-surface/80 hover:bg-bg-surface text-text-primary backdrop-blur border border-border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                         aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                       >
@@ -2040,7 +2040,7 @@ export function LiveBroadcast() {
                         setConsoleLines([]);
                         setTextOutput("");
                       }}
-                      className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded-[var(--radius-sm)] transition-colors"
+                      className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded-[var(--radius-sm)] transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95]"
                     >
                       Clear output
                     </button>
@@ -2050,7 +2050,7 @@ export function LiveBroadcast() {
                   {editorLanguage === "whiteboard" ? (
                     <button
                       onClick={handleSaveWhiteboard}
-                      className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded-[var(--radius-sm)] transition-colors flex items-center gap-1.5"
+                      className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded-[var(--radius-sm)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] flex items-center gap-1.5"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Save
@@ -2060,7 +2060,7 @@ export function LiveBroadcast() {
                       <button
                         onClick={handleRunCode}
                         disabled={pyodideLoading}
-                        className="h-7 px-3 text-xs font-medium bg-accent-info hover:bg-accent-info/90 text-white rounded-[var(--radius-sm)] transition-colors disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                        className="h-7 px-3 text-xs font-medium bg-accent-info hover:bg-accent-info/90 text-white rounded-[var(--radius-sm)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
                       >
                         {pyodideLoading ? (
                           <>
@@ -2081,7 +2081,7 @@ export function LiveBroadcast() {
                   <button
                     type="button"
                     onClick={handleToggleFullScreen}
-                    className="h-7 px-2.5 text-xs font-medium rounded-[var(--radius-sm)] border border-border bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5 ml-1"
+                    className="h-7 px-2.5 text-xs font-medium rounded-[var(--radius-sm)] border border-border bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] flex items-center gap-1.5 ml-1"
                     title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                     aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                   >
@@ -2323,7 +2323,7 @@ export function LiveBroadcast() {
 
       {/* ── Session Setup Modal ──────────────────────────────────────────────── */}
       <Dialog open={showSetupModal} onOpenChange={setShowSetupModal}>
-        <DialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-md">
+        <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-text-primary">
               Start New Lecture Session
@@ -2378,7 +2378,7 @@ export function LiveBroadcast() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -2420,7 +2420,7 @@ export function LiveBroadcast() {
                           setSelectedClassIds([...selectedClassIds, cls.id]);
                         }
                       }}
-                      className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-[var(--radius-md)] text-xs font-medium border transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center gap-1.5 ${
                         isSelected
                           ? "bg-accent-info/20 border-accent-info text-accent-info"
                           : "bg-bg-elevated border-border text-text-secondary hover:text-text-primary hover:border-border/80"

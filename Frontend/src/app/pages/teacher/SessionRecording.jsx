@@ -1,8 +1,9 @@
 import { Video } from "lucide-react";
+import PageShell from "../../components/PageShell";
 
 export function SessionRecording() {
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <PageShell>
       <div>
         <h1 className="text-2xl font-semibold text-text-primary mb-1">
           Session Recordings
@@ -12,16 +13,18 @@ export function SessionRecording() {
         </p>
       </div>
 
-      {/* Empty state */}
+      {/* Recordings save directly to your device — there is no server-side
+          list to show here, so this state is permanent by design. */}
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <Video className="w-12 h-12 text-text-muted" />
         <p className="text-base font-medium text-text-primary">
-          No recordings yet
+          Recordings save straight to your device
         </p>
-        <p className="text-sm text-text-muted">
-          Recorded sessions will appear here after you stop a broadcast.
+        <p className="text-sm text-text-muted text-center max-w-sm">
+          Start a recording from Live Broadcast and stop it to save the file directly to your
+          computer — nothing is uploaded, and there's no list to browse here.
         </p>
       </div>
-    </div>
+    </PageShell>
   );
 }

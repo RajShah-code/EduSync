@@ -2,6 +2,8 @@
 @custom-variant dark (&);
 
 :root {
+  color-scheme: dark;
+
   /* Base Colors — pure black dominant tone, per direct request. Surface/
      elevated/border layers stay above true black: OKLCH lightness below
      ~0.10 rounds to indistinguishable-from-black in sRGB, which would
@@ -82,6 +84,12 @@
   --shadow-card-soft: none;
   --glow-accent-info: none;
   --glow-accent-locked: none;
+
+  /* Named easing curves — strong variants of the standard easings, used
+     for physics-feeling settle states on modals/dropdowns/toggles. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* Shadcn/UI compatibility */
   --background: var(--bg-base);
@@ -218,11 +226,23 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Only the dashboard shells (Student/Teacher/Admin layouts) toggle this on
+     document.documentElement while mounted — every scroll region inside them
+     is one of their own internal ScrollArea/overflow-auto containers, so the
+     document itself should never need to scroll. LandingPage/Login are NOT
+     wrapped by these layouts and rely on normal document scroll — this must
+     stay scoped to the class, never a bare html/body rule, or it breaks them. */
+  html.app-shell-active,
+  html.app-shell-active body {
+    overflow: hidden;
+  }
+
   body {
     @apply bg-bg-base text-text-primary;
     font-family: var(--font-sans);
     font-size: var(--text-base);
     line-height: 1.6;
+    overflow: hidden;
   }
 
   h1 {
@@ -271,6 +291,34 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+}
+
+/* Custom dark scrollbar styling across all browsers */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hover) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Utility classes */
@@ -373,7 +421,11 @@
   animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Button press micro-interaction */
+/* Button press micro-interaction — transition lives on the base rule so
+   both press-down and release settle smoothly instead of snapping. */
+.btn-press {
+  transition: transform 120ms var(--ease-out-strong);
+}
 .btn-press:active {
   transform: scale(0.97);
 }
@@ -479,8 +531,12 @@
   .live-pulse,
   .pulse-dot,
   .glow-critical,
-  .card-hover {
+  .card-hover,
+  .btn-press {
     animation: none;
+    transform: none;
+  }
+  .btn-press:active {
     transform: none;
   }
   .skeleton-shimmer::after {

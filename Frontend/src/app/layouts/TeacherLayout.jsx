@@ -38,6 +38,16 @@ export function TeacherLayout() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Marks the document as "inside a dashboard shell" so html/body suppress
+  // their own scroll (see theme.css's html.app-shell-active rule) — every
+  // scroll region in here is one of this layout's own internal containers.
+  // Must be scoped to this class, not a bare html/body rule, since routes
+  // outside this layout (LandingPage, Login) rely on normal document scroll.
+  useEffect(() => {
+    document.documentElement.classList.add("app-shell-active");
+    return () => document.documentElement.classList.remove("app-shell-active");
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("edusync_token");
     localStorage.removeItem("edusync_user");

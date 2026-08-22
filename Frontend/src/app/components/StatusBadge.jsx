@@ -1,4 +1,4 @@
-import { Check, X, Circle, CircleDot, Lock, TriangleAlert, Undo2, MoreHorizontal, Minus } from "lucide-react";
+import { Check, X, Circle, CircleDot, Lock, TriangleAlert, Undo2, MoreHorizontal, Minus, Hand } from "lucide-react";
 import { cn } from "../components/ui/utils";
 
 // Colors are drawn from the locked token set (theme.css) via CSS var references,
@@ -13,6 +13,7 @@ const statusConfig = {
   offline: { label: "OFFLINE", Icon: Minus, token: "text-muted" },
   submitted: { label: "SUBMITTED", Icon: Check, token: "accent-info" },
   "in-progress": { label: "IN PROGRESS", Icon: CircleDot, token: "accent-info", pulse: true },
+  doubt: { label: "DOUBT RAISED", Icon: Hand, token: "accent-warning", pulse: true },
   locked: { label: "LOCKED", Icon: Lock, token: "accent-locked" },
   "exam-live": { label: "EXAM LIVE", Icon: TriangleAlert, token: "accent-critical", livePulse: true },
   absent: { label: "ABSENT", Icon: X, token: "accent-critical", solid: true },

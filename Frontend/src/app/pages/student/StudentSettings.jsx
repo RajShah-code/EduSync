@@ -11,6 +11,7 @@ import { User, Key, HelpCircle } from "lucide-react";
 import { AppTour } from "../../components/AppTour";
 import { settingsPageTourSteps } from "../../tours/studentTourSteps";
 import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
+import PageShell from "../../components/PageShell";
 
 export function StudentSettings() {
   const navigate = useNavigate();
@@ -139,7 +140,7 @@ export function StudentSettings() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6 max-w-6xl mx-auto w-full">
+      <PageShell>
         <div className="space-y-2">
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-4 w-80" />
@@ -159,13 +160,13 @@ export function StudentSettings() {
             </div>
           ))}
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   if (loadError) {
     return (
-      <div className="p-6 max-w-6xl mx-auto w-full">
+      <PageShell>
         <h1 className="text-2xl font-semibold text-text-primary mb-4">Settings</h1>
         <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
           <p className="text-sm text-text-secondary">Couldn't load your profile settings.</p>
@@ -177,12 +178,12 @@ export function StudentSettings() {
             Try again
           </button>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto w-full">
+    <PageShell>
       <div>
         <h1 className="text-2xl font-semibold text-text-primary">Settings</h1>
         <p className="text-sm text-text-secondary mt-1">
@@ -336,6 +337,6 @@ export function StudentSettings() {
           markPageTourSeen("settings");
         }}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -225,7 +225,7 @@ export function ActiveExam() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-text-primary">{exam.title}</h1>
-            <p className="text-xs text-text-muted font-mono mt-0.5 uppercase tracking-wider">
+            <p className="text-xs text-text-muted tnum mt-0.5 uppercase tracking-wider">
               {exam.question_type} · {exam.num_sets} set(s) · {exam.time_limit_minutes} min ·
               limit {exam.violation_limit} violation(s)
             </p>
@@ -245,7 +245,7 @@ export function ActiveExam() {
               <div className="text-xs text-text-muted mb-1 uppercase tracking-wider">
                 Submitted
               </div>
-              <div className="text-xl font-mono font-semibold text-text-primary">
+              <div className="text-xl tnum font-semibold text-text-primary">
                 {submitted} / {total}
               </div>
             </div>
@@ -292,7 +292,7 @@ export function ActiveExam() {
               {violations.map((a) => (
                 <div key={a.attempt_id} className="flex items-center justify-between text-xs">
                   <span className="text-text-primary font-medium">{a.student_name}</span>
-                  <span className="font-mono text-accent-critical">
+                  <span className="tnum text-accent-critical">
                     {a.violation_count} / {exam.violation_limit}
                   </span>
                 </div>
@@ -336,7 +336,7 @@ export function ActiveExam() {
                         <div className="font-medium text-text-primary text-sm">
                           {attempt.student_name}
                         </div>
-                        <div className="text-xs text-text-muted font-mono mt-0.5">
+                        <div className="text-xs text-text-muted tnum mt-0.5">
                           {attempt.roll_no ? `Roll ${attempt.roll_no}` : ""} · Set{" "}
                           {attempt.set_number}
                         </div>
@@ -347,11 +347,11 @@ export function ActiveExam() {
                     <div className="flex items-center gap-2 text-xs mt-2">
                       <div className="flex-1 h-1 bg-bg-base rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-accent-info transition-all"
-                          style={{ width: `${Math.min(100, (answeredCount / Math.max(1, attempt.answers?.length || 1)) * 100)}%` }}
+                          className="h-full w-full bg-accent-info origin-left transition-transform duration-200 ease-[var(--ease-out-strong)]"
+                          style={{ transform: `scaleX(${Math.min(100, (answeredCount / Math.max(1, attempt.answers?.length || 1)) * 100) / 100})` }}
                         />
                       </div>
-                      <span className="font-mono text-text-muted">{answeredCount} ans</span>
+                      <span className="tnum text-text-muted">{answeredCount} ans</span>
                     </div>
 
                     {hasViolations && (
