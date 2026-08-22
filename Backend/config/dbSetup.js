@@ -127,6 +127,7 @@ const setup = async () => {
         task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
         student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         code_snapshot TEXT NOT NULL,
+        question_text TEXT,
         raised_at TIMESTAMP DEFAULT NOW(),
         status VARCHAR(50) NOT NULL DEFAULT 'pending',
         hint_line_start INTEGER,
@@ -135,6 +136,7 @@ const setup = async () => {
         resolved_at TIMESTAMP
       );
     `;
+    await sql`ALTER TABLE doubt_requests ADD COLUMN IF NOT EXISTS question_text TEXT;`;
     console.log("Database Setup: Base tables checked.");
 
     // 1. Create classes table
