@@ -20,6 +20,7 @@ export function SubmissionReview() {
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   // Scoring form state
   const [scoreInput, setScoreInput] = useState("");
@@ -36,14 +37,18 @@ export function SubmissionReview() {
         const data = await res.json();
         const subs = data.submissions || [];
         setSubmissions(subs);
-        
+        setError(false);
+
         // Auto select first submission if none selected yet
         if (subs.length > 0 && !selectedSubmission) {
           selectSubmission(subs[0]);
         }
+      } else {
+        setError(true);
       }
     } catch (err) {
       console.error("Failed to fetch submissions:", err);
+      setError(true);
       toast.error("Error loading submissions.");
     } finally {
       setLoading(false);
@@ -108,7 +113,7 @@ export function SubmissionReview() {
       <div className="h-14 px-4 border-b border-border bg-bg-surface flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => navigate(`/teacher/task/progress/${taskId}`)}
+            onClick={() => navigate(`/teacher/task/assign?task=${taskId}`)}
             variant="ghost"
             size="sm"
             className="text-xs text-text-secondary hover:text-text-primary px-2"
@@ -167,6 +172,24 @@ export function SubmissionReview() {
             </div>
           </div>
         </div>
+      ) : error && submissions.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <Code className="w-12 h-12 text-text-muted" />
+          <p className="text-base font-semibold text-text-primary">
+            Couldn't load submissions
+          </p>
+          <p className="text-sm text-text-secondary">
+            Something went wrong while fetching this task's submissions.
+          </p>
+          <Button
+            onClick={fetchSubmissions}
+            variant="outline"
+            size="sm"
+            className="mt-1 text-xs font-semibold"
+          >
+            Try again
+          </Button>
+        </div>
       ) : submissions.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
           <Code className="w-12 h-12 text-text-muted" />
@@ -198,9 +221,9 @@ export function SubmissionReview() {
                   <button
                     key={sub.id}
                     onClick={() => selectSubmission(sub)}
-                    className={`w-full text-left p-3.5 flex flex-col gap-1 transition-all ${
-                      isSelected 
-                        ? "bg-accent-info/10 border-l-4 border-l-accent-info" 
+                    className={`w-full text-left p-3.5 flex flex-col gap-1 transition-[transform,background-color,border-color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] ${
+                      isSelected
+                        ? "bg-accent-info/10 border-l-4 border-l-accent-info"
                         : "hover:bg-bg-elevated border-l-4 border-l-transparent"
                     }`}
                   >
@@ -211,7 +234,7 @@ export function SubmissionReview() {
                       <StatusBadge status={subBadge} />
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-text-muted font-mono mt-1">
+                    <div className="flex items-center justify-between text-[10px] text-text-muted tnum mt-1">
                       <span>Roll No: {sub.roll_no}</span>
                       {sub.score !== null ? (
                         <span className="text-accent-success font-bold">
@@ -239,7 +262,7 @@ export function SubmissionReview() {
                       Reviewing: {selectedSubmission.student_name}
                     </h2>
                     <div className="flex items-center gap-3 text-xs text-text-secondary">
-                      <span className="font-mono bg-bg-base/60 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[10px] uppercase">
+                      <span className="font-semibold tracking-wide bg-bg-base/60 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-[10px] uppercase">
                         {selectedSubmission.language || "Plain Text"}
                       </span>
                       {selectedSubmission.submitted_at && (
@@ -294,7 +317,7 @@ export function SubmissionReview() {
                         value={scoreInput}
                         onChange={(e) => setScoreInput(e.target.value)}
                         placeholder="e.g. 85.5"
-                        className="w-28 bg-bg-base border-border font-mono text-sm text-text-primary focus-visible:ring-accent-info"
+                        className="w-28 bg-bg-base border-border tnum text-sm text-text-primary focus-visible:ring-accent-info"
                       />
                     </div>
 

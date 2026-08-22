@@ -173,6 +173,80 @@
         ],
         "createdAt": "2026-08-21T17:18:39.722Z",
         "reason": "Pre-existing glow-critical keyframe color, not introduced by this role-accent-alias fix"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/teacher/SubmissionReview.jsx"
+        ],
+        "createdAt": "2026-08-22T09:27:08.949Z"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "jetbrains mono",
+        "files": [
+          "Frontend/src/app/pages/teacher/SubmissionReview.jsx"
+        ],
+        "createdAt": "2026-08-22T09:29:48.439Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/teacher/TaskAssignment.jsx"
+        ],
+        "createdAt": "2026-08-22T09:30:54.918Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "files": [
+          "Frontend/src/app/pages/teacher/TaskProgress.jsx"
+        ],
+        "createdAt": "2026-08-22T09:32:16.611Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "files": [
+          "Frontend/src/app/pages/teacher/TaskProgress.jsx"
+        ],
+        "createdAt": "2026-08-22T09:32:16.851Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "9px",
+        "files": [
+          "Frontend/src/app/pages/teacher/TaskProgress.jsx"
+        ],
+        "createdAt": "2026-08-22T09:32:30.822Z"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "jetbrains mono",
+        "files": [
+          "Frontend/src/app/pages/teacher/TaskProgress.jsx"
+        ],
+        "createdAt": "2026-08-22T09:32:31.068Z"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "11px",
+        "createdAt": "2026-08-22T18:06:27.422Z",
+        "reason": "matches documented --text-xs (11px) token; carried over unchanged from the TaskProgress.jsx card component being merged in, not a new design decision"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "jetbrains mono",
+        "createdAt": "2026-08-22T18:37:59.664Z",
+        "reason": "Monaco code-editor content font (pre-existing) — the No-Mono Rule targets UI chrome/labels, not the actual code editor's monospace requirement; same fontFamily already used unflagged elsewhere (TaskStatusModal, SubmissionReview)"
+      },
+      {
+        "rule": "design-system-font-size",
+        "value": "10px",
+        "createdAt": "2026-08-22T18:37:59.903Z",
+        "reason": "pre-existing micro-label size in the doubt hint box, not touched by this edit; consistent with the app's existing pattern of sub-11px micro captions"
       }
     ]
   }

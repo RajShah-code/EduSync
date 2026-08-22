@@ -11,6 +11,7 @@ import {
 import { Button } from "../../components/ui/button";
 import { Download, CalendarCheck, AlertTriangle, Check, X, Loader2 } from "lucide-react";
 import { Skeleton } from "../../components/ui/skeleton";
+import PageShell from "../../components/PageShell";
 
 const formatDuration = (secs) => {
   if (secs < 60) return `${secs}s`;
@@ -152,7 +153,7 @@ export function Attendance() {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageShell>
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <Skeleton className="h-7 w-56" />
@@ -189,12 +190,12 @@ export function Attendance() {
             </div>
           </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <PageShell>
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -247,7 +248,7 @@ export function Attendance() {
                 </Select>
               </div>
 
-              <div className="flex items-center gap-6 font-mono text-sm">
+              <div className="flex items-center gap-6 tnum text-sm">
                 <div>
                   <span className="text-accent-success">PRESENT: </span>
                   <span className="text-accent-success font-semibold">
@@ -315,19 +316,19 @@ export function Attendance() {
                         <td className="px-4 py-3 text-sm text-text-primary font-medium">
                           {record.student_name}
                         </td>
-                        <td className="px-4 py-3 text-sm font-mono text-text-secondary">
+                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
                           {formatTime(record.joined_at)}
                         </td>
-                        <td className="px-4 py-3 text-sm font-mono text-text-secondary">
+                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
                           {record.left_at ? formatTime(record.left_at) : "—"}
                         </td>
-                        <td className="px-4 py-3 text-sm font-mono text-text-primary">
+                        <td className="px-4 py-3 text-sm tnum text-text-primary">
                           {formatDuration(record.total_present_seconds)}
                         </td>
-                        <td className="px-4 py-3 text-sm font-mono text-text-secondary">
+                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
                           {record.fullscreen_exit_count}
                         </td>
-                        <td className="px-4 py-3 text-sm font-mono text-text-secondary">
+                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
                           {(record.presence_percentage * 100).toFixed(0)}%
                         </td>
                         <td className="px-4 py-3">
@@ -362,6 +363,6 @@ export function Attendance() {
           </div>
         </>
       )}
-    </div>
+    </PageShell>
   );
 }

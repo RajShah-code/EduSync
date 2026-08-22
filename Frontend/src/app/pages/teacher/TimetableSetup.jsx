@@ -27,6 +27,17 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { Skeleton } from "../../components/ui/skeleton";
+import PageShell from "../../components/PageShell";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "../../components/ui/alert-dialog";
 
 // Monday through Saturday (day_of_week 0–5)
 const DAYS = [
@@ -84,8 +95,10 @@ export function TimetableSetup() {
   const [entries, setEntries] = useState([]);
   const [exceptions, setExceptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
   // Global Timetable Options State (Teacher-level single setting)
   const [defaultDelayMinutes, setDefaultDelayMinutes] = useState(5);
@@ -95,6 +108,14 @@ export function TimetableSetup() {
 
   // Modal State for Add / Edit Entry
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalClosing, setIsModalClosing] = useState(false);
+  const closeModal = () => {
+    setIsModalClosing(true);
+    setTimeout(() => {
+      setIsModalOpen(false);
+      setIsModalClosing(false);
+    }, 150);
+  };
   const [editingEntryId, setEditingEntryId] = useState(null); // null for new, ID for edit
   const [formDayOfWeek, setFormDayOfWeek] = useState(0);
   const [formStartTime, setFormStartTime] = useState("09:00");
@@ -109,6 +130,14 @@ export function TimetableSetup() {
 
   // Excel Import Report Modal State
   const [importReport, setImportReport] = useState(null);
+  const [importReportClosing, setImportReportClosing] = useState(false);
+  const closeImportReport = () => {
+    setImportReportClosing(true);
+    setTimeout(() => {
+      setImportReport(null);
+      setImportReportClosing(false);
+    }, 150);
+  };
 
   // Empty state banner visibility
   const [showEmptyBanner, setShowEmptyBanner] = useState(true);
@@ -170,6 +199,9 @@ export function TimetableSetup() {
         const tData = await timetableRes.json();
         setEntries(tData.entries || []);
         setDefaultDelayMinutes(tData.default_reminder_delay_minutes ?? 5);
+      } else {
+        setLoadError(true);
+        return;
       }
 
       // 3. Fetch reminder suppression exception dates
@@ -180,8 +212,10 @@ export function TimetableSetup() {
         const exData = await exceptionsRes.json();
         setExceptions(exData.exceptions || []);
       }
+      setLoadError(false);
     } catch (err) {
       toast.error("Error connecting to server");
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -306,7 +340,7 @@ export function TimetableSetup() {
       }
 
       toast.success(isEdit ? "Entry updated successfully" : "Entry added successfully");
-      setIsModalOpen(false);
+      closeModal();
       fetchInitialData();
     } catch (err) {
       setFormError("Network error while saving entry");
@@ -315,12 +349,18 @@ export function TimetableSetup() {
     }
   };
 
-  // Delete entry handler
-  const handleDeleteEntry = async (entryId, e) => {
+  // Delete entry handler — confirmation is a controlled AlertDialog (see
+  // deleteTargetId state), matching the app-wide themed-confirm convention
+  // instead of a raw window.confirm().
+  const handleDeleteEntry = (entryId, e) => {
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to delete this lecture from your timetable?")) {
-      return;
-    }
+    setDeleteTargetId(entryId);
+  };
+
+  const confirmDeleteEntry = async () => {
+    const entryId = deleteTargetId;
+    setDeleteTargetId(null);
+    if (!entryId) return;
 
     const token = localStorage.getItem("edusync_token");
     try {
@@ -457,7 +497,7 @@ export function TimetableSetup() {
 
   if (loading) {
     return (
-      <div className="w-full p-6 space-y-6">
+      <PageShell>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5">
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
@@ -488,12 +528,30 @@ export function TimetableSetup() {
             ))}
           </div>
         </div>
-      </div>
+      </PageShell>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <PageShell>
+        <div className="bg-bg-surface border border-accent-critical/25 rounded-xl flex flex-col items-center justify-center gap-3 py-16">
+          <p className="text-sm text-text-secondary">Couldn't load your timetable.</p>
+          <Button
+            onClick={fetchInitialData}
+            variant="outline"
+            size="sm"
+            className="text-xs font-semibold"
+          >
+            Try again
+          </Button>
+        </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="w-full p-6 space-y-6">
+    <PageShell>
       {/* Hidden File Input for Excel Import */}
       <input
         type="file"
@@ -594,7 +652,7 @@ export function TimetableSetup() {
         <table className="w-full border-collapse min-w-[900px]">
           <thead>
             <tr>
-              <th className="w-16 pb-4 pt-1 text-center text-[length:var(--text-xs)] font-mono font-medium text-text-muted uppercase tracking-wider border-b border-border/80 px-2">
+              <th className="w-16 pb-4 pt-1 text-center text-[length:var(--text-xs)] font-medium text-text-muted uppercase tracking-wider border-b border-border/80 px-2">
                 #
               </th>
               {DAYS.map((day) => {
@@ -630,7 +688,7 @@ export function TimetableSetup() {
             {serialRowIndices.map((serialNum) => (
               <tr key={serialNum} className="group hover:bg-bg-base/20 transition-colors">
                 {/* Serial Number Column - De-emphasized Plain Text */}
-                <td className="py-4 px-2 text-center text-[length:var(--text-xs)] font-mono text-text-muted align-middle">
+                <td className="py-4 px-2 text-center text-[length:var(--text-xs)] tnum text-text-muted align-middle">
                   {serialNum}
                 </td>
 
@@ -651,7 +709,7 @@ export function TimetableSetup() {
                         /* Empty Cell: Dashed border with (+) Add Lecture */
                         <button
                           onClick={() => handleOpenAddModal(day.id)}
-                          className="w-full min-h-28 h-auto p-3 rounded-xl border border-dashed border-border/80 hover:border-accent-info/50 hover:bg-accent-info/5 transition-all flex flex-col items-center justify-center gap-1.5 text-text-secondary hover:text-accent-info cursor-pointer group/cell focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                          className="w-full min-h-28 h-auto p-3 rounded-xl border border-dashed border-border/80 hover:border-accent-info/50 hover:bg-accent-info/5 transition-[transform,border-color,background-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] flex flex-col items-center justify-center gap-1.5 text-text-secondary hover:text-accent-info cursor-pointer group/cell focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                         >
                           <div className="w-7 h-7 rounded-full bg-bg-base border border-border/60 group-hover/cell:border-accent-info/40 flex items-center justify-center transition-colors">
                             <Plus className="w-4 h-4" />
@@ -663,7 +721,7 @@ export function TimetableSetup() {
                       ) : (
                         /* Filled Cell Card */
                         <div
-                          className={`group/card relative rounded-xl p-3 border transition-all flex flex-col justify-between min-h-28 h-auto gap-2 ${
+                          className={`group/card relative rounded-xl p-3 border transition-[border-color] duration-150 ease-[var(--ease-out-strong)] flex flex-col justify-between min-h-28 h-auto gap-2 ${
                             entry.session_type === "lab"
                               ? "bg-accent-live/10 border-accent-live/30 hover:border-accent-live/60 text-accent-live"
                               : "bg-accent-info/10 border-accent-info/30 hover:border-accent-info/60 text-accent-info"
@@ -673,7 +731,7 @@ export function TimetableSetup() {
                           <div className="absolute top-2 right-2 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-bg-base/90 p-1 rounded-md border border-border shadow-sm z-10">
                             <button
                               onClick={(e) => handleOpenEditModal(entry, e)}
-                              className="p-1.5 hover:text-accent-info text-text-secondary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                              className="p-1.5 hover:text-accent-info text-text-secondary transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Edit lecture"
                               aria-label="Edit lecture"
                             >
@@ -681,7 +739,7 @@ export function TimetableSetup() {
                             </button>
                             <button
                               onClick={(e) => handleDeleteEntry(entry.id, e)}
-                              className="p-1.5 hover:text-accent-critical text-text-secondary transition-colors cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                              className="p-1.5 hover:text-accent-critical text-text-secondary transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Delete lecture"
                               aria-label="Delete lecture"
                             >
@@ -715,7 +773,7 @@ export function TimetableSetup() {
                           </div>
 
                           {/* 2nd Line: Time Range */}
-                          <div className="flex items-center justify-between font-mono text-[length:var(--text-xs)] font-medium text-text-secondary">
+                          <div className="flex items-center justify-between tnum text-[length:var(--text-xs)] font-medium text-text-secondary">
                             <span>
                               {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
                             </span>
@@ -789,7 +847,7 @@ export function TimetableSetup() {
               onChange={(e) => handleUpdateGlobalDelay(Number(e.target.value))}
               className="w-full accent-accent-warning cursor-pointer"
             />
-            <span className="text-[length:var(--text-xs)] font-mono font-semibold text-accent-warning bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded shrink-0">
+            <span className="text-[length:var(--text-xs)] tnum font-semibold text-accent-warning bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded shrink-0">
               {defaultDelayMinutes} min
             </span>
           </div>
@@ -836,7 +894,7 @@ export function TimetableSetup() {
               {exceptions.map((ex) => (
                 <div
                   key={ex.id}
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-accent-warning/10 border border-accent-warning/30 text-accent-warning text-[length:var(--text-xs)] font-mono"
+                  className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-accent-warning/10 border border-accent-warning/30 text-accent-warning text-[length:var(--text-xs)] tnum"
                 >
                   <span>{ex.exception_date}</span>
                   <button
@@ -856,8 +914,21 @@ export function TimetableSetup() {
 
       {/* ADD / EDIT LECTURE MODAL (BG-ELEVATED, INLINE PER-FIELD ERRORS) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div className="relative max-w-md w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <div
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto ${
+            isModalClosing
+              ? "opacity-0 transition-opacity duration-150 ease-in"
+              : "opacity-100 animate-in fade-in duration-200 ease-[var(--ease-out-strong)]"
+          }`}
+        >
+          <div
+            className={`relative max-w-md w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-5 ${
+              isModalClosing
+                ? "animate-out fade-out zoom-out-95 duration-150 ease-in"
+                : "animate-in fade-in zoom-in-95 duration-200 ease-[var(--ease-out-strong)]"
+            }`}
+          >
+
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
                 {editingEntryId ? (
@@ -871,8 +942,8 @@ export function TimetableSetup() {
                 )}
               </h2>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                onClick={closeModal}
+                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -956,7 +1027,7 @@ export function TimetableSetup() {
                   <button
                     type="button"
                     onClick={() => setFormSessionType("standard")}
-                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
+                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
                       formSessionType === "standard"
                         ? "bg-accent-info/20 border-accent-info/50 text-accent-info font-semibold"
                         : "bg-bg-base border-border text-text-secondary"
@@ -972,7 +1043,7 @@ export function TimetableSetup() {
                   <button
                     type="button"
                     onClick={() => setFormSessionType("lab")}
-                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
+                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
                       formSessionType === "lab"
                         ? "bg-accent-live/20 border-accent-live/50 text-accent-live font-semibold"
                         : "bg-bg-base border-border text-text-secondary"
@@ -1071,7 +1142,7 @@ export function TimetableSetup() {
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-border/60">
               <Button
                 variant="outline"
-                onClick={() => setIsModalOpen(false)}
+                onClick={closeModal}
                 className="border-border text-text-secondary text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 Cancel
@@ -1096,17 +1167,50 @@ export function TimetableSetup() {
         </div>
       )}
 
+      {/* Delete Lecture Confirmation */}
+      <AlertDialog open={deleteTargetId !== null} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
+        <AlertDialogContent className="bg-bg-elevated border-border text-text-primary">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-text-primary">Delete this lecture?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes it from your recurring weekly timetable. This action can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteEntry}
+              className="bg-accent-critical hover:bg-accent-critical/90 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* EXCEL IMPORT REPORT MODAL (BG-ELEVATED) */}
       {importReport && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-          <div className="relative max-w-xl w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+        <div
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto ${
+            importReportClosing
+              ? "opacity-0 transition-opacity duration-150 ease-in"
+              : "opacity-100 animate-in fade-in duration-200 ease-[var(--ease-out-strong)]"
+          }`}
+        >
+          <div
+            className={`relative max-w-xl w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-4 ${
+              importReportClosing
+                ? "animate-out fade-out zoom-out-95 duration-150 ease-in"
+                : "animate-in fade-in zoom-in-95 duration-200 ease-[var(--ease-out-strong)]"
+            }`}
+          >
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-accent-info" /> Excel Import Report
               </h2>
               <button
-                onClick={() => setImportReport(null)}
-                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                onClick={closeImportReport}
+                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -1132,7 +1236,7 @@ export function TimetableSetup() {
                       )}
                       Row {resItem.row}: {resItem.subject || "Unnamed Entry"}
                     </span>
-                    <span className="font-mono text-[length:var(--text-xs)] uppercase font-bold px-2 py-0.5 rounded bg-bg-base/60">
+                    <span className="tracking-wide text-[length:var(--text-xs)] uppercase font-bold px-2 py-0.5 rounded bg-bg-base/60">
                       {resItem.status}
                     </span>
                   </div>
@@ -1154,7 +1258,7 @@ export function TimetableSetup() {
 
             <div className="flex justify-end pt-3 border-t border-border/60">
               <Button
-                onClick={() => setImportReport(null)}
+                onClick={closeImportReport}
                 className="bg-accent-info hover:bg-accent-info/90 text-white text-[length:var(--text-sm)] font-medium cursor-pointer h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 Close Report
@@ -1163,6 +1267,6 @@ export function TimetableSetup() {
           </div>
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

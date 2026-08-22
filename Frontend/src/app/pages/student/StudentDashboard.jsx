@@ -11,6 +11,7 @@ import { getSocket } from "../../store/socket";
 import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { studentTourSteps } from "../../tours/studentTourSteps";
+import PageShell from "../../components/PageShell";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -305,7 +306,7 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 w-full">
+    <PageShell>
       {/* Kick banner — shown when instructor ended the session the student was in */}
       {wasKicked && (
         <div className="px-4 py-3 bg-bg-surface border border-accent-critical/40 rounded-[var(--radius-md)] flex items-center justify-between">
@@ -612,6 +613,6 @@ export function StudentDashboard() {
         isManualReplay={isManualReplay}
         onFinish={() => setRunTour(false)}
       />
-    </div>
+    </PageShell>
   );
 }

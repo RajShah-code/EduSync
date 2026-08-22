@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useOutletContext, useParams, useNavigate } from "react-router";
 import { CodeEditor } from "./CodeEditor";
 import { getSocket } from "../../store/socket";
-import { Lock, Unlock, CheckCircle, FileCode, AlertCircle } from "lucide-react";
+import { FileCode, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "../../components/ui/skeleton";
 
@@ -22,6 +22,7 @@ export function TaskWorkspace() {
   const [activeLanguage, setActiveLanguage] = useState("javascript");
   const [doubt, setDoubt] = useState(null); // current doubt for active task
   const [showHintHighlight, setShowHintHighlight] = useState(true);
+  const [submittingDoubt, setSubmittingDoubt] = useState(false);
 
   const lastSavedCodeRef = useRef("");
   const activeTaskRef = useRef(null);
@@ -285,8 +286,11 @@ export function TaskWorkspace() {
   };
 
   // Raise Doubt handler
-  const handleRaiseDoubt = async () => {
-    if (!activeTaskId) return;
+  // Raises a doubt for the active task. Returns true on success so the
+  // composer (in CodeEditor) knows whether to close itself.
+  const handleRaiseDoubt = async (questionText) => {
+    if (!activeTaskId || !questionText.trim()) return false;
+    setSubmittingDoubt(true);
     try {
       const token = localStorage.getItem("edusync_token");
       const res = await fetch(`${API_BASE_URL}/doubts/raise`, {
@@ -295,47 +299,54 @@ export function TaskWorkspace() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ task_id: activeTaskId, code_snapshot: activeCode })
+        body: JSON.stringify({
+          task_id: activeTaskId,
+          code_snapshot: activeCode,
+          question_text: questionText.trim(),
+        })
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.message || "Failed to raise doubt.");
-        return;
+        return false;
       }
       toast.info("Doubt raised. Waiting for instructor response.");
       setDoubt(data.doubt);
+      return true;
     } catch (err) {
       toast.error("Network error raising doubt.");
+      return false;
+    } finally {
+      setSubmittingDoubt(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="h-screen flex bg-bg-base overflow-hidden">
-        {/* Task Queue Left Sidebar */}
-        <aside className="w-64 border-r border-border bg-bg-surface flex flex-col flex-shrink-0">
-          <div className="p-4 border-b border-border flex-shrink-0 space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-40" />
+      <div className="h-screen flex flex-col bg-bg-base overflow-hidden">
+        {/* Browser-tab strip skeleton */}
+        <div className="h-11 px-2 bg-bg-surface border-b border-border flex items-end gap-1 flex-shrink-0">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-9 w-32 flex items-center px-3">
+              <Skeleton className="h-3.5 w-full" />
+            </div>
+          ))}
+        </div>
+        <div className="flex-1 flex overflow-hidden">
+          <div className="w-72 border-r border-border bg-bg-surface p-4 space-y-3 flex-shrink-0">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-3 w-5/6" />
+            <Skeleton className="h-3 w-4/6" />
           </div>
-          <div className="flex-1 p-2 space-y-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="p-3 rounded-lg space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            ))}
-          </div>
-        </aside>
-
-        {/* Editor area */}
-        <div className="flex-1 flex flex-col">
-          <div className="p-4 border-b border-border flex items-center justify-between gap-4">
-            <Skeleton className="h-5 w-56" />
-            <Skeleton className="h-8 w-24" />
-          </div>
-          <div className="flex-1 p-4">
-            <Skeleton className="h-full w-full" />
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="h-12 px-3 border-b border-border bg-bg-surface flex items-center justify-between gap-4 flex-shrink-0">
+              <Skeleton className="h-7 w-28" />
+              <Skeleton className="h-7 w-40" />
+            </div>
+            <div className="flex-1 p-4">
+              <Skeleton className="h-full w-full" />
+            </div>
           </div>
         </div>
       </div>
@@ -390,95 +401,42 @@ export function TaskWorkspace() {
   // Check if all tasks in the session are completed
   const allTasksCompleted = tasks.every(t => t.submission_status === 'submitted' || t.submission_status === 'auto_submitted');
 
+  // Task-switching now happens via the browser-tab strip inside CodeEditor's
+  // own header, rather than a separate left sidebar — precompute each row's
+  // lock/done state here (isTaskLocked already lives in this file) so the
+  // strip doesn't need to duplicate the sequential-lock logic.
+  const tasksForTabs = tasks.map(t => ({
+    ...t,
+    locked: isTaskLocked(t, tasks),
+    done: t.submission_status === 'submitted' || t.submission_status === 'auto_submitted',
+  }));
+
   return (
-    <div className="h-screen flex bg-bg-base overflow-hidden">
-      {/* Task Queue Left Sidebar */}
-      <aside className="w-64 border-r border-border bg-bg-surface flex flex-col flex-shrink-0">
-        <div className="p-4 border-b border-border flex-shrink-0">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-text-primary">
-            Session Tasks
-          </h2>
-          <p className="text-xs text-text-muted mt-1">
-            Complete tasks in sequential order
-          </p>
-        </div>
-
-        {allTasksCompleted && (
-          <div className="mx-2 mb-2 p-2.5 bg-accent-success/15 border border-accent-success/30 rounded flex gap-2 items-center">
-            <CheckCircle className="w-4 h-4 text-accent-success flex-shrink-0" />
-            <span className="text-[10px] font-semibold text-accent-success">
-              All tasks completed!
-            </span>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {tasks.map((t, idx) => {
-            const isLocked = isTaskLocked(t, tasks);
-            const isSelected = t.id === activeTaskId;
-            const isDone = t.submission_status === 'submitted' || t.submission_status === 'auto_submitted';
-            
-            return (
-              <button
-                key={t.id}
-                disabled={isLocked}
-                onClick={() => selectTask(t)}
-                className={`w-full text-left p-3 rounded-lg flex items-center justify-between transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
-                  isLocked
-                    ? "opacity-40 cursor-not-allowed"
-                    : isSelected
-                      ? "bg-accent-info/10 border border-accent-info/30"
-                      : "hover:bg-bg-elevated border border-transparent"
-                }`}
-              >
-                <div className="min-w-0">
-                  <div className={`text-xs font-semibold truncate ${
-                    isSelected ? "text-accent-info" : "text-text-primary"
-                  }`}>
-                    {idx + 1}. {t.title}
-                  </div>
-                  <div className="text-[10px] text-text-muted mt-0.5 capitalize">
-                    Status: {t.submission_status?.replace('_', ' ') || 'not started'}
-                  </div>
-                </div>
-
-                <div className="flex-shrink-0 ml-2">
-                  {isLocked ? (
-                    <Lock className="w-3.5 h-3.5 text-text-muted" />
-                  ) : isDone ? (
-                    <CheckCircle className="w-3.5 h-3.5 text-accent-success" />
-                  ) : (
-                    <Unlock className="w-3.5 h-3.5 text-accent-info" />
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </aside>
-
-      {/* Editor & Console Workspace */}
-      <div className="flex-1 min-w-0 relative">
-        <CodeEditor
-          mode="task"
-          task={activeTask}
-          code={activeCode}
-          setCode={setActiveCode}
-          language={activeLanguage}
-          setLanguage={setActiveLanguage}
-          isSubmitted={activeTaskIsSubmitted}
-          onSubmit={handleSubmitTask}
-          onAskDoubt={handleRaiseDoubt}
-          doubt={doubt}
-          hintRange={
-            showHintHighlight && doubt?.status === "resolved" 
-              ? { startLine: doubt.hint_line_start, endLine: doubt.hint_line_end } 
-              : null
-          }
-          onDismissHint={() => setShowHintHighlight(false)}
-          timerSeconds={timerSeconds}
-        />
-      </div>
+    <div className="h-screen bg-bg-base overflow-hidden">
+      <CodeEditor
+        mode="task"
+        task={activeTask}
+        tasks={tasksForTabs}
+        activeTaskId={activeTaskId}
+        onSelectTask={selectTask}
+        allTasksCompleted={allTasksCompleted}
+        code={activeCode}
+        setCode={setActiveCode}
+        language={activeLanguage}
+        setLanguage={setActiveLanguage}
+        isSubmitted={activeTaskIsSubmitted}
+        onSubmit={handleSubmitTask}
+        onAskDoubt={handleRaiseDoubt}
+        submittingDoubt={submittingDoubt}
+        doubt={doubt}
+        hintRange={
+          showHintHighlight && doubt?.status === "resolved"
+            ? { startLine: doubt.hint_line_start, endLine: doubt.hint_line_end }
+            : null
+        }
+        onDismissHint={() => setShowHintHighlight(false)}
+        timerSeconds={timerSeconds}
+      />
     </div>
   );
 }

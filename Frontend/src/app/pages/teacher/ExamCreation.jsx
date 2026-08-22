@@ -20,6 +20,7 @@ import {
   Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import PageShell from "../../components/PageShell";
 
 const QUESTION_TYPES = [
   { value: "mcq", label: "MCQ Only", icon: CheckSquare, desc: "Multiple choice questions only" },
@@ -308,10 +309,9 @@ export function ExamCreation() {
   const isDraftCode = draft?.type === "code";
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header and Tabs */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4 mb-6">
+    <PageShell>
+      {/* Header and Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-text-primary">Exam Manager</h1>
             <p className="text-sm text-text-secondary">
@@ -323,7 +323,7 @@ export function ExamCreation() {
           <div className="flex bg-bg-surface p-1 rounded border border-border">
             <button
               onClick={() => setActiveTab("create")}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] ${
                 activeTab === "create"
                   ? "bg-accent-info/10 text-accent-info"
                   : "text-text-secondary hover:text-text-primary"
@@ -334,7 +334,7 @@ export function ExamCreation() {
             </button>
             <button
               onClick={() => setActiveTab("manage")}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] ${
                 activeTab === "manage"
                   ? "bg-accent-info/10 text-accent-info"
                   : "text-text-secondary hover:text-text-primary"
@@ -371,7 +371,7 @@ export function ExamCreation() {
                     }`}
                   >
                     <span
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-mono flex-shrink-0 ${
+                      className={`w-5 h-5 rounded-full flex items-center justify-center text-xs tnum flex-shrink-0 ${
                         step > s.id
                           ? "bg-accent-success text-white"
                           : step === s.id
@@ -393,27 +393,27 @@ export function ExamCreation() {
               </h3>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Type</span>
-                <span className="font-mono text-text-primary uppercase text-xs">
+                <span className="tnum text-text-primary uppercase text-xs">
                   {settings.question_type}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Sets</span>
-                <span className="font-mono text-text-primary">{settings.num_sets}</span>
+                <span className="tnum text-text-primary">{settings.num_sets}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Duration</span>
-                <span className="font-mono text-text-primary">
+                <span className="tnum text-text-primary">
                   {settings.time_limit_minutes}m
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Violations</span>
-                <span className="font-mono text-text-primary">{settings.violation_limit}</span>
+                <span className="tnum text-text-primary">{settings.violation_limit}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Questions</span>
-                <span className="font-mono text-text-primary">{totalQuestions}</span>
+                <span className="tnum text-text-primary">{totalQuestions}</span>
               </div>
             </div>
           </div>
@@ -443,7 +443,7 @@ export function ExamCreation() {
                       <button
                         key={value}
                         onClick={() => setSettings({ ...settings, question_type: value })}
-                        className={`p-3 rounded-lg border text-left transition-all ${
+                        className={`p-3 rounded-lg border text-left transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] ${
                           settings.question_type === value
                             ? "border-accent-info bg-accent-info/10"
                             : "border-border bg-bg-base hover:border-border/60"
@@ -487,7 +487,7 @@ export function ExamCreation() {
                               setSelectedClassIds([...selectedClassIds, cls.id]);
                             }
                           }}
-                          className={`p-3 rounded-lg border text-left transition-all flex items-center gap-3 ${
+                          className={`p-3 rounded-lg border text-left transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] flex items-center gap-3 ${
                             isSelected
                               ? "border-accent-info bg-accent-info/10"
                               : "border-border bg-bg-base hover:border-border/60"
@@ -525,7 +525,7 @@ export function ExamCreation() {
                       onChange={(e) =>
                         setSettings({ ...settings, num_sets: parseInt(e.target.value) || 1 })
                       }
-                      className="mt-1 bg-bg-base border-border font-mono"
+                      className="mt-1 bg-bg-base border-border tnum"
                     />
                     <p className="text-xs text-text-muted mt-1">
                       Different versions of the exam
@@ -544,7 +544,7 @@ export function ExamCreation() {
                           time_limit_minutes: parseInt(e.target.value) || 30,
                         })
                       }
-                      className="mt-1 bg-bg-base border-border font-mono"
+                      className="mt-1 bg-bg-base border-border tnum"
                     />
                   </div>
                   <div>
@@ -561,7 +561,7 @@ export function ExamCreation() {
                           violation_limit: parseInt(e.target.value) || 3,
                         })
                       }
-                      className="mt-1 bg-bg-base border-border font-mono"
+                      className="mt-1 bg-bg-base border-border tnum"
                     />
                     <p className="text-xs text-text-muted mt-1">Auto-locks after this many</p>
                   </div>
@@ -589,7 +589,7 @@ export function ExamCreation() {
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-text-primary">Question Builder</h2>
-                  <span className="text-xs font-mono text-text-muted px-2 py-1 bg-bg-base border border-border rounded">
+                  <span className="text-xs tnum text-text-muted px-2 py-1 bg-bg-base border border-border rounded">
                     Exam #{examId}
                   </span>
                 </div>
@@ -600,7 +600,7 @@ export function ExamCreation() {
                     <button
                       key={s}
                       onClick={() => { setActiveSet(s); setDraft(null); }}
-                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-150 ease-[var(--ease-out-strong)] -mb-px ${
                         activeSet === s
                           ? "border-accent-info text-accent-info"
                           : "border-transparent text-text-secondary hover:text-text-primary"
@@ -608,7 +608,7 @@ export function ExamCreation() {
                     >
                       Set {s}
                       {(setQuestions[s]?.length ?? 0) > 0 && (
-                        <span className="ml-1.5 text-xs font-mono px-1.5 py-0.5 bg-accent-info/10 text-accent-info rounded">
+                        <span className="ml-1.5 text-xs tnum px-1.5 py-0.5 bg-accent-info/10 text-accent-info rounded">
                           {setQuestions[s].length}
                         </span>
                       )}
@@ -623,7 +623,7 @@ export function ExamCreation() {
                       key={q.id}
                       className="flex items-start gap-3 p-3 bg-bg-base border border-border rounded-lg"
                     >
-                      <span className="text-xs font-mono text-text-muted px-2 py-0.5 bg-bg-surface border border-border rounded mt-0.5 flex-shrink-0">
+                      <span className="text-xs tnum text-text-muted px-2 py-0.5 bg-bg-surface border border-border rounded mt-0.5 flex-shrink-0">
                         {q.type.toUpperCase()}
                       </span>
                       <div className="flex-1 min-w-0">
@@ -631,7 +631,7 @@ export function ExamCreation() {
                           {idx + 1}. {q.question_text}
                         </p>
                         {q.type === "code" && (
-                          <p className="text-xs text-text-muted mt-0.5 font-mono">{q.language}</p>
+                          <p className="text-xs text-text-muted mt-0.5 tnum">{q.language}</p>
                         )}
                         {q.type === "mcq" && (
                           <p className="text-xs text-text-muted mt-0.5">
@@ -691,7 +691,7 @@ export function ExamCreation() {
                 {draft && (
                   <div className="border border-border rounded-lg p-4 space-y-4 bg-bg-base">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-text-muted uppercase tracking-wider">
+                      <span className="text-xs tnum text-text-muted uppercase tracking-wider">
                         New {draft.type === "mcq" ? "MCQ" : "Code"} Question — Set {activeSet}
                       </span>
                       <button
@@ -720,7 +720,7 @@ export function ExamCreation() {
                             <div key={i} className="flex items-center gap-2">
                               <button
                                 onClick={() => setDraft({ ...draft, correct_option: i })}
-                                className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition-colors ${
+                                className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 ${
                                   draft.correct_option === i
                                     ? "border-accent-success bg-accent-success"
                                     : "border-border hover:border-accent-success/50"
@@ -742,7 +742,7 @@ export function ExamCreation() {
                             <p className="text-xs text-text-muted">
                               Circle = correct answer (index {draft.correct_option})
                             </p>
-                            <span className="text-xs font-mono px-2 py-0.5 bg-bg-surface border border-border rounded text-text-secondary">
+                            <span className="text-xs tnum px-2 py-0.5 bg-bg-surface border border-border rounded text-text-secondary">
                               1 point (auto)
                             </span>
                           </div>
@@ -760,7 +760,7 @@ export function ExamCreation() {
                                 <button
                                   key={lang}
                                   onClick={() => setDraft({ ...draft, language: lang })}
-                                  className={`px-3 py-1 rounded text-xs font-mono border transition-colors ${
+                                  className={`px-3 py-1 rounded text-xs tnum border transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] ${
                                     draft.language === lang
                                       ? "border-accent-info bg-accent-info/10 text-accent-info"
                                       : "border-border text-text-muted hover:border-border/60"
@@ -783,7 +783,7 @@ export function ExamCreation() {
                               onChange={(e) =>
                                 setDraft({ ...draft, max_score: parseInt(e.target.value) || 1 })
                               }
-                              className="mt-1 bg-bg-surface border-border font-mono w-32 text-sm"
+                              className="mt-1 bg-bg-surface border-border tnum w-32 text-sm"
                             />
                           </div>
                         </div>
@@ -859,23 +859,23 @@ export function ExamCreation() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-text-secondary">Type</span>
-                    <span className="font-mono text-text-primary uppercase text-xs">
+                    <span className="tnum text-text-primary uppercase text-xs">
                       {settings.question_type}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-text-secondary">Sets</span>
-                    <span className="font-mono text-text-primary">{settings.num_sets}</span>
+                    <span className="tnum text-text-primary">{settings.num_sets}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-text-secondary">Duration</span>
-                    <span className="font-mono text-text-primary">
+                    <span className="tnum text-text-primary">
                       {settings.time_limit_minutes} minutes
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-text-secondary">Auto-lock after</span>
-                    <span className="font-mono text-text-primary">
+                    <span className="tnum text-text-primary">
                       {settings.violation_limit} violation(s)
                     </span>
                   </div>
@@ -883,7 +883,7 @@ export function ExamCreation() {
                     {Array.from({ length: settings.num_sets }, (_, i) => i + 1).map((s) => (
                       <div key={s} className="flex items-center justify-between">
                         <span className="text-text-secondary">Set {s}</span>
-                        <span className="font-mono text-text-primary">
+                        <span className="tnum text-text-primary">
                           {setQuestions[s]?.length ?? 0} question(s)
                         </span>
                       </div>
@@ -975,7 +975,7 @@ export function ExamCreation() {
                         {exam.title}
                       </h4>
                       <div className="flex items-center gap-3 text-xs text-text-secondary">
-                        <span className="capitalize font-mono text-[10px] border border-border bg-bg-base px-1.5 py-0.5 rounded text-text-muted">
+                        <span className="capitalize tnum text-[10px] border border-border bg-bg-base px-1.5 py-0.5 rounded text-text-muted">
                           Type: {exam.question_type}
                         </span>
                         <span>•</span>
@@ -1005,7 +1005,6 @@ export function ExamCreation() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }

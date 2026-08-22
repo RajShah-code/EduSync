@@ -9,11 +9,11 @@ import {
   FileText,
   Loader2,
   ChevronDown,
-  ChevronUp,
   CheckCircle,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import PageShell from "../../components/PageShell";
 
 export function ExamResults() {
   const { examId } = useParams();
@@ -96,8 +96,7 @@ export function ExamResults() {
 
   if (loading) {
     return (
-      <div className="h-full overflow-auto">
-        <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <PageShell>
           <div className="space-y-2">
             <Skeleton className="h-7 w-56" />
             <Skeleton className="h-4 w-96" />
@@ -120,8 +119,7 @@ export function ExamResults() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -135,8 +133,7 @@ export function ExamResults() {
   }
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <PageShell>
         {/* Header */}
         <div>
           <h1 className="text-2xl font-semibold text-text-primary mb-1">Exam Results</h1>
@@ -169,7 +166,7 @@ export function ExamResults() {
               className="p-4 bg-bg-surface border border-border rounded-lg"
             >
               <div className="text-xs text-text-muted uppercase tracking-wider mb-1">{label}</div>
-              <div className="text-2xl font-mono font-semibold text-text-primary">{value}</div>
+              <div className="text-2xl tnum font-semibold text-text-primary">{value}</div>
             </div>
           ))}
         </div>
@@ -194,7 +191,7 @@ export function ExamResults() {
                 >
                   {/* Collapsed row */}
                   <button
-                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-bg-base/50 transition-colors text-left"
+                    className="w-full flex items-center gap-4 px-4 py-3 hover:bg-bg-base/50 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.995] text-left"
                     onClick={() =>
                       setExpandedAttempt(isExpanded ? null : attempt.attempt_id)
                     }
@@ -204,19 +201,19 @@ export function ExamResults() {
                         <div className="font-medium text-text-primary text-sm">
                           {attempt.student_name}
                         </div>
-                        <div className="text-xs text-text-muted font-mono">
+                        <div className="text-xs text-text-muted tnum">
                           {attempt.roll_no ? `Roll ${attempt.roll_no}` : ""} · Set{" "}
                           {attempt.set_number}
                         </div>
                       </div>
                       <StatusBadge status={getStatusKey(attempt.status)} />
                       {attempt.auto_submitted && (
-                        <span className="text-xs font-mono px-2 py-0.5 bg-accent-warning/10 text-accent-warning border border-accent-warning/20 rounded">
+                        <span className="text-xs tnum px-2 py-0.5 bg-accent-warning/10 text-accent-warning border border-accent-warning/20 rounded">
                           auto-submitted
                         </span>
                       )}
                       {attempt.violation_count > 0 && (
-                        <span className="text-xs font-mono px-2 py-0.5 bg-accent-critical/10 text-accent-critical border border-accent-critical/20 rounded">
+                        <span className="text-xs tnum px-2 py-0.5 bg-accent-critical/10 text-accent-critical border border-accent-critical/20 rounded">
                           {attempt.violation_count} violation(s)
                         </span>
                       )}
@@ -224,18 +221,18 @@ export function ExamResults() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div className="text-xs text-text-muted">Score</div>
-                        <div className="font-mono font-semibold text-text-primary">
+                        <div className="tnum font-semibold text-text-primary">
                           {score.toFixed(1)}
                           {hasCodeAnswers && (
                             <span className="text-xs text-text-muted font-normal"> (partial)</span>
                           )}
                         </div>
                       </div>
-                      {isExpanded ? (
-                        <ChevronUp className="w-4 h-4 text-text-muted" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 text-text-muted" />
-                      )}
+                      <ChevronDown
+                        className={`w-4 h-4 text-text-muted transition-transform duration-200 ease-[var(--ease-out-strong)] ${
+                          isExpanded ? "rotate-180" : ""
+                        }`}
+                      />
                     </div>
                   </button>
 
@@ -248,7 +245,7 @@ export function ExamResults() {
                       {attempt.answers.map((ans, idx) => (
                         <div key={ans.answer_id} className="px-4 py-3">
                           <div className="flex items-start gap-3">
-                            <span className="text-xs font-mono text-text-muted px-2 py-0.5 bg-bg-base border border-border rounded flex-shrink-0 mt-0.5">
+                            <span className="text-xs tnum text-text-muted px-2 py-0.5 bg-bg-base border border-border rounded flex-shrink-0 mt-0.5">
                               {ans.type.toUpperCase()}
                             </span>
                             <div className="flex-1 min-w-0">
@@ -285,7 +282,7 @@ export function ExamResults() {
                                         )}
                                         {opt}
                                         {isSelected && !isCorrect && (
-                                          <span className="ml-auto font-mono">student selected</span>
+                                          <span className="ml-auto tnum">student selected</span>
                                         )}
                                       </div>
                                     );
@@ -293,7 +290,7 @@ export function ExamResults() {
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-xs text-text-muted">Auto-score:</span>
                                     <span
-                                      className={`text-xs font-mono font-semibold ${
+                                      className={`text-xs tnum font-semibold ${
                                         ans.score > 0 ? "text-accent-success" : "text-accent-critical"
                                       }`}
                                     >
@@ -323,7 +320,7 @@ export function ExamResults() {
                                     </span>
                                     {ans.score !== null && ans.score !== undefined &&
                                      scoreDrafts[ans.answer_id] === undefined ? (
-                                      <span className="text-xs font-mono text-text-primary">
+                                      <span className="text-xs tnum text-text-primary">
                                         {ans.score}
                                       </span>
                                     ) : null}
@@ -350,7 +347,7 @@ export function ExamResults() {
                                           [ans.answer_id]: e.target.value,
                                         }));
                                       }}
-                                      className="w-28 h-7 text-xs bg-bg-base border-border font-mono"
+                                      className="w-28 h-7 text-xs bg-bg-base border-border tnum"
                                     />
                                     <Button
                                       size="sm"
@@ -383,7 +380,6 @@ export function ExamResults() {
             })}
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }

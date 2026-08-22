@@ -6,6 +6,7 @@ import { Input } from "../../components/ui/input";
 import { AppTour } from "../../components/AppTour";
 import { sessionsPageTourSteps } from "../../tours/studentTourSteps";
 import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
+import PageShell from "../../components/PageShell";
 
 // ─── Relative time helper ─────────────────────────────────────────────────────
 function getRelativeTime(isoString) {
@@ -124,7 +125,7 @@ export function SessionList() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto w-full space-y-6 page-enter">
+    <PageShell>
       {/* Page header */}
       <div className="space-y-1" data-tour="sessions-header">
         <div className="flex items-center gap-3">
@@ -181,7 +182,7 @@ export function SessionList() {
           markPageTourSeen("sessions");
         }}
       />
-    </div>
+    </PageShell>
   );
 }
 
