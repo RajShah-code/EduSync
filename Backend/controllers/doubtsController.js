@@ -2,9 +2,13 @@ const sql = require('../config/db');
 
 // POST /doubts/raise — student only
 const raiseDoubt = async (req, res) => {
-  const { task_id, code_snapshot } = req.body;
+  const { task_id, code_snapshot, question_text } = req.body;
   const studentId = req.user.id;
   const studentName = req.user.name;
+
+  if (!question_text || !question_text.trim()) {
+    return res.status(400).json({ message: 'Please describe your question before sending.' });
+  }
 
   try {
     // Verify task exists and is active
@@ -19,8 +23,10 @@ const raiseDoubt = async (req, res) => {
     }
 
     // 1. Reject 409 if a pending doubt already exists for (task_id, student_id)
+    // — one open doubt per task at a time, so the teacher's queue never shows
+    // duplicate/stacked requests from the same student on the same task.
     const [existing] = await sql`
-      SELECT id FROM doubt_requests 
+      SELECT id FROM doubt_requests
       WHERE task_id = ${task_id} AND student_id = ${studentId} AND status = 'pending'
     `;
     if (existing) {
@@ -29,8 +35,8 @@ const raiseDoubt = async (req, res) => {
 
     // 2. Insert doubt
     const [doubt] = await sql`
-      INSERT INTO doubt_requests (task_id, student_id, code_snapshot, raised_at, status)
-      VALUES (${task_id}, ${studentId}, ${code_snapshot}, NOW(), 'pending')
+      INSERT INTO doubt_requests (task_id, student_id, code_snapshot, question_text, raised_at, status)
+      VALUES (${task_id}, ${studentId}, ${code_snapshot}, ${question_text.trim()}, NOW(), 'pending')
       RETURNING *
     `;
 
@@ -43,6 +49,7 @@ const raiseDoubt = async (req, res) => {
         student_id: studentId,
         student_name: studentName,
         code_snapshot: code_snapshot,
+        question_text: doubt.question_text,
         raised_at: doubt.raised_at,
         status: 'pending'
       });

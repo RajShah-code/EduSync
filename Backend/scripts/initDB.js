@@ -108,6 +108,7 @@ const init = async () => {
         task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
         student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         code_snapshot TEXT NOT NULL,
+        question_text TEXT,
         raised_at TIMESTAMP DEFAULT NOW(),
         status VARCHAR(50) NOT NULL DEFAULT 'pending',
         hint_line_start INTEGER,
@@ -116,6 +117,8 @@ const init = async () => {
         resolved_at TIMESTAMP
       );
     `;
+    // Defensive add for databases initialized before question_text existed.
+    await sql`ALTER TABLE doubt_requests ADD COLUMN IF NOT EXISTS question_text TEXT;`;
 
     console.log("✅ Database schema initialized");
     process.exit(0);
