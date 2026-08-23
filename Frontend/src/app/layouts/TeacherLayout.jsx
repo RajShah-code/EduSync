@@ -16,6 +16,7 @@ import {
   Check,
   X,
   AlertTriangle,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
@@ -173,13 +174,18 @@ export function TeacherLayout() {
         const elapsedSeconds = Math.floor(
           (Date.now() - new Date(session.started_at).getTime()) / 1000
         );
+        // Password is never returned by the API (not stored in plaintext server-side).
+        // The only way to recover it after a refresh is a client-side cache written
+        // at creation time in LiveBroadcast.jsx's handleStartBroadcast — this
+        // survives a page reload (sessionStorage) but not a closed tab or a
+        // different device, where the placeholder is the best we can do.
+        const cachedPassword = sessionStorage.getItem(`edusync_session_password_${session.id}`);
         setSessionInfo({
           id: session.id,
           lectureName: session.lecture_name,
           subject: session.subject,
           labRoom: session.lab_room,
-          // Password is not stored in plaintext — show placeholder
-          password: '(session active — password not shown after refresh)',
+          password: cachedPassword || '(session active — password not shown after refresh)',
           started_at: session.started_at,
           class_ids: session.class_ids,
         });
@@ -284,44 +290,34 @@ export function TeacherLayout() {
     return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const teacherInitials = (displayUser.name || "Teacher")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
     <div className="flex h-screen bg-bg-base" data-role="teacher">
-      {/* Sidebar */}
-      <aside
-        className="flex flex-col bg-bg-surface border-r border-border"
-        style={{
-          width: "240px",
-          minWidth: "240px",
-        }}
-      >
+      {/* Sidebar — 3 distinct rounded blocks (brand / nav / user), tight gap
+          between them, rather than one continuous panel with dividers. */}
+      <aside className="w-16 min-w-16 md:w-[230px] md:min-w-[230px] flex flex-col gap-2 p-2 bg-bg-base transition-all duration-200">
         {/* Brand */}
-        <div
-          className="px-5 py-4 border-b border-border"
-        >
+        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface px-3 md:px-4 py-3.5 flex items-center gap-2.5 justify-center md:justify-start shrink-0">
           <div
-            className="font-semibold text-text-primary"
-            style={{ fontSize: "15px", letterSpacing: "-0.01em" }}
+            className="w-[26px] h-[26px] rounded-lg shrink-0 flex items-center justify-center"
+            style={{ background: "linear-gradient(155deg, var(--accent-700), color-mix(in srgb, var(--accent-700) 55%, var(--bg-base)))" }}
           >
-            Lab Control
+            <GraduationCap className="w-3.5 h-3.5 text-white" strokeWidth={2} />
           </div>
-          <div
-            className="font-mono text-text-muted"
-            style={{
-              fontSize: "11px",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              marginTop: "2px",
-            }}
-          >
-            Teacher
-          </div>
+          <span className="font-display font-semibold text-text-primary text-[14.5px] tracking-tight hidden md:inline">
+            EduSync
+          </span>
         </div>
 
         {/* Navigation */}
-        <nav
-          className="flex-1 py-3 overflow-y-auto"
-          style={{ padding: "12px 8px" }}
-        >
+        <nav className="flex-1 min-h-0 rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 space-y-0.5 overflow-y-auto">
           {navigation.map((item) => {
             const isActive =
               location.pathname === item.href ||
@@ -333,57 +329,50 @@ export function TeacherLayout() {
                 key={item.name}
                 to={item.href}
                 data-tour={item.dataTour}
+                title={item.name}
                 className={cn(
-                  "flex items-center gap-3 py-2 rounded-lg text-sm mb-0.5",
-                  isActive ? "nav-active" : "nav-inactive",
+                  "flex items-center gap-2.5 pr-3 py-2 text-[13px] rounded-[var(--radius-md)] justify-center md:justify-start",
+                  isActive ? "nav-active" : "nav-inactive"
                 )}
-                style={{
-                  borderRadius: "8px",
-                  fontSize: "13.5px",
-                  fontWeight: isActive ? 500 : 400,
-                }}
               >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                <span>{item.name}</span>
+                <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
+                <span className="hidden md:inline">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User info */}
-        <div
-          className="p-3 space-y-1 border-t border-border"
-        >
-          <div className="px-3 py-2">
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-text-primary truncate">
+        {/* User info & Actions */}
+        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 shrink-0">
+          <div className="hidden md:flex items-center gap-2.5 px-1 py-1">
+            <div className="w-7 h-7 rounded-full bg-bg-surface-3 border border-border flex items-center justify-center text-[10.5px] font-semibold text-text-secondary shrink-0">
+              {teacherInitials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12.5px] font-medium text-text-primary truncate">
                 {displayUser.name || "Teacher"}
               </div>
-              <div
-                className="font-mono text-text-muted truncate"
-                style={{ fontSize: "11px" }}
-              >
-                {displayUser.email || ""}
+              <div className="text-[10.5px] text-text-muted truncate">
+                {displayUser.email || "Teacher"}
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="btn-press w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 transition-std shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </button>
           </div>
+
+          {/* Collapsed (mobile) — icon-only logout, name/avatar hidden */}
           <button
             onClick={handleLogout}
-            className="btn-press w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
+            title="Logout"
+            className="btn-press md:hidden w-full flex items-center justify-center py-2 text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
           >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
+            <LogOut className="w-4 h-4" strokeWidth={1.75} />
           </button>
-        </div>
-
-        {/* Version */}
-        <div
-          className="px-5 py-3 font-mono text-text-muted text-center border-t border-border"
-          style={{
-            fontSize: "11px",
-          }}
-        >
-          v2.4.1
         </div>
       </aside>
 
