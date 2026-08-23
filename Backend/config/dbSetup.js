@@ -253,7 +253,11 @@ const setup = async () => {
       ALTER TABLE questions
       ADD COLUMN IF NOT EXISTS max_score NUMERIC NOT NULL DEFAULT 1;
     `;
-    console.log("Database Setup: questions table and max_score column checked.");
+    await sql`
+      ALTER TABLE questions
+      ADD COLUMN IF NOT EXISTS description TEXT;
+    `;
+    console.log("Database Setup: questions table, max_score, and description columns checked.");
 
     await sql`
       CREATE TABLE IF NOT EXISTS exam_attempts (

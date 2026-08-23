@@ -181,7 +181,7 @@ const addQuestion = async (req, res) => {
   const examId = parseInt(req.params.id);
   const setNumber = parseInt(req.params.setNumber);
   const teacherId = req.user.id;
-  const { type, question_text, options, correct_option, language, starter_code } = req.body;
+  const { type, question_text, description, options, correct_option, language } = req.body;
 
   try {
     // Verify teacher owns this exam
@@ -223,15 +223,15 @@ const addQuestion = async (req, res) => {
     }
 
     const [question] = await sql`
-      INSERT INTO questions (exam_set_id, type, question_text, options, correct_option, language, starter_code, max_score)
+      INSERT INTO questions (exam_set_id, type, question_text, description, options, correct_option, language, max_score)
       VALUES (
         ${examSet.id},
         ${type},
         ${question_text},
+        ${type === 'code' ? description : null},
         ${type === 'mcq' ? JSON.stringify(options) : null},
         ${type === 'mcq' ? correct_option : null},
         ${type === 'code' ? language : null},
-        ${type === 'code' ? starter_code : null},
         ${finalMaxScore}
       )
       RETURNING *
@@ -372,7 +372,7 @@ const getMyQuestions = async (req, res) => {
 
     // Fetch only this student's assigned set — never expose other sets
     const questions = await sql`
-      SELECT id, type, question_text, options, language, starter_code
+      SELECT id, type, question_text, description, options, language, starter_code
       FROM questions
       WHERE exam_set_id = ${attempt.exam_set_id}
       ORDER BY id ASC
