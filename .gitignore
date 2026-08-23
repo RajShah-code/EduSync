@@ -41,6 +41,7 @@ lerna-debug.log*
 .agents/
 .claude/
 .codex/
+.impeccable/
 skills-lock.json
 scratch/
 
