@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { getSocket } from "../../store/socket";
 import { useFocusGuard } from "../../hooks/useFocusGuard";
 import { Timer } from "../../components/Timer";
@@ -9,16 +10,48 @@ import Editor from "@monaco-editor/react";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { Skeleton } from "../../components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "../../components/ui/alert-dialog";
+import { cn } from "../../components/ui/utils";
 import {
   Clock,
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Loader2,
   FileText,
   Play,
+  PanelRight,
+  PanelLeft,
+  PanelTop,
+  PanelBottom,
+  X,
 } from "lucide-react";
+
+// Dock options for the code-question console panel — a manually-built
+// dropdown (matching CodeOutputPanel.jsx's pattern below) rather than the
+// shared Select primitive: Select's popper-mode Viewport is height-locked to
+// its trigger (a real, documented shadcn/Radix quirk), which clips a 4-item
+// menu under a compact trigger to almost nothing. CodeOutputPanel already
+// solved exactly this "dock position picker" problem elsewhere in the app —
+// reusing that proven pattern instead of re-hitting the same bug.
+const DOCK_OPTIONS = [
+  { value: "right", label: "Right", icon: PanelRight },
+  { value: "left", label: "Left", icon: PanelLeft },
+  { value: "top", label: "Top", icon: PanelTop },
+  { value: "bottom", label: "Bottom", icon: PanelBottom },
+];
 import { toast } from "sonner";
 
 // ─── Pyodide lazy-loader (self-hosted) ─────────────────────────────────────────
@@ -78,6 +111,7 @@ ${code}
 export function ExamScreen() {
   const { examId } = useParams();
   const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
 
   const [phase, setPhase] = useState("waiting");
 
@@ -100,6 +134,29 @@ export function ExamScreen() {
   // UI state
   const [currentIdx, setCurrentIdx] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+
+  // ── Code-question panel layout: resizable 3-way split + dockable console ──
+  // Preference lives purely in component state — it's a per-session UI
+  // convenience, not something worth persisting per-student.
+  const [consoleDockPosition, setConsoleDockPosition] = useState("right"); // 'right' | 'left' | 'top' | 'bottom'
+  const [questionPanelWidth, setQuestionPanelWidth] = useState(380);
+  const [consoleSize, setConsoleSize] = useState(320); // width (left/right dock) or height (top/bottom dock), px
+  const [isDockMenuOpen, setIsDockMenuOpen] = useState(false);
+  const codeAreaRef = useRef(null); // outer row: [Question] [handle] [editor area]
+  const editorAreaRef = useRef(null); // sub-container holding Editor + Console
+  const dockMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isDockMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (dockMenuRef.current && !dockMenuRef.current.contains(e.target)) {
+        setIsDockMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isDockMenuOpen]);
 
   // Lock details (for ExamLocked props)
   const [lockInfo, setLockInfo] = useState({});
@@ -370,6 +427,37 @@ export function ExamScreen() {
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Generic drag-resize handler for the code-question panels ────────────────
+  // Mirrors the mouse-event resize pattern already used for the dockable
+  // output panel elsewhere in the app (CodeOutputPanel.jsx / student Task
+  // page): track the pointer's start position, compute a signed delta on
+  // mousemove, clamp into [min, max], and clean up listeners on mouseup.
+  // `sign` encodes whether dragging in the positive axis direction should
+  // grow or shrink the panel (depends on which side of the handle the panel
+  // sits on), so the same function drives every handle in every dock layout.
+  const startPanelResize = (e, { axis, sign, size, setSize, min, max }) => {
+    e.preventDefault();
+    const startPos = axis === "x" ? e.clientX : e.clientY;
+    const startSize = size;
+
+    const handleMove = (moveEvent) => {
+      const pos = axis === "x" ? moveEvent.clientX : moveEvent.clientY;
+      const delta = sign * (pos - startPos);
+      const next = Math.max(min, Math.min(max, startSize + delta));
+      setSize(Math.round(next));
+    };
+    const handleUp = () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+    };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
+  };
+
+  const handleClearOutput = (qId) => {
+    setTextOutput((prev) => ({ ...prev, [qId]: "" }));
+  };
+
   // ── Monaco local runner ─────────────────────────────────────────────────────
   const handleRunCode = async (qId, language) => {
     const code = codeAnswers[qId] ?? questions.find((q) => q.id === qId)?.starter_code ?? "";
@@ -443,8 +531,10 @@ export function ExamScreen() {
   };
 
   // ── Submit exam ─────────────────────────────────────────────────────────────
+  // Confirmation is our own AlertDialog (see showSubmitConfirm below), not
+  // the browser's native window.confirm — this function now runs the actual
+  // submission only, triggered from that dialog's confirm action.
   const handleSubmit = async () => {
-    if (!window.confirm("Submit your exam? This cannot be undone.")) return;
     setSubmitting(true);
 
     const answers = questions.map((q) => ({
@@ -562,18 +652,53 @@ export function ExamScreen() {
   // ── Phase: in_progress ──────────────────────────────────────────────────────
   const question = questions[currentIdx];
   const isCritical = secondsRemaining !== null && secondsRemaining < 300;
-  const mcqAnsweredCount = Object.keys(mcqAnswers).length;
-  const codeAnsweredCount = Object.keys(codeAnswers).filter(
-    (k) => (codeAnswers[k] || "").trim().length > 0
-  ).length;
-  const totalAnswered = mcqAnsweredCount + codeAnsweredCount;
+
+  // Last question by POSITION, not by type — Submit Exam replaces Next
+  // whichever question type happens to land last in the set.
+  const isLastQuestion = currentIdx === questions.length - 1;
+  const navButtons = (
+    <div className="flex items-center justify-between">
+      <Button
+        variant="ghost"
+        onClick={() => setCurrentIdx((i) => i - 1)}
+        disabled={currentIdx === 0}
+        className="text-text-secondary hover:text-text-primary"
+      >
+        <ChevronLeft className="w-4 h-4 mr-2" strokeWidth={1.75} />
+        Previous
+      </Button>
+
+      {isLastQuestion ? (
+        <Button
+          onClick={() => setShowSubmitConfirm(true)}
+          disabled={submitting}
+          className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold px-6"
+        >
+          {submitting ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={1.75} />
+          ) : null}
+          Submit Exam
+        </Button>
+      ) : (
+        <Button
+          variant="outline"
+          onClick={() => setCurrentIdx((i) => i + 1)}
+          className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-surface-3"
+        >
+          Next
+          <ChevronRight className="w-4 h-4 ml-2" strokeWidth={1.75} />
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div ref={containerRef} className="h-screen flex flex-col bg-bg-base">
-      {/* Top bar — deliberately quiet by default. The timer's own color/pulse
-          carries the time-critical signal; only genuine security interruptions
-          (fullscreen exit, violations) get bold treatment here. */}
-      <div className="h-14 px-6 bg-bg-surface border-b border-border flex items-center justify-between flex-shrink-0">
+      {/* Top bar — deliberately quiet by default. The timer carries the
+          time-critical signal on its own (a subtle color/glow shift built
+          into the Timer component itself); only genuine security
+          interruptions (fullscreen exit, violations) get bold treatment. */}
+      <div className="h-16 px-6 bg-bg-surface border-b border-border flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5 text-xs text-text-muted">
             <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -591,106 +716,127 @@ export function ExamScreen() {
           )}
         </div>
 
-        <div className="flex items-center gap-6">
-          {isCritical && (
-            <span className="text-xs font-semibold text-accent-critical">
-              Time critical
-            </span>
-          )}
-          {secondsRemaining !== null && (
-            <Timer seconds={secondsRemaining} size="lg" onExpire={handleTimerExpire} />
-          )}
-          <span className="tnum text-sm text-text-secondary">
+        {/* Right cluster — the timer is the single most important glanceable
+            element on this bar, so it gets the most visual weight: its own
+            pill, larger type. The urgency cue is just that pill's background
+            tinting amber/red as time runs low — no extra "time critical"
+            label competing for attention next to it. */}
+        <div className="flex items-center gap-4">
+          <div
+            className={cn(
+              "flex items-center gap-2 pl-3 pr-3.5 py-1.5 rounded-full border transition-colors duration-300",
+              isCritical
+                ? "bg-accent-critical/10 border-accent-critical/30"
+                : "bg-bg-elevated border-border"
+            )}
+          >
+            <Clock
+              className={cn("w-4 h-4", isCritical ? "text-accent-critical" : "text-text-muted")}
+              strokeWidth={1.75}
+            />
+            {secondsRemaining !== null && (
+              <Timer
+                seconds={secondsRemaining}
+                size="lg"
+                onExpire={handleTimerExpire}
+                className="font-sans"
+              />
+            )}
+          </div>
+          <div className="h-6 w-px bg-border" aria-hidden="true" />
+          <span className="tnum text-sm text-text-secondary font-medium">
             {currentIdx + 1} / {questions.length}
           </span>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Question area */}
-        <div className="flex-1 overflow-y-auto p-8">
-          {!question ? (
-            <div className="max-w-3xl mx-auto space-y-6">
-              <div className="flex items-start gap-3">
-                <Skeleton className="h-8 w-14 flex-shrink-0 rounded-[var(--radius-sm)]" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-5 w-3/4" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                {[0, 1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-14 w-full rounded-[var(--radius-md)]" />
-                ))}
+      {/* Question tab strip — LeetCode-Contest-style horizontal navigator,
+          reusing the exact browser-tab pattern already built for the
+          student Task Progress strip (CodeEditor.jsx): active tab shares
+          bg-bg-base with the panel below so it reads as physically attached,
+          not a separate floating panel. Answered state is a small filled
+          dot next to the label — self-evident without a separate legend.
+          More tabs than fit at normal desktop width scroll horizontally
+          (same as the Task strip) rather than wrapping — wrapping would
+          push question content down and eat the vertical space this
+          redesign is trying to reclaim, and a lab desktop-first exam
+          realistically has a small, fixed question count per set. */}
+      <div
+        className="h-11 px-2 bg-bg-surface border-b border-border flex items-end gap-1 overflow-x-auto flex-shrink-0"
+        role="tablist"
+        aria-label="Exam questions"
+      >
+        {questions.map((q, idx) => {
+          const isSelected = idx === currentIdx;
+          const isAnswered =
+            q.type === "mcq"
+              ? mcqAnswers[q.id] !== undefined
+              : (codeAnswers[q.id] || "").trim().length > 0;
+          return (
+            <button
+              key={q.id}
+              type="button"
+              role="tab"
+              aria-selected={isSelected}
+              aria-label={`Question ${idx + 1}${isAnswered ? ", answered" : ", unanswered"}`}
+              onClick={() => setCurrentIdx(idx)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 h-9 rounded-t-[var(--radius-md)] text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors duration-150",
+                isSelected
+                  ? "bg-bg-base text-text-primary"
+                  : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
+              )}
+            >
+              {isAnswered && (
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-success flex-shrink-0" aria-hidden="true" />
+              )}
+              <span className="max-w-[180px] truncate">
+                Q{idx + 1}: {q.question_text}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Question panel — code questions get an independent-scroll two-column
+          split (problem statement / editor+console); MCQ gets a narrower
+          centered card, matching the two reference layouts respectively. */}
+      <div className={cn("flex-1", !question || question.type === "mcq" ? "overflow-y-auto" : "overflow-hidden")}>
+        {!question ? (
+          <div className="max-w-3xl mx-auto p-10 space-y-8">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-8 w-14 flex-shrink-0 rounded-[var(--radius-sm)]" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-6 w-3/4" />
               </div>
             </div>
-          ) : (
-            <div className="max-w-3xl mx-auto space-y-6">
-              {/* Question header */}
-              <div className="flex items-start gap-3">
-                <span className="tnum px-3 py-1.5 bg-accent-info/10 border border-accent-info/20 rounded-[var(--radius-sm)] text-sm font-medium text-accent-info flex-shrink-0">
-                  Q{currentIdx + 1}
-                </span>
-                <div>
-                  <div className="text-xs text-text-secondary uppercase tracking-wider mb-1">
-                    {question.type === "mcq" ? "Multiple Choice" : "Code"}
-                  </div>
-                  <div className="text-lg font-medium text-text-primary">
-                    {question.question_text}
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-3">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-[var(--radius-md)]" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {question.type === "code" ? (() => {
+              const isConsoleRow = consoleDockPosition === "left" || consoleDockPosition === "right";
+              const consoleFirst = consoleDockPosition === "left" || consoleDockPosition === "top";
+              const questionMax = () => (codeAreaRef.current?.clientWidth || 1200) * 0.5;
+              const consoleMax = () =>
+                isConsoleRow
+                  ? (editorAreaRef.current?.clientWidth || 900) * 0.55
+                  : (editorAreaRef.current?.clientHeight || 600) * 0.65;
 
-              {/* MCQ options */}
-              {question.type === "mcq" && (
-                <RadioGroup
-                  value={
-                    mcqAnswers[question.id] !== undefined
-                      ? String(mcqAnswers[question.id])
-                      : ""
-                  }
-                  onValueChange={(val) =>
-                    setMcqAnswers((prev) => ({ ...prev, [question.id]: parseInt(val) }))
-                  }
-                  className="space-y-3"
-                >
-                  {(question.options || []).map((opt, oi) => {
-                    const isSelected = mcqAnswers[question.id] === oi;
-                    return (
-                      <div
-                        key={oi}
-                        className={`relative flex items-center gap-3 p-4 rounded-[var(--radius-md)] border cursor-pointer transition-all ${
-                          isSelected
-                            ? "bg-accent-info/10 border-accent-info/50"
-                            : "bg-bg-surface border-border hover:border-accent-info/30"
-                        }`}
-                      >
-                        <RadioGroupItem
-                          value={String(oi)}
-                          id={`q${question.id}-opt${oi}`}
-                        />
-                        <Label
-                          htmlFor={`q${question.id}-opt${oi}`}
-                          className="flex-1 text-sm text-text-primary cursor-pointer"
-                        >
-                          <span className="text-text-muted mr-2 font-medium">
-                            {["A", "B", "C", "D"][oi]}.
-                          </span>
-                          {opt}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </RadioGroup>
-              )}
+              const DockIcon = { right: PanelRight, left: PanelLeft, top: PanelTop, bottom: PanelBottom }[consoleDockPosition];
 
-              {/* Code editor */}
-              {question.type === "code" && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-text-secondary capitalize">
-                      Language: {question.language || "python"}
+              const editorBlock = (
+                <div key="editor" className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-bg-surface">
+                  {/* Toolbar — matches the Monaco toolbar convention used in
+                      Task Assignment / Live Broadcast (language + Run). */}
+                  <div className="h-11 px-4 flex items-center justify-between bg-bg-elevated border-b border-border flex-shrink-0">
+                    <span className="text-xs text-text-secondary">
+                      Language: <span className="text-text-primary font-medium capitalize">{question.language || "python"}</span>
                     </span>
                     <Button
                       size="sm"
@@ -701,7 +847,7 @@ export function ExamScreen() {
                         phase === "submitted" ||
                         phase === "locked"
                       }
-                      className="bg-accent-700 hover:bg-accent-700/90 text-white flex items-center gap-1.5 h-8 text-xs font-semibold"
+                      className="bg-accent-success hover:bg-accent-success/90 text-white flex items-center gap-1.5 h-7 px-3 text-xs font-semibold"
                     >
                       {pyodideLoading[question.id] ? (
                         <>
@@ -722,9 +868,9 @@ export function ExamScreen() {
                     </Button>
                   </div>
 
-                  <div className="border border-border rounded-[var(--radius-md)] overflow-hidden" style={{ height: 350 }}>
+                  <div className="flex-1 min-h-0">
                     <Editor
-                      height="350px"
+                      height="100%"
                       language={question.language || "python"}
                       value={codeAnswers[question.id] ?? question.starter_code ?? ""}
                       onChange={(val) =>
@@ -736,6 +882,7 @@ export function ExamScreen() {
                         fontSize: 14,
                         scrollBeyondLastLine: false,
                         padding: { top: 12 },
+                        automaticLayout: true,
                         readOnly: phase === "submitted" || phase === "locked",
                       }}
                     />
@@ -749,114 +896,250 @@ export function ExamScreen() {
                       style={{ width: 0, height: 0, border: 0, display: "none" }}
                     />
                   )}
-
-                  {/* Output Panel */}
-                  <div className="bg-bg-surface border border-border rounded-[var(--radius-md)] p-4 text-xs space-y-2">
-                    <div className="text-text-muted font-semibold uppercase tracking-wider text-[10px]">
-                      Console Output
-                    </div>
-                    <pre className="text-text-primary whitespace-pre-wrap min-h-[80px] max-h-[200px] overflow-y-auto bg-bg-base p-3 rounded-[var(--radius-sm)] border border-border">
-                      {textOutput[question.id] || "(click Run to see output)"}
-                    </pre>
-                  </div>
                 </div>
-              )}
+              );
 
-              {/* Navigation */}
-              <div className="flex items-center justify-between pt-4 border-t border-border">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentIdx((i) => i - 1)}
-                  disabled={currentIdx === 0}
+              const consoleBlock = (
+                <div
+                  key="console"
+                  style={isConsoleRow ? { width: consoleSize } : { height: consoleSize }}
+                  className={cn(
+                    "flex-shrink-0 flex flex-col overflow-hidden bg-bg-surface",
+                    isConsoleRow
+                      ? consoleFirst ? "border-r border-border" : "border-l border-border"
+                      : consoleFirst ? "border-b border-border" : "border-t border-border"
+                  )}
                 >
-                  <ChevronLeft className="w-4 h-4 mr-2" strokeWidth={1.75} />
-                  Previous
-                </Button>
+                  <div className="h-9 px-3 flex items-center justify-between bg-bg-elevated border-b border-border flex-shrink-0 gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted whitespace-nowrap">
+                      Console Output
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleClearOutput(question.id)}
+                        className="text-[11px] text-text-muted hover:text-text-primary px-2 py-1 rounded-[var(--radius-sm)] hover:bg-bg-surface-3 transition-colors flex items-center gap-1"
+                        title="Clear console output"
+                      >
+                        <X className="w-3 h-3" strokeWidth={1.75} />
+                        Clear
+                      </button>
+                      <div className="relative" ref={dockMenuRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsDockMenuOpen((p) => !p)}
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-sm)] bg-bg-surface border border-border hover:border-border-hover hover:bg-bg-surface-3 transition-colors text-[11px] text-text-secondary whitespace-nowrap"
+                          title="Dock position"
+                          aria-haspopup="true"
+                          aria-expanded={isDockMenuOpen}
+                        >
+                          <DockIcon className="w-3 h-3 text-accent-500" />
+                          Dock {DOCK_OPTIONS.find((o) => o.value === consoleDockPosition)?.label}
+                          <ChevronDown className="w-3 h-3 text-text-muted" />
+                        </button>
 
-                {currentIdx < questions.length - 1 ? (
-                  <Button
-                    onClick={() => setCurrentIdx((i) => i + 1)}
-                    className="bg-accent-700 hover:bg-accent-700/90"
+                        {isDockMenuOpen && (
+                          <div className="absolute right-0 top-full mt-1 w-32 bg-bg-elevated border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-modal)] z-50 py-1">
+                            {DOCK_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => {
+                                  setConsoleDockPosition(opt.value);
+                                  setIsDockMenuOpen(false);
+                                }}
+                                className={cn(
+                                  "w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-bg-surface-3 transition-colors",
+                                  consoleDockPosition === opt.value ? "text-accent-500 font-semibold" : "text-text-primary"
+                                )}
+                              >
+                                <opt.icon className="w-3.5 h-3.5" />
+                                Dock {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <pre className="flex-1 overflow-y-auto text-xs text-text-primary whitespace-pre-wrap p-3 bg-bg-base">
+                    {textOutput[question.id] || "(click Run to see output)"}
+                  </pre>
+                </div>
+              );
+
+              // Handle between editor and console — orientation follows the
+              // dock's row/column split; sign follows which side of the
+              // handle the console sits on, so dragging always feels like
+              // dragging *the console's* edge regardless of dock position.
+              const editorConsoleHandle = (
+                <div
+                  key="handle"
+                  onMouseDown={(e) =>
+                    startPanelResize(e, {
+                      axis: isConsoleRow ? "x" : "y",
+                      sign: consoleFirst ? 1 : -1,
+                      size: consoleSize,
+                      setSize: setConsoleSize,
+                      min: isConsoleRow ? 240 : 120,
+                      max: consoleMax(),
+                    })
+                  }
+                  role="separator"
+                  aria-orientation={isConsoleRow ? "vertical" : "horizontal"}
+                  aria-label="Resize console panel"
+                  className={cn(
+                    "flex-shrink-0 hover:bg-accent-500/50 active:bg-accent-500 transition-colors",
+                    isConsoleRow ? "w-1.5 cursor-col-resize" : "h-1.5 cursor-row-resize"
+                  )}
+                />
+              );
+
+              return (
+                <motion.div
+                  key={question.id}
+                  className="h-full flex flex-col"
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+                >
+                  <div ref={codeAreaRef} className="flex-1 flex overflow-hidden min-h-0">
+                    {/* Question panel — its own scroll region; Previous/Next
+                        (or Submit on the last question) are scoped to this
+                        panel's own width at its bottom edge, not floating
+                        under the full-width layout. */}
+                    <div style={{ width: questionPanelWidth }} className="flex-shrink-0 flex flex-col border-r border-border bg-bg-surface min-w-0">
+                      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                        <div className="flex items-center gap-2.5">
+                          <Badge variant="info" className="tnum rounded-[var(--radius-sm)] px-2.5 py-1 text-sm font-semibold">
+                            Q{currentIdx + 1}
+                          </Badge>
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                            Code
+                          </span>
+                        </div>
+                        <h1 className="text-xl font-semibold tracking-tight text-text-primary leading-snug">
+                          {question.question_text}
+                        </h1>
+                        {question.description && (
+                          <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+                            {question.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0 p-4 border-t border-border">
+                        {navButtons}
+                      </div>
+                    </div>
+
+                    {/* Handle: Question panel <-> editor area */}
+                    <div
+                      onMouseDown={(e) =>
+                        startPanelResize(e, {
+                          axis: "x",
+                          sign: 1,
+                          size: questionPanelWidth,
+                          setSize: setQuestionPanelWidth,
+                          min: 260,
+                          max: questionMax(),
+                        })
+                      }
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label="Resize question panel"
+                      className="w-1.5 flex-shrink-0 cursor-col-resize hover:bg-accent-500/50 active:bg-accent-500 transition-colors"
+                    />
+
+                    {/* Editor area: editor + console, order/orientation per dock */}
+                    <div
+                      ref={editorAreaRef}
+                      className={cn("flex-1 min-w-0 min-h-0 flex overflow-hidden", isConsoleRow ? "flex-row" : "flex-col")}
+                    >
+                      {consoleFirst
+                        ? [consoleBlock, editorConsoleHandle, editorBlock]
+                        : [editorBlock, editorConsoleHandle, consoleBlock]}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })() : (
+              <motion.div
+                key={question.id}
+                className="min-h-full flex items-center justify-center px-8 py-10"
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              >
+                {/* MCQ — narrower centered card (question + options + nav all
+                    inside one card), distinct from the full-width code split. */}
+                <div className="w-full max-w-xl bg-bg-surface border border-border rounded-[var(--radius-lg)] p-6 space-y-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <Badge variant="info" className="tnum rounded-[var(--radius-sm)] px-2.5 py-1 text-sm font-semibold">
+                        Q{currentIdx + 1}
+                      </Badge>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                        Multiple Choice
+                      </span>
+                    </div>
+                    <h1 className="text-xl font-semibold tracking-tight text-text-primary leading-snug">
+                      {question.question_text}
+                    </h1>
+                  </div>
+
+                  <RadioGroup
+                    value={
+                      mcqAnswers[question.id] !== undefined
+                        ? String(mcqAnswers[question.id])
+                        : ""
+                    }
+                    onValueChange={(val) =>
+                      setMcqAnswers((prev) => ({ ...prev, [question.id]: parseInt(val) }))
+                    }
+                    className="space-y-3"
                   >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-2" strokeWidth={1.75} />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={submitting}
-                    className="bg-accent-success hover:bg-accent-success/90"
-                  >
-                    {submitting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={1.75} />
-                    ) : null}
-                    Submit Exam
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+                    {(question.options || []).map((opt, oi) => {
+                      const isSelected = mcqAnswers[question.id] === oi;
+                      return (
+                        <Label
+                          key={oi}
+                          htmlFor={`q${question.id}-opt${oi}`}
+                          className={cn(
+                            "flex items-center gap-3.5 p-4 rounded-[var(--radius-md)] border cursor-pointer transition-colors duration-150",
+                            isSelected
+                              ? "bg-accent-500/10 border-accent-500/50"
+                              : "bg-bg-base border-border hover:border-border-hover"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold shrink-0 transition-colors duration-150",
+                              isSelected
+                                ? "bg-accent-700 text-white"
+                                : "bg-bg-elevated border border-border text-text-muted"
+                            )}
+                          >
+                            {["A", "B", "C", "D"][oi]}
+                          </span>
+                          <span className="flex-1 text-sm text-text-primary">{opt}</span>
+                          <RadioGroupItem
+                            value={String(oi)}
+                            id={`q${question.id}-opt${oi}`}
+                            className="size-[18px] shrink-0"
+                          />
+                        </Label>
+                      );
+                    })}
+                  </RadioGroup>
 
-        {/* Right sidebar: question navigator */}
-        <div className="w-56 border-l border-border bg-bg-surface overflow-y-auto flex-shrink-0">
-          <div className="p-4">
-            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
-              Navigator
-            </h3>
-            <div className="grid grid-cols-4 gap-1.5">
-              {questions.map((q, idx) => {
-                const isCurrent = idx === currentIdx;
-                const isAnswered =
-                  q.type === "mcq"
-                    ? mcqAnswers[q.id] !== undefined
-                    : (codeAnswers[q.id] || "").trim().length > 0;
-                return (
-                  <button
-                    key={q.id}
-                    type="button"
-                    onClick={() => setCurrentIdx(idx)}
-                    aria-label={`Question ${idx + 1}${isCurrent ? ", current" : isAnswered ? ", answered" : ", unanswered"}`}
-                    aria-current={isCurrent ? "true" : undefined}
-                    className={`tnum aspect-square rounded-[var(--radius-sm)] flex items-center justify-center text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
-                      isCurrent
-                        ? "bg-accent-700 text-white"
-                        : isAnswered
-                        ? "bg-accent-success/20 border border-accent-success/50 text-accent-success"
-                        : "bg-bg-base border border-border text-text-muted hover:border-accent-info/40"
-                    }`}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 space-y-1.5 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-[var(--radius-sm)] bg-accent-700" />
-                <span className="text-text-secondary">Current</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-[var(--radius-sm)] bg-accent-success/20 border border-accent-success/50" />
-                <span className="text-text-secondary">Answered</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-[var(--radius-sm)] bg-bg-base border border-border" />
-                <span className="text-text-secondary">Unanswered</span>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-border text-xs text-text-muted">
-              <div className="flex justify-between">
-                <span>Answered</span>
-                <span className="tnum text-text-primary">
-                  {totalAnswered}/{questions.length}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+                  {navButtons}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
 
       {/* Re-enter fullscreen overlay (shown when fullscreen exits mid-exam) */}
@@ -889,6 +1172,40 @@ export function ExamScreen() {
           )}
         </div>
       )}
+
+      {/* Submit confirmation — our own dialog, not the browser's native
+          window.confirm, so it matches the app's dark theme/typography
+          instead of an unstyled OS alert. */}
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <AlertDialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-text-primary">
+              Submit your exam?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-text-secondary">
+              This cannot be undone. You won't be able to change any answers after submitting.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-border text-text-secondary hover:bg-bg-elevated bg-transparent">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowSubmitConfirm(false);
+                handleSubmit();
+              }}
+              disabled={submitting}
+              className="bg-accent-success hover:bg-accent-success/90 text-white border-0"
+            >
+              {submitting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={1.75} />
+              ) : null}
+              Submit Exam
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

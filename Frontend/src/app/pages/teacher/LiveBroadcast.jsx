@@ -1,17 +1,18 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext, useLocation } from "react-router";
+import { motion, useReducedMotion } from "motion/react";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { CodeOutputPanel } from "../../components/CodeOutputPanel";
 import { Button } from "../../components/ui/button";
+import { cn } from "../../components/ui/utils";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 import {
   Pause,
   Play,
-  Square,
   Monitor,
   Circle,
   MonitorStop,
@@ -30,6 +31,8 @@ import {
   Calendar,
   Maximize2,
   Minimize2,
+  PhoneOff,
+  Info,
 } from "lucide-react";
 import {
   Dialog,
@@ -75,6 +78,37 @@ const formatTime = (totalSeconds) => {
   const s = totalSeconds % 60;
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 };
+
+// LiveDot — the "this session is live" indicator that sits in front of the
+// timer. Deliberately subtle: a slow dim→glow→dim cycle (opacity + a soft
+// box-shadow bloom), never a hard blink, since it sits directly next to text
+// the teacher needs to read quickly mid-lecture. Falls back to a static dot
+// under prefers-reduced-motion, matching the rest of the app's live-status
+// vocabulary (pulse-dot / live-pulse in theme.css).
+function LiveDot() {
+  const prefersReducedMotion = useReducedMotion();
+
+  if (prefersReducedMotion) {
+    return <span className="w-2 h-2 rounded-full bg-accent-live shrink-0" title="Live" aria-hidden="true" />;
+  }
+
+  return (
+    <motion.span
+      className="w-2 h-2 rounded-full bg-accent-live shrink-0"
+      title="Live"
+      aria-hidden="true"
+      animate={{
+        opacity: [0.55, 1, 0.55],
+        boxShadow: [
+          "0 0 0 0 rgba(21,128,61,0)",
+          "0 0 6px 1px rgba(21,128,61,0.55)",
+          "0 0 0 0 rgba(21,128,61,0)",
+        ],
+      }}
+      transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+    />
+  );
+}
 
 // Build an iframe srcdoc for JS execution.
 // Console methods are overridden to postMessage results to the parent window,
@@ -181,6 +215,7 @@ export function LiveBroadcast() {
   // ── Modal / form state ──────────────────────────────────────────────────────
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const [showSessionInfoDialog, setShowSessionInfoDialog] = useState(false);
   const [formData, setFormData] = useState({
     lectureName: "",
     subject: "",
@@ -317,7 +352,7 @@ export function LiveBroadcast() {
   const [recordingError, setRecordingError] = useState("");
 
   // ── Audio state ─────────────────────────────────────────────────────────────
-  const [micMuted, setMicMuted] = useState(false);
+  const [micMuted, setMicMuted] = useState(true); // muted by default — teacher opts in
   const [micWarning, setMicWarning] = useState(""); // non-empty = mic unavailable
 
   // ── Code editor state ───────────────────────────────────────────────────────
@@ -596,6 +631,13 @@ export function LiveBroadcast() {
       return;
     }
 
+    // Clear the cached password now that the session is over.
+    if (sessionInfoRef.current) {
+      try {
+        sessionStorage.removeItem(`edusync_session_password_${sessionInfoRef.current.id}`);
+      } catch {}
+    }
+
     // REST call succeeded — now emit socket events and tear down local state.
     if (socket && sessionInfoRef.current) {
       // Only emit broadcast_ended if there was an active screen share
@@ -648,7 +690,7 @@ export function LiveBroadcast() {
     setSessionInfo(null);
     sessionInfoRef.current = null;
     setConnectedStudents([]);
-    setMicMuted(false);
+    setMicMuted(true); // muted by default for the next lecture
     setMicWarning("");
     setIsScreenSharing(false);
     setScreenShareError("");
@@ -1065,6 +1107,31 @@ export function LiveBroadcast() {
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
+  // acquireMicStream: idempotent — returns the existing mic stream if one was
+  // already granted, otherwise prompts the OS/browser for microphone permission.
+  // Called as soon as the lecture goes live (not gated behind screen sharing),
+  // so the Mute/Unmute button works immediately rather than only after the
+  // teacher starts a screen share. The track always starts DISABLED (muted) —
+  // students never hear the teacher's mic until the teacher explicitly unmutes.
+  const acquireMicStream = async () => {
+    if (micStreamRef.current) return micStreamRef.current;
+    try {
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStream.getAudioTracks().forEach((t) => { t.enabled = false; });
+      micStreamRef.current = micStream;
+      setMicMuted(true);
+      setMicWarning("");
+      return micStream;
+    } catch (micErr) {
+      setMicWarning(
+        micErr.name === "NotAllowedError"
+          ? "Microphone permission blocked — turn on the microphone permission for this site (browser/OS settings), then click the mic button again."
+          : "Microphone unavailable — broadcasting video only."
+      );
+      return null;
+    }
+  };
+
   const handleOpenSetupModal = () => {
     setFormData({ lectureName: "", subject: "", password: "", labRoom: "LAB 301" });
     setSelectedClassIds([]);
@@ -1113,9 +1180,21 @@ export function LiveBroadcast() {
       };
       sessionInfoRef.current = newSessionInfo;
       setSessionInfo(newSessionInfo);
+      // Cache the password client-side, keyed by session id, so a page refresh
+      // (TeacherLayout's rehydration effect) can still show it in the eye-toggle
+      // instead of the placeholder — the API never returns it since it's not
+      // stored in plaintext server-side.
+      try {
+        sessionStorage.setItem(`edusync_session_password_${data.session.id}`, formData.password);
+      } catch {}
       setShowSetupModal(false);
       setSessionSeconds(0);
       setBroadcastState("live");
+
+      // Grab mic access as soon as the lecture is live, independent of screen
+      // sharing — students already in the room get the audio track once they
+      // connect, and the Mute/Unmute button becomes usable right away.
+      acquireMicStream();
 
       const socket = getSocket();
       if (socket) {
@@ -1345,19 +1424,7 @@ export function LiveBroadcast() {
     }
 
     // Request microphone audio (graceful — mic denied does not abort screen share)
-    if (!micStreamRef.current) {
-      try {
-        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        micStreamRef.current = micStream;
-        setMicWarning("");
-      } catch (micErr) {
-        setMicWarning(
-          micErr.name === "NotAllowedError"
-            ? "Microphone access denied — broadcasting video only."
-            : "Microphone unavailable — broadcasting video only."
-        );
-      }
-    }
+    await acquireMicStream();
 
     const isTrackReusable = screenTrackRef.current && screenTrackRef.current.readyState !== 'ended';
 
@@ -1566,8 +1633,18 @@ export function LiveBroadcast() {
     handleModeSwitch("editor");
   };
 
-  const handleMicToggle = () => {
-    if (!micStreamRef.current) return;
+  const handleMicToggle = async () => {
+    // No mic stream yet (permission never granted, or was denied) — treat the
+    // click as "turn on the microphone": (re)prompt for OS/browser permission,
+    // then unmute immediately since the teacher just explicitly asked for it.
+    if (!micStreamRef.current) {
+      const micStream = await acquireMicStream();
+      if (!micStream) return; // still denied/unavailable — micWarning now explains why
+      micStream.getAudioTracks().forEach((t) => { t.enabled = true; });
+      setMicMuted(false);
+      return;
+    }
+
     const newMuted = !micMuted;
     micStreamRef.current.getAudioTracks().forEach((t) => {
       t.enabled = !newMuted; // true = audible, false = muted
@@ -1863,89 +1940,6 @@ export function LiveBroadcast() {
 
   return (
     <div className="h-full flex flex-col bg-bg-base">
-      {/* ── Top Bar ─────────────────────────────────────────────────────────── */}
-      <div className="px-6 border-b border-border bg-bg-surface flex items-center justify-between gap-4 h-14 flex-shrink-0">
-        {!isBroadcasting ? (
-          <div className="flex items-center gap-3">
-            {loadingTimetable ? (
-              <Skeleton className="h-7 w-56 rounded-[var(--radius-md)]" />
-            ) : currentLecture ? (
-              <button
-                onClick={() => handlePrefillScheduledLecture(currentLecture)}
-                className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-[var(--radius-md)] text-xs text-accent-info font-medium transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] flex items-center gap-2"
-                title="Click to pre-fill lecture setup"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Current Scheduled: <strong className="text-text-primary">{currentLecture.subject || currentLecture.subject_name}</strong> {currentLecture.class_name ? `(${currentLecture.class_name})` : ""}</span>
-                <span className="text-[10px] bg-accent-info/20 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-accent-info font-semibold">Pre-fill</span>
-              </button>
-            ) : (
-              <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
-                <Calendar className="w-3.5 h-3.5 text-text-muted/60" />
-                <span>No Lecture Scheduled</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2.5">
-              <span className="relative flex h-2.5 w-2.5" title="Live">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-accent-live pulse-dot" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent-live" />
-              </span>
-              <span className="tnum font-medium text-sm text-text-primary">
-                {formatTime(sessionSeconds)}
-              </span>
-              <span className="text-xs text-text-secondary font-medium">
-                · {connectedStudents.length} {connectedStudents.length === 1 ? "Student" : "Students"}
-              </span>
-            </div>
-
-            {sessionInfo && (
-              <div className="flex items-center gap-2 px-2.5 py-1 bg-bg-elevated border border-border rounded-[var(--radius-md)] text-xs">
-                <span className="text-text-muted">Password:</span>
-                <span className="tnum font-bold text-text-primary tracking-wider">
-                  {showPassword ? sessionInfo.password : "••••••••"}
-                </span>
-                <button
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="text-text-muted hover:text-text-primary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 p-0.5"
-                  title={showPassword ? "Hide password" : "Show password"}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-3.5 h-3.5" />
-                  ) : (
-                    <Eye className="w-3.5 h-3.5" />
-                  )}
-                </button>
-                <div className="h-3 w-px bg-border my-auto" />
-                <button
-                  onClick={() => {
-                    const msg =
-                      `📚 Live Lab Session is Active!\n\n` +
-                      `Lecture: ${sessionInfo.lectureName}\n` +
-                      `Subject: ${sessionInfo.subject}\n` +
-                      `Lab Room: ${sessionInfo.labRoom}\n` +
-                      `Password: ${sessionInfo.password}\n\n` +
-                      `Log in to the student portal, enter the password, and click "JOIN NOW".`;
-                    handleCopy("topInvite", msg);
-                  }}
-                  className="text-text-muted hover:text-text-primary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 p-0.5 flex items-center gap-1 text-[11px]"
-                  title="Copy session invite message"
-                  aria-label="Copy session invite message"
-                >
-                  {copiedField === "topInvite" ? (
-                    <Check className="w-3.5 h-3.5 text-accent-success" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
       <div className="flex-1 flex overflow-hidden">
         {/* Preview / Editor — the single primary content area; no side panel exists here */}
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
@@ -2032,13 +2026,16 @@ export function LiveBroadcast() {
 
                   <div className="flex-1" />
 
-                  {/* Clear output */}
+                  {/* Clear output — also synced to students, otherwise the
+                      panel stays open on their side after the teacher clears
+                      it locally. */}
                   {outputMode !== "none" && (
                     <button
                       onClick={() => {
                         setOutputMode("none");
                         setConsoleLines([]);
                         setTextOutput("");
+                        emitCodeOutput("none", "", "", []);
                       }}
                       className="h-7 px-2 text-xs text-text-muted hover:text-text-secondary border border-border rounded-[var(--radius-sm)] transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95]"
                     >
@@ -2060,7 +2057,7 @@ export function LiveBroadcast() {
                       <button
                         onClick={handleRunCode}
                         disabled={pyodideLoading}
-                        className="h-7 px-3 text-xs font-medium bg-accent-info hover:bg-accent-info/90 text-white rounded-[var(--radius-sm)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                        className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded-[var(--radius-sm)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
                       >
                         {pyodideLoading ? (
                           <>
@@ -2096,7 +2093,7 @@ export function LiveBroadcast() {
                     minHeight: 0,
                     minWidth: 0,
                     display: "flex",
-                    flexDirection: outputDockPosition === "bottom" ? "column" : "row",
+                    flexDirection: (outputDockPosition === "bottom" || outputDockPosition === "top") ? "column" : "row",
                     overflow: "hidden",
                     position: "relative",
                   }}
@@ -2109,7 +2106,7 @@ export function LiveBroadcast() {
                       minWidth: 0,
                       overflow: "hidden",
                       position: "relative",
-                      order: outputDockPosition === "left" ? 1 : 0,
+                      order: (outputDockPosition === "left" || outputDockPosition === "top") ? 1 : 0,
                     }}
                   >
                     <div
@@ -2178,118 +2175,194 @@ export function LiveBroadcast() {
             )}
           </div>
 
-          {/* ── Control Bar — centered Start Lecture button when idle, full control bar when live ───── */}
+          {/* ── Control Bar ──────────────────────────────────────────────────────
+              Idle: schedule notice (relocated from the removed top bar) sits
+              above a centered "Start Lecture" button — the notice now lives
+              right next to the action it pre-fills, instead of in an isolated
+              header the teacher had to look up at separately.
+
+              Live: THREE separate clusters spread across the row with real gaps
+              between them (not one fused pill), so the eye reads groups instead
+              of one continuous row of equal-weight buttons:
+                1. Status cluster (live dot + timer + info) — left edge, because
+                   it's the thing glanced at most often and reading order starts
+                   left. It's read-only, so it's visually separated (its own
+                   pill, its own background) from anything clickable.
+                2. Primary session actions (Mute / Screen Share / Record) — the
+                   dead-center of the bar, matching the video-call convention
+                   this is deliberately borrowing (Meet/Zoom) so the muscle
+                   memory transfers. These are real labeled buttons (icon +
+                   text) with a visible border/background, distinct from the
+                   icon-only glanceable elements — a teacher mid-lecture needs
+                   to identify them without hovering.
+                3. Participant count + End — right edge, kept close together as
+                   one unit. Count is a low-frequency glance so it stays small
+                   and secondary; End is the one solid-red, highest-stakes
+                   control, isolated at the far edge so it's never in the
+                   accidental-click path of the mic/screen/record cluster a
+                   teacher is toggling rapidly in the center. */}
           <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
             {!isBroadcasting ? (
-              <Button
-                data-tour="teacher-broadcast-start"
-                onClick={handleOpenSetupModal}
-                className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold px-6"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Start Lecture
-              </Button>
-            ) : (
-              <>
-                {/* Session toggles — grouped together, equal visual weight by design */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  {/* Record */}
-                  <Button
-                    data-tour="broadcast-record"
-                    variant="outline"
-                    onClick={handleToggleRecording}
-                    className={
-                      isRecording
-                        ? "border-accent-critical text-accent-critical hover:bg-accent-critical/10"
-                        : "border-border"
-                    }
+              <div className="flex flex-col items-center gap-3">
+                {loadingTimetable ? (
+                  <Skeleton className="h-7 w-56 rounded-[var(--radius-md)]" />
+                ) : currentLecture ? (
+                  <button
+                    onClick={() => handlePrefillScheduledLecture(currentLecture)}
+                    className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-full text-xs text-accent-info font-medium transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] flex items-center gap-2"
+                    title="Click to pre-fill lecture setup"
                   >
-                    <Circle className={`w-4 h-4 mr-2 ${isRecording ? "fill-accent-critical" : ""}`} />
-                    {isRecording ? "Stop Recording" : "Record"}
-                  </Button>
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Current Scheduled: <strong className="text-text-primary">{currentLecture.subject || currentLecture.subject_name}</strong> {currentLecture.class_name ? `(${currentLecture.class_name})` : ""}</span>
+                    <span className="text-[10px] bg-accent-info/20 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-accent-info font-semibold">Pre-fill</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
+                    <Calendar className="w-3.5 h-3.5 text-text-muted/60" />
+                    <span>No Lecture Scheduled</span>
+                  </div>
+                )}
+                <Button
+                  data-tour="teacher-broadcast-start"
+                  onClick={handleOpenSetupModal}
+                  className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold px-7 h-11 rounded-full shadow-[var(--shadow-modal)]"
+                >
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Lecture
+                </Button>
+              </div>
+            ) : (
+              <div className="w-full flex items-center justify-between gap-4 flex-wrap">
+                {/* 1. Status cluster — live dot, timer, info (read-only, own pill) */}
+                <div className="flex items-center gap-2 bg-bg-elevated/90 backdrop-blur border border-border rounded-full pl-3.5 pr-2 py-2 shadow-[var(--shadow-modal)] shrink-0">
+                  <LiveDot />
+                  <span className="tnum font-semibold text-sm text-text-primary" title="Session duration">
+                    {formatTime(sessionSeconds)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSessionInfoDialog(true)}
+                    title="Session info — lecture, subject, password"
+                    aria-label="Session info"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-3 transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
+                  >
+                    <Info className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
-                  {/* Download Recording temporary link */}
+                {/* 2. Primary session actions — Mute / Screen Share / Record, as
+                    real labeled buttons so each is identifiable at a glance. */}
+                <div className="flex items-center gap-2.5 flex-wrap justify-center">
+                  {/* Mic toggle — always shown while live. Muted by default; if
+                      permission hasn't been granted (or was denied), clicking
+                      (re)prompts the OS/browser permission dialog instead of
+                      being disabled, so the teacher always has a way to turn it on. */}
+                  <button
+                    type="button"
+                    onClick={handleMicToggle}
+                    title={
+                      !hasMic
+                        ? micWarning
+                          ? "Microphone permission blocked — enable it in your browser/OS settings, then click to try again"
+                          : "Turn on microphone"
+                        : micMuted
+                        ? "Unmute microphone"
+                        : "Mute microphone"
+                    }
+                    aria-label={!hasMic ? "Turn on microphone" : micMuted ? "Unmute microphone" : "Mute microphone"}
+                    className={cn(
+                      "relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                      !hasMic
+                        ? micWarning
+                          ? "border-accent-warning/40 bg-accent-warning/15 text-accent-warning hover:bg-accent-warning/25"
+                          : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                        : micMuted
+                        ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
+                        : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                    )}
+                  >
+                    {micWarning && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-warning ring-2 ring-bg-elevated" aria-hidden="true" />
+                    )}
+                    {micMuted || !hasMic ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    {!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}
+                  </button>
+
+                  {/* Screen Share toggle */}
+                  <button
+                    data-tour="broadcast-screenshare"
+                    type="button"
+                    onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
+                    title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
+                    aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
+                    className={cn(
+                      "h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                      isScreenSharing
+                        ? "border-accent-700/50 bg-accent-700 text-white hover:bg-accent-700/90"
+                        : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                    )}
+                  >
+                    {isScreenSharing ? <MonitorStop className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
+                    {isScreenSharing ? "Stop Sharing" : "Start Screen Share"}
+                  </button>
+
+                  {/* Record toggle */}
+                  <button
+                    data-tour="broadcast-record"
+                    type="button"
+                    onClick={handleToggleRecording}
+                    title={isRecording ? "Stop recording" : "Start recording"}
+                    aria-label={isRecording ? "Stop recording" : "Start recording"}
+                    className={cn(
+                      "relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                      isRecording
+                        ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
+                        : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                    )}
+                  >
+                    {isRecording && (
+                      <span className="absolute inset-0 rounded-full ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
+                    )}
+                    <Circle className={cn("w-4 h-4", isRecording && "fill-white")} />
+                    {isRecording ? "Stop Recording" : "Record"}
+                  </button>
+
+                  {/* Download Recording — appears only once a finished recording is ready */}
                   {recordingDownloadUrl && recordingState === "off" && (
                     <a
                       href={recordingDownloadUrl}
                       download="session-recording.webm"
-                      className="inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors border border-border rounded-[var(--radius-md)] text-text-primary hover:bg-bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      title="Download Recording"
+                      aria-label="Download Recording"
+                      className="h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]"
                     >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download Recording
+                      <Download className="w-4 h-4" />
+                      Download
                     </a>
                   )}
-
-                  {/* Mic toggle — only if mic was granted */}
-                  {(hasMic || micWarning === "") && (
-                    <Button
-                      variant="outline"
-                      onClick={handleMicToggle}
-                      disabled={!hasMic}
-                      className={
-                        micMuted
-                          ? "border-accent-warning/60 text-accent-warning hover:bg-accent-warning/10"
-                          : micWarning
-                          ? "border-border text-text-muted opacity-50"
-                          : "border-border text-text-secondary hover:bg-bg-elevated"
-                      }
-                      title={
-                        !hasMic
-                          ? "Microphone unavailable"
-                          : micMuted
-                          ? "Unmute microphone"
-                          : "Mute microphone"
-                      }
-                    >
-                      {micMuted || !hasMic ? (
-                        <MicOff className="w-4 h-4 mr-2" />
-                      ) : (
-                        <Mic className="w-4 h-4 mr-2" />
-                      )}
-                      {micMuted ? "Unmute" : "Mute"}
-                    </Button>
-                  )}
-
-                  {/* Screen Share toggle — shown when session is active */}
-                  <Button
-                    data-tour="broadcast-screenshare"
-                    variant="outline"
-                    onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
-                    className={
-                      isScreenSharing
-                        ? "border-accent-info/60 text-accent-info hover:bg-accent-info/10"
-                        : "border-border text-text-secondary hover:bg-bg-elevated"
-                    }
-                    title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
-                  >
-                    {isScreenSharing ? (
-                      <>
-                        <MonitorStop className="w-4 h-4 mr-2" />
-                        Stop Screen Share
-                      </>
-                    ) : (
-                      <>
-                        <Monitor className="w-4 h-4 mr-2" />
-                        Start Screen Share
-                      </>
-                    )}
-                  </Button>
                 </div>
 
-                {/* Divider — separates reversible session toggles from the one
-                    irreversible action, so "End" never reads as just another toggle */}
-                <div className="h-8 w-px bg-border shrink-0" aria-hidden="true" />
-
-                {/* End Broadcast */}
-                <Button
-                  variant="outline"
-                  onClick={() => setShowStopConfirm(true)}
-                  className="border-accent-critical text-accent-critical hover:bg-accent-critical/10"
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  End
-                </Button>
-              </>
+                {/* 3. Participant count + End — right edge, kept close together */}
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-2 bg-bg-elevated/90 backdrop-blur border border-border rounded-full text-xs text-text-secondary font-medium"
+                    title={`${connectedStudents.length} ${connectedStudents.length === 1 ? "student" : "students"} connected`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span className="tnum">{connectedStudents.length}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowStopConfirm(true)}
+                    title="End lecture"
+                    aria-label="End lecture"
+                    className="h-11 px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center gap-2 font-medium text-sm shadow-[var(--shadow-modal)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
+                  >
+                    <PhoneOff className="w-[18px] h-[18px]" />
+                    End
+                  </button>
+                </div>
+              </div>
             )}
           </div>
           {/* Screen share error — shown below control bar */}
@@ -2320,6 +2393,81 @@ export function LiveBroadcast() {
           )}
         </div>
       </div>
+
+      {/* ── Session Info Dialog — low-frequency lookup (lecture/subject/password),
+          reached via the small "i" icon in the bottom bar rather than living
+          permanently on screen. bg-elevated per the app's modal convention. ──── */}
+      <Dialog open={showSessionInfoDialog} onOpenChange={setShowSessionInfoDialog}>
+        <DialogContent data-role="teacher" className="bg-bg-elevated border-border text-text-primary sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-text-primary">Session Info</DialogTitle>
+          </DialogHeader>
+          {sessionInfo && (
+            <div className="flex flex-col gap-4 pt-1">
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                  Lecture Name
+                </div>
+                <div className="text-sm text-text-primary">{sessionInfo.lectureName}</div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                  Subject
+                </div>
+                <div className="text-sm text-text-primary">{sessionInfo.subject}</div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+                  Password
+                </div>
+                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-bg-base border border-border rounded-[var(--radius-md)]">
+                  <span className="tnum font-bold text-text-primary tracking-wider text-sm">
+                    {showPassword ? sessionInfo.password : "••••••••"}
+                  </span>
+                  <button
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="text-text-muted hover:text-text-primary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 p-1 rounded-[var(--radius-sm)] hover:bg-bg-surface-3"
+                    title={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const msg =
+                    `📚 Live Lab Session is Active!\n\n` +
+                    `Lecture: ${sessionInfo.lectureName}\n` +
+                    `Subject: ${sessionInfo.subject}\n` +
+                    `Lab Room: ${sessionInfo.labRoom}\n` +
+                    `Password: ${sessionInfo.password}\n\n` +
+                    `Log in to the student portal, enter the password, and click "JOIN NOW".`;
+                  handleCopy("sessionInfoPassword", msg);
+                }}
+                className="w-full justify-center gap-2 border-border text-text-secondary hover:text-text-primary hover:bg-bg-surface-3"
+              >
+                {copiedField === "sessionInfoPassword" ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-accent-success" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    Copy Invite Message
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ── Session Setup Modal ──────────────────────────────────────────────── */}
       <Dialog open={showSetupModal} onOpenChange={setShowSetupModal}>

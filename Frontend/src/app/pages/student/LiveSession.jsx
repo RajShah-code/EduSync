@@ -1122,7 +1122,7 @@ export function LiveSession() {
                       minHeight: 0,
                       minWidth: 0,
                       display: "flex",
-                      flexDirection: (editingEnabled ? studentOutputDockPosition : mirroredOutputDockPosition) === "bottom" ? "column" : "row",
+                      flexDirection: ["bottom", "top"].includes(editingEnabled ? studentOutputDockPosition : mirroredOutputDockPosition) ? "column" : "row",
                       overflow: "hidden",
                       position: "relative",
                     }}
@@ -1135,7 +1135,7 @@ export function LiveSession() {
                         minWidth: 0,
                         overflow: "hidden",
                         position: "relative",
-                        order: (editingEnabled ? studentOutputDockPosition : mirroredOutputDockPosition) === "left" ? 1 : 0,
+                        order: ["left", "top"].includes(editingEnabled ? studentOutputDockPosition : mirroredOutputDockPosition) ? 1 : 0,
                       }}
                     >
                       <div

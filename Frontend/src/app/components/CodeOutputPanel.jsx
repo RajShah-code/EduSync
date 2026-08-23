@@ -3,6 +3,7 @@ import {
   PanelBottom,
   PanelRight,
   PanelLeft,
+  PanelTop,
   ChevronDown,
 } from "lucide-react";
 
@@ -55,15 +56,18 @@ export function CodeOutputPanel({
 
       if (dockPosition === "bottom") {
         delta = startY - moveEvent.clientY; // Dragging up increases height
+      } else if (dockPosition === "top") {
+        delta = moveEvent.clientY - startY; // Dragging down increases height
       } else if (dockPosition === "right") {
         delta = startX - moveEvent.clientX; // Dragging left increases width
       } else if (dockPosition === "left") {
         delta = moveEvent.clientX - startX; // Dragging right increases width
       }
 
+      const isColumn = dockPosition === "bottom" || dockPosition === "top";
       const parentEl = panelRef.current?.parentElement;
       const parentLimit = parentEl
-        ? (dockPosition === "bottom" ? parentEl.clientHeight : parentEl.clientWidth) * 0.7
+        ? (isColumn ? parentEl.clientHeight : parentEl.clientWidth) * 0.7
         : 600;
 
       const newSize = Math.max(120, Math.min(parentLimit, startSize + delta));
@@ -83,6 +87,9 @@ export function CodeOutputPanel({
   const getResizeHandleStyle = () => {
     if (dockPosition === "bottom") {
       return "absolute top-0 left-0 right-0 h-1.5 cursor-row-resize hover:bg-accent-info/50 active:bg-accent-info z-20 -translate-y-1/2";
+    }
+    if (dockPosition === "top") {
+      return "absolute bottom-0 left-0 right-0 h-1.5 cursor-row-resize hover:bg-accent-info/50 active:bg-accent-info z-20 translate-y-1/2";
     }
     if (dockPosition === "right") {
       return "absolute top-0 bottom-0 left-0 w-1.5 cursor-col-resize hover:bg-accent-info/50 active:bg-accent-info z-20 -translate-x-1/2";
@@ -109,6 +116,8 @@ export function CodeOutputPanel({
       className={`relative flex flex-col bg-bg-base border-border select-none overflow-hidden ${
         dockPosition === "bottom"
           ? "border-t"
+          : dockPosition === "top"
+          ? "border-b"
           : dockPosition === "right"
           ? "border-l"
           : "border-r"
@@ -133,6 +142,11 @@ export function CodeOutputPanel({
               {dockPosition === "bottom" && (
                 <>
                   <PanelBottom className="w-3 h-3 text-accent-info" /> Dock Bottom
+                </>
+              )}
+              {dockPosition === "top" && (
+                <>
+                  <PanelTop className="w-3 h-3 text-accent-info" /> Dock Top
                 </>
               )}
               {dockPosition === "right" && (
@@ -161,6 +175,18 @@ export function CodeOutputPanel({
                   }`}
                 >
                   <PanelBottom className="w-3.5 h-3.5" /> Dock Bottom
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDockChange("top");
+                    setIsDockMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                    dockPosition === "top" ? "text-accent-info font-bold" : "text-text-primary"
+                  }`}
+                >
+                  <PanelTop className="w-3.5 h-3.5" /> Dock Top
                 </button>
                 <button
                   type="button"
