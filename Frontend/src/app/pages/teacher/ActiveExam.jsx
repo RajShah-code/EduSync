@@ -24,6 +24,7 @@ import {
   Loader2,
   Users,
   ChevronRight,
+  ArrowLeft,
   X,
   Clock,
 } from "lucide-react";
@@ -386,6 +387,7 @@ export function ActiveExam() {
   };
   const filteredAttempts =
     statusFilter === "all" ? studentAttempts : studentAttempts.filter((a) => a.status === statusFilter);
+  const isTimeCritical = secondsRemaining !== null && secondsRemaining > 0 && secondsRemaining < 300;
 
   if (loading) {
     return (
@@ -439,18 +441,42 @@ export function ActiveExam() {
       {/* Top bar */}
       <div className="px-6 py-4 border-b border-border bg-bg-surface flex-shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-text-primary">{exam.title}</h1>
-            <p className="text-[11px] text-text-muted tnum mt-0.5 uppercase tracking-[0.08em]">
-              {exam.question_type} · {exam.num_sets} set(s) · {exam.time_limit_minutes} min ·
-              limit {exam.violation_limit} violation(s)
-            </p>
+          <div className="flex items-start gap-3 min-w-0">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => navigate("/teacher/exam/create", { state: { tab: "manage" } })}
+              aria-label="Back to Exam Manager"
+              className="flex-shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
+            </Button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <h1 className="text-lg font-semibold text-text-primary truncate">{exam.title}</h1>
+                <StatusBadge status="exam-live" />
+              </div>
+              <p className="text-[11px] text-text-muted tnum mt-1 uppercase tracking-[0.08em]">
+                {exam.question_type} · {exam.num_sets} set(s) · {exam.time_limit_minutes} min ·
+                limit {exam.violation_limit} violation(s)
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-5">
             {secondsRemaining !== null && (
-              <div className="flex items-center gap-2 pl-3 pr-3.5 py-1.5 rounded-full border border-border bg-bg-elevated">
-                <Clock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+              <div
+                className={cn(
+                  "flex items-center gap-2 pl-3 pr-3.5 py-1.5 rounded-full border transition-colors duration-300",
+                  isTimeCritical
+                    ? "border-accent-critical/40 bg-accent-critical/10"
+                    : "border-border bg-bg-elevated"
+                )}
+              >
+                <Clock
+                  className={cn("w-4 h-4 transition-colors duration-300", isTimeCritical ? "text-accent-critical" : "text-text-muted")}
+                  strokeWidth={1.75}
+                />
                 <Timer seconds={secondsRemaining} size="lg" className="font-sans" />
               </div>
             )}
@@ -458,9 +484,17 @@ export function ActiveExam() {
               <div className="text-[10px] text-text-muted mb-0.5 uppercase tracking-[0.08em]">
                 Submitted
               </div>
-              <div className="text-lg tnum font-semibold text-text-primary leading-none">
-                {submitted} / {total}
-              </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={submitted}
+                  initial={prefersReducedMotion ? false : { opacity: 0.5, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.22, ease: [0.23, 1, 0.32, 1] }}
+                  className="text-lg tnum font-semibold text-text-primary leading-none"
+                >
+                  {submitted} / {total}
+                </motion.div>
+              </AnimatePresence>
             </div>
             <div className="h-8 w-px bg-border" aria-hidden="true" />
             <div className="flex gap-2">

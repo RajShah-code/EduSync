@@ -49,6 +49,16 @@ export function TeacherLayout() {
     return () => document.documentElement.classList.remove("app-shell-active");
   }, []);
 
+  // Mirrors the [data-role] scope onto <body> so role-accent CSS variables
+  // (--accent-500, --ring, --primary, ...) still resolve correctly inside
+  // Radix Dialog/AlertDialog content, which portals to document.body and
+  // would otherwise sit outside the [data-role="teacher"] wrapper div and
+  // fall back to :root's default (student orange).
+  useEffect(() => {
+    document.body.setAttribute("data-role", "teacher");
+    return () => document.body.removeAttribute("data-role");
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("edusync_token");
     localStorage.removeItem("edusync_user");

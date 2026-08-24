@@ -7,7 +7,8 @@ import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useNavigate } from "react-router";
-import { User, Key, HelpCircle, Calendar } from "lucide-react";
+import { User, Key, HelpCircle } from "lucide-react";
+import PageShell from "../../components/PageShell";
 
 export function TeacherSettings() {
   const navigate = useNavigate();
@@ -128,48 +129,50 @@ export function TeacherSettings() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6 max-w-4xl">
+      <PageShell>
         <div className="space-y-2">
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-4 w-80" />
         </div>
-        {[0, 1].map((i) => (
-          <div key={i} className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
-            <div className="space-y-1.5">
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-3 w-48" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[0, 1].map((i) => (
+            <div key={i} className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+              <div className="space-y-3 pt-2">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+              <Skeleton className="h-9 w-28" />
             </div>
-            <div className="space-y-3 pt-2 max-w-md">
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-            <Skeleton className="h-9 w-28" />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </PageShell>
     );
   }
 
   if (loadError) {
     return (
-      <div className="p-6 max-w-4xl">
+      <PageShell>
         <h1 className="text-2xl font-semibold text-text-primary mb-4">Settings</h1>
         <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
           <p className="text-sm text-text-secondary">Couldn't load your profile settings.</p>
           <button
             type="button"
             onClick={fetchUser}
-            className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-[transform,background-color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
           >
             Try again
           </button>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <PageShell>
       <div>
         <h1 className="text-2xl font-semibold text-text-primary">Settings</h1>
         <p className="text-sm text-text-secondary mt-1">
@@ -177,24 +180,24 @@ export function TeacherSettings() {
         </p>
       </div>
 
-      {/* Sections 1 &amp; 2: Profile &amp; Change Password — two genuinely equivalent,
-          independent forms, paired side-by-side on wide viewports (matches
+      {/* Profile & Change Password — two genuinely equivalent, independent
+          forms, paired side-by-side on wide viewports (matches
           StudentSettings.jsx's identical structural decision). */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        <Card className="h-full flex flex-col justify-between">
+        <Card className="bg-bg-surface border-border h-full flex flex-col justify-between">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <User className="h-5 w-5 text-accent-500" /> Profile
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+              <User className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Profile
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs text-text-secondary">
               View and update your profile information.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-between">
             <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-xs font-semibold text-text-primary">Name</Label>
                   <Input
                     id="name"
                     type="text"
@@ -204,8 +207,8 @@ export function TeacherSettings() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs font-semibold text-text-primary">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -216,7 +219,11 @@ export function TeacherSettings() {
                 </div>
               </div>
               <div className="pt-2">
-                <Button type="submit" disabled={savingProfile}>
+                <Button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium text-xs"
+                >
                   {savingProfile ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
@@ -224,20 +231,20 @@ export function TeacherSettings() {
           </CardContent>
         </Card>
 
-        <Card className="h-full flex flex-col justify-between">
+        <Card className="bg-bg-surface border-border h-full flex flex-col justify-between">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Key className="h-5 w-5 text-accent-500" /> Change Password
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+              <Key className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Change Password
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs text-text-secondary">
               Update your account password.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 flex flex-col justify-between">
             <form onSubmit={handleChangePassword} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="currentPassword" className="text-xs font-semibold text-text-primary">Current Password</Label>
                   <Input
                     id="currentPassword"
                     type="password"
@@ -247,8 +254,8 @@ export function TeacherSettings() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="newPassword" className="text-xs font-semibold text-text-primary">New Password</Label>
                   <Input
                     id="newPassword"
                     type="password"
@@ -258,8 +265,8 @@ export function TeacherSettings() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword" className="text-xs font-semibold text-text-primary">Confirm New Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -271,7 +278,11 @@ export function TeacherSettings() {
                 </div>
               </div>
               <div className="pt-2">
-                <Button type="submit" disabled={savingPassword}>
+                <Button
+                  type="submit"
+                  disabled={savingPassword}
+                  className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium text-xs"
+                >
                   {savingPassword ? "Updating..." : "Update Password"}
                 </Button>
               </div>
@@ -280,56 +291,34 @@ export function TeacherSettings() {
         </Card>
       </div>
 
-      {/* Section 3: Timetable Management */}
-      <Card>
+      {/* App Tour — the Weekly Timetable shortcut card that used to live
+          here was removed as redundant: Timetable already has its own
+          sidebar nav entry ("Timetable" → /teacher/timetable), so Settings
+          doesn't need a second entry point to the same destination. */}
+      <Card className="bg-bg-surface border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5 text-accent-info" /> Weekly Timetable
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+            <HelpCircle className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> App Tour
           </CardTitle>
-          <CardDescription>
-            Configure or edit your recurring weekly teaching timetable and email reminder preferences.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-text-secondary mb-4">
-            Use the conversational setup wizard to customize your day-by-day class schedule and automated broadcast reminders.
-          </p>
-          <Button
-            type="button"
-            onClick={() => navigate("/teacher/timetable")}
-            className="flex items-center gap-2 bg-accent-700 hover:bg-accent-700/90 text-white"
-          >
-            <Calendar className="h-4 w-4" />
-            Edit Timetable Wizard
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Section 4: App Tour */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <HelpCircle className="h-5 w-5 text-accent-500" /> App Tour
-          </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs text-text-secondary">
             Replay the guided feature tour for your role.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <p className="text-xs text-text-secondary mb-4">
+        <CardContent className="space-y-4">
+          <p className="text-xs text-text-secondary">
             Need a refresher on how to navigate EduSync? Launch the interactive spotlight tour anytime.
           </p>
           <Button
             type="button"
             variant="outline"
             onClick={() => navigate("/teacher", { state: { startTour: true } })}
-            className="flex items-center gap-2"
+            className="flex items-center gap-1.5 text-xs"
           >
-            <HelpCircle className="h-4 w-4 text-accent-info" />
+            <HelpCircle className="h-3.5 w-3.5 text-accent-500" strokeWidth={1.75} />
             Restart Tour
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   );
 }

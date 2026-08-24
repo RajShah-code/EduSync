@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { useOutletContext, useNavigate } from "react-router";
+import { useOutletContext, useNavigate, useLocation } from "react-router";
+import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -8,6 +9,7 @@ import { Badge } from "../../components/ui/badge";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Textarea } from "../../components/ui/textarea";
+import { cn } from "../../components/ui/utils";
 import {
   Dialog,
   DialogContent,
@@ -25,8 +27,15 @@ import {
   CheckSquare,
   Play,
   Loader2,
-  Clock,
   Check,
+  Search,
+  AlertTriangle,
+  SlidersHorizontal,
+  Radio,
+  BarChart2,
+  Edit3,
+  Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
@@ -40,10 +49,112 @@ const QUESTION_TYPES = [
 const LANGUAGES = ["javascript", "python", "java", "cpp", "c"];
 
 const SETUP_STEPS = [
-  { id: 1, label: "Settings" },
-  { id: 2, label: "Questions" },
-  { id: 3, label: "Start" },
+  { id: 1, label: "Exam Settings", desc: "Core configuration" },
+  { id: 2, label: "Questions", desc: "Add exam content" },
+  { id: 3, label: "Review & Start", desc: "Confirm and launch" },
 ];
+
+const MANAGE_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "draft", label: "Draft" },
+  { key: "active", label: "Active" },
+  { key: "ended", label: "Ended" },
+];
+
+// Groups the two pre-launch exam statuses (draft, waiting_room) under one
+// "Draft" filter bucket — StatusBadge still tells them apart on the card
+// itself, this is just the coarser filter grain the wizard needs.
+function manageFilterKeyOf(status) {
+  if (status === "draft" || status === "waiting_room") return "draft";
+  return status;
+}
+
+// Small-caps breadcrumb + display heading used at the top of each wizard
+// step's content card — the one piece of the reference's visual language
+// that lives inside the step card rather than the page-level header.
+function StepHeader({ index, total, title, subtitle }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-[0.12em]">
+        <span>Exam Creation Wizard</span>
+        <ChevronRight className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+        <span className="text-accent-500">Step {index} of {total}</span>
+      </div>
+      <h2 className="text-xl font-bold text-text-primary tracking-[-0.01em] mt-1.5">{title}</h2>
+      {subtitle && <p className="text-sm text-text-secondary mt-1">{subtitle}</p>}
+    </div>
+  );
+}
+
+// Individual exam card for the Manage Exams grid — identity + status up top,
+// a real-data metric grid (only fields the /my-exams endpoint actually
+// returns — no fabricated candidate/violation counts), one contextual
+// action per status matching handleExamClick's existing routing.
+function ExamManageCard({ exam, onOpen }) {
+  const isActive = exam.status === "active";
+  const isEnded = exam.status === "ended";
+  const isWaiting = exam.status === "waiting_room";
+
+  const actionLabel = isActive ? "Monitor Live" : isEnded ? "View Results" : isWaiting ? "Manage Exam" : "Edit Draft";
+  const ActionIcon = isActive ? Radio : isEnded ? BarChart2 : isWaiting ? Users : Edit3;
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-4 p-5 bg-bg-surface border rounded-[var(--radius-lg)] card-hover h-full",
+        isActive ? "border-accent-live/30" : "border-border"
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className="text-[10px] tnum font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-[var(--radius-sm)] border border-border bg-bg-base text-text-muted">
+          {exam.question_type}
+        </span>
+        <StatusBadge status={exam.status} />
+      </div>
+
+      <h4 className="text-base font-semibold text-text-primary leading-snug" title={exam.title}>
+        {exam.title}
+      </h4>
+
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Duration</div>
+          <div className="text-sm tnum font-medium text-text-primary mt-0.5">{exam.time_limit_minutes}m</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Sets</div>
+          <div className="text-sm tnum font-medium text-text-primary mt-0.5">
+            {exam.num_sets} variant{exam.num_sets === 1 ? "" : "s"}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Violation Limit</div>
+          <div className="text-sm tnum font-medium text-text-primary mt-0.5">{exam.violation_limit}</div>
+        </div>
+        <div>
+          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Created</div>
+          <div className="text-sm tnum font-medium text-text-primary mt-0.5">
+            {new Date(exam.created_at).toLocaleDateString()}
+          </div>
+        </div>
+      </div>
+
+      <Button
+        onClick={() => onOpen(exam)}
+        size="sm"
+        className={cn(
+          "mt-auto w-full",
+          isActive
+            ? "bg-accent-live hover:bg-accent-live/90 text-white"
+            : "bg-transparent border border-border text-text-primary hover:bg-bg-surface-3"
+        )}
+      >
+        <ActionIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+        {actionLabel}
+      </Button>
+    </div>
+  );
+}
 
 const emptyMcq = () => ({
   type: "mcq",
@@ -65,6 +176,7 @@ export function ExamCreation() {
   const context = useOutletContext();
   const sessionInfo = context?.sessionInfo ?? null;
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -85,6 +197,44 @@ export function ExamCreation() {
   const [classes, setClasses] = useState([]);
   const [selectedClassIds, setSelectedClassIds] = useState([]);
   const [examOpened, setExamOpened] = useState(false);
+  const [classSearch, setClassSearch] = useState("");
+  const [waitingCount, setWaitingCount] = useState(0);
+
+  // Fetches the live waiting-room count once opened (initial load / when
+  // revisiting via Manage Exams) — live updates after that come from
+  // exam:waiting_count_update below.
+  useEffect(() => {
+    if (!examOpened || !examId) return;
+    let active = true;
+    const fetchWaitingCount = async () => {
+      try {
+        const token = localStorage.getItem("edusync_token");
+        const res = await fetch(`${API_BASE_URL}/exams/${examId}/waiting-count`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok && active) {
+          const data = await res.json();
+          setWaitingCount(data.count ?? 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch waiting-room count:", err);
+      }
+    };
+    fetchWaitingCount();
+    return () => { active = false; };
+  }, [examOpened, examId]);
+
+  useEffect(() => {
+    if (!examId) return;
+    const socket = getSocket();
+    if (!socket) return;
+    const handleWaitingCount = ({ examId: eId, count }) => {
+      if (parseInt(eId) !== parseInt(examId)) return;
+      setWaitingCount(count);
+    };
+    socket.on("exam:waiting_count_update", handleWaitingCount);
+    return () => socket.off("exam:waiting_count_update", handleWaitingCount);
+  }, [examId]);
 
   // Fetch classes on mount
   useEffect(() => {
@@ -105,9 +255,12 @@ export function ExamCreation() {
     fetchClasses();
   }, []);
 
-  const [activeTab, setActiveTab] = useState("create"); // "create" | "manage"
+  const [activeTab, setActiveTab] = useState(
+    location.state?.tab === "manage" ? "manage" : "create"
+  ); // "create" | "manage"
   const [myExams, setMyExams] = useState([]);
   const [loadingExams, setLoadingExams] = useState(false);
+  const [manageFilter, setManageFilter] = useState("all");
 
   const fetchMyExams = async () => {
     setLoadingExams(true);
@@ -152,6 +305,7 @@ export function ExamCreation() {
         setExamId(data.exam.id);
         setSelectedClassIds(data.exam.class_ids || []);
         setExamOpened(data.exam.status === "waiting_room");
+        setWaitingCount(0);
 
         // Reconstruct setQuestions: { [setNumber]: questions[] }
         const questionsMap = {};
@@ -326,6 +480,19 @@ export function ExamCreation() {
   const isDraftMcq = draft?.type === "mcq";
   const isDraftCode = draft?.type === "code";
 
+  const manageFilterCounts = {
+    all: myExams.length,
+    draft: myExams.filter((e) => manageFilterKeyOf(e.status) === "draft").length,
+    active: myExams.filter((e) => e.status === "active").length,
+    ended: myExams.filter((e) => e.status === "ended").length,
+  };
+  const filteredMyExams =
+    manageFilter === "all" ? myExams : myExams.filter((e) => manageFilterKeyOf(e.status) === manageFilter);
+
+  const filteredClasses = classes.filter((c) =>
+    c.name.toLowerCase().includes(classSearch.trim().toLowerCase())
+  );
+
   return (
     <PageShell>
       {/* Header + page-mode tab strip — the same browser-tab pattern used for
@@ -341,20 +508,18 @@ export function ExamCreation() {
           </p>
         </div>
 
-        <div
-          className="h-11 px-1.5 pt-1.5 bg-bg-surface border border-border border-b-0 rounded-t-[var(--radius-md)] flex items-end gap-1 flex-shrink-0"
-          role="tablist"
-          aria-label="Exam manager view"
-        >
+        {/* Segmented tab control — same pattern as Task Manager's Assign/Active
+            Tasks toggle (TaskAssignment.jsx), not the browser-tab strip used
+            for the session-tabs elsewhere on this page. */}
+        <div className="flex bg-bg-surface p-1 rounded-[var(--radius-md)] border border-border flex-shrink-0">
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === "create"}
             onClick={() => setActiveTab("create")}
-            className={`flex items-center gap-1.5 px-3.5 h-9 rounded-t-[var(--radius-md)] text-xs font-semibold whitespace-nowrap transition-colors duration-150 ${
+            aria-pressed={activeTab === "create"}
+            className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
               activeTab === "create"
-                ? "bg-bg-base text-text-primary"
-                : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
+                ? "bg-accent-info text-white"
+                : "text-text-secondary hover:text-text-primary"
             }`}
           >
             <Plus className="w-3.5 h-3.5" strokeWidth={1.75} />
@@ -362,103 +527,33 @@ export function ExamCreation() {
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected={activeTab === "manage"}
             onClick={() => setActiveTab("manage")}
-            className={`flex items-center gap-1.5 px-3.5 h-9 rounded-t-[var(--radius-md)] text-xs font-semibold whitespace-nowrap transition-colors duration-150 ${
+            aria-pressed={activeTab === "manage"}
+            className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
               activeTab === "manage"
-                ? "bg-bg-base text-text-primary"
-                : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
+                ? "bg-accent-info text-white"
+                : "text-text-secondary hover:text-text-primary"
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" strokeWidth={1.75} />
-            Manage Exams
-            {myExams.length > 0 && (
-              <span className="tnum text-[10px] px-1.5 py-0.5 rounded-full bg-bg-elevated text-text-muted">
-                {myExams.length}
-              </span>
-            )}
+            Manage Exams ({myExams.length})
           </button>
         </div>
       </div>
 
       {activeTab === "create" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
-          {/* Left: Step indicator + summary — a sequential authoring flow, not
-              a set of parallel items, so this stays step-based rather than
-              becoming a tab strip (the parallel-items pattern doesn't fit a
-              linear "settings → questions → start" task). */}
-          <div className="space-y-4">
-            <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
-              <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-3">
-                Setup Steps
-              </h3>
-              <div className="space-y-1">
-                {SETUP_STEPS.map((s) => (
-                  <div
-                    key={s.id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors duration-150 ${
-                      step === s.id
-                        ? "bg-accent-500/10 border border-accent-500/25 text-accent-500 font-medium"
-                        : step > s.id
-                        ? "text-accent-success"
-                        : "text-text-muted"
-                    }`}
-                  >
-                    <span
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] tnum flex-shrink-0 ${
-                        step > s.id
-                          ? "bg-accent-success text-white"
-                          : step === s.id
-                          ? "bg-accent-700 text-white"
-                          : "bg-bg-base border border-border text-text-muted"
-                      }`}
-                    >
-                      {step > s.id ? <Check className="w-3 h-3" strokeWidth={2.5} /> : s.id}
-                    </span>
-                    {s.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] text-sm space-y-2">
-              <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-2">
-                Summary
-              </h3>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Type</span>
-                <span className="tnum text-text-primary uppercase text-xs">
-                  {settings.question_type}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Sets</span>
-                <span className="tnum text-text-primary">{settings.num_sets}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Duration</span>
-                <span className="tnum text-text-primary">
-                  {settings.time_limit_minutes}m
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Violations</span>
-                <span className="tnum text-text-primary">{settings.violation_limit}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Questions</span>
-                <span className="tnum text-text-primary">{totalQuestions}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Step content */}
-          <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+          {/* Left: step content */}
+          <div className="relative bg-bg-surface border border-border rounded-[var(--radius-lg)] p-6 pb-0 flex flex-col">
             {/* ── STEP 1: Settings ── */}
             {step === 1 && (
-              <div className="space-y-5">
-                <h2 className="text-lg font-semibold text-text-primary">Exam Settings</h2>
+              <div className="space-y-6 pb-6">
+                <StepHeader
+                  index={1}
+                  total={3}
+                  title="Exam Settings"
+                  subtitle="Configure the core parameters and structural elements of your new assessment session."
+                />
 
                 <div>
                   <Label htmlFor="exam-title">Exam Title</Label>
@@ -472,157 +567,158 @@ export function ExamCreation() {
                 </div>
 
                 <div>
-                  <Label>Question Type</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                    {QUESTION_TYPES.map(({ value, label, icon: Icon, desc }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => setSettings({ ...settings, question_type: value })}
-                        className={`p-3 rounded-[var(--radius-md)] border text-left transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] ${
-                          settings.question_type === value
-                            ? "border-accent-500/60 bg-accent-500/10"
-                            : "border-border bg-bg-base hover:border-border-hover"
-                        }`}
-                      >
-                        <Icon
-                          className={`w-5 h-5 mb-1.5 ${
-                            settings.question_type === value ? "text-accent-500" : "text-text-muted"
-                          }`}
-                          strokeWidth={1.75}
-                        />
-                        <div
-                          className={`text-sm font-medium ${
-                            settings.question_type === value ? "text-accent-500" : "text-text-primary"
-                          }`}
-                        >
-                          {label}
-                        </div>
-                        <div className="text-xs text-text-muted mt-0.5">{desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Target Classes</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                    {classes.map((cls) => {
-                      const isSelected = selectedClassIds.includes(cls.id);
+                  <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-2">
+                    <CheckSquare className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
+                    Question Format
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {QUESTION_TYPES.map(({ value, label, icon: Icon, desc }) => {
+                      const isSelected = settings.question_type === value;
                       return (
                         <button
-                          key={cls.id}
+                          key={value}
                           type="button"
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedClassIds(selectedClassIds.filter((id) => id !== cls.id));
-                            } else {
-                              setSelectedClassIds([...selectedClassIds, cls.id]);
-                            }
-                          }}
-                          className={`p-3 rounded-[var(--radius-md)] border text-left transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] flex items-center gap-3 ${
+                          onClick={() => setSettings({ ...settings, question_type: value })}
+                          aria-pressed={isSelected}
+                          className={`relative p-3.5 rounded-[var(--radius-md)] border text-left transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] ${
                             isSelected
                               ? "border-accent-500/60 bg-accent-500/10"
                               : "border-border bg-bg-base hover:border-border-hover"
                           }`}
                         >
                           <span
-                            className={`w-4 h-4 rounded-[var(--radius-sm)] border flex items-center justify-center flex-shrink-0 ${
-                              isSelected ? "bg-accent-700 border-accent-700" : "border-border"
+                            className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150 ${
+                              isSelected ? "border-accent-500" : "border-border"
                             }`}
                             aria-hidden="true"
                           >
-                            {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
+                            {isSelected && <span className="w-2 h-2 rounded-full bg-accent-500" />}
                           </span>
-                          <span className="text-sm font-medium text-text-primary">{cls.name}</span>
+                          <Icon
+                            className={`w-5 h-5 mb-1.5 ${
+                              isSelected ? "text-accent-500" : "text-text-muted"
+                            }`}
+                            strokeWidth={1.75}
+                          />
+                          <div
+                            className={`text-sm font-medium pr-4 ${
+                              isSelected ? "text-accent-500" : "text-text-primary"
+                            }`}
+                          >
+                            {label}
+                          </div>
+                          <div className="text-xs text-text-muted mt-0.5 pr-4">{desc}</div>
                         </button>
                       );
                     })}
                   </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                      <Users className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
+                      Target Classes
+                    </h3>
+                    <span className="text-[10px] text-text-muted uppercase tracking-[0.08em]">
+                      Select multiple
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 p-3 bg-bg-base border border-border rounded-[var(--radius-md)] min-h-[52px]">
+                    {selectedClassIds.length === 0 && (
+                      <span className="text-xs text-text-muted italic self-center">
+                        No classes selected yet
+                      </span>
+                    )}
+                    {classes
+                      .filter((c) => selectedClassIds.includes(c.id))
+                      .map((cls) => (
+                        <span
+                          key={cls.id}
+                          className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-[var(--radius-pill)] bg-accent-500/15 border border-accent-500/30 text-accent-500 text-xs font-medium"
+                        >
+                          {cls.name}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedClassIds(selectedClassIds.filter((id) => id !== cls.id))
+                            }
+                            aria-label={`Remove ${cls.name}`}
+                            className="hover:text-accent-critical transition-colors"
+                          >
+                            <X className="w-3 h-3" strokeWidth={2.25} />
+                          </button>
+                        </span>
+                      ))}
+                  </div>
+
+                  <div className="relative mt-2">
+                    <Search
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                      strokeWidth={1.75}
+                    />
+                    <Input
+                      value={classSearch}
+                      onChange={(e) => setClassSearch(e.target.value)}
+                      placeholder="Search for more classes..."
+                      className="pl-9 bg-bg-base border-border"
+                    />
+                  </div>
+
+                  {filteredClasses.filter((c) => !selectedClassIds.includes(c.id)).length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {filteredClasses
+                        .filter((c) => !selectedClassIds.includes(c.id))
+                        .map((cls) => (
+                          <button
+                            key={cls.id}
+                            type="button"
+                            onClick={() => setSelectedClassIds([...selectedClassIds, cls.id])}
+                            className="inline-flex items-center gap-1 pl-2.5 pr-3 py-1 rounded-[var(--radius-pill)] border border-border text-text-secondary text-xs hover:border-accent-500/50 hover:text-accent-500 transition-colors duration-150"
+                          >
+                            <Plus className="w-3 h-3" strokeWidth={2.25} />
+                            {cls.name}
+                          </button>
+                        ))}
+                    </div>
+                  )}
                   {classes.length === 0 && (
                     <p className="text-xs text-text-muted mt-1">No classes found. Please create classes first.</p>
                   )}
                 </div>
+              </div>
+            )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="num-sets">Question Sets</Label>
-                    <Input
-                      id="num-sets"
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={settings.num_sets}
-                      onChange={(e) =>
-                        setSettings({ ...settings, num_sets: parseInt(e.target.value) || 1 })
-                      }
-                      className="mt-1 bg-bg-base border-border tnum"
-                    />
-                    <p className="text-xs text-text-muted mt-1">
-                      Different versions of the exam
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor="time-limit">Duration (min)</Label>
-                    <Input
-                      id="time-limit"
-                      type="number"
-                      min={1}
-                      value={settings.time_limit_minutes}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          time_limit_minutes: parseInt(e.target.value) || 30,
-                        })
-                      }
-                      className="mt-1 bg-bg-base border-border tnum"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="violation-limit">Violation Limit</Label>
-                    <Input
-                      id="violation-limit"
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={settings.violation_limit}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          violation_limit: parseInt(e.target.value) || 3,
-                        })
-                      }
-                      className="mt-1 bg-bg-base border-border tnum"
-                    />
-                    <p className="text-xs text-text-muted mt-1">Auto-locks after this many</p>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <Button
-                    onClick={handleCreateExam}
-                    disabled={saving || !settings.title.trim()}
-                  >
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
-                    )}
-                    Create &amp; Continue to Questions
-                  </Button>
-                </div>
+            {/* Sticky footer CTA — pins to the bottom of the viewport while
+                the step content scrolls above it, matching the reference's
+                always-reachable primary action. */}
+            {step === 1 && (
+              <div className="sticky bottom-0 -mx-6 px-6 py-4 mt-2 bg-bg-surface border-t border-border rounded-b-[var(--radius-lg)]">
+                <Button
+                  onClick={handleCreateExam}
+                  disabled={saving || !settings.title.trim()}
+                  className="w-full sm:w-auto"
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
+                  )}
+                  Create &amp; Continue to Questions
+                </Button>
               </div>
             )}
 
             {/* ── STEP 2: Question Builder ── */}
             {step === 2 && (
-              <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-text-primary">Question Builder</h2>
-                  <span className="tnum text-xs text-text-muted px-2 py-1 bg-bg-base border border-border rounded-[var(--radius-sm)]">
-                    Exam #{examId}
-                  </span>
-                </div>
+              <div className="space-y-5 pb-6">
+                <StepHeader
+                  index={2}
+                  total={3}
+                  title="Question Builder"
+                  subtitle={`Add MCQ or code questions to each set — Exam #${examId}`}
+                />
 
                 {/* Set switcher — a genuinely fixed, parallel set of items
                     (Set 1, Set 2, ...), so this is the one place in Step 2
@@ -671,7 +767,7 @@ export function ExamCreation() {
                         </p>
                         {q.type === "code" && (
                           <p className="text-xs text-text-muted mt-0.5 tnum capitalize">
-                            {q.language} · {q.max_score} pt{q.max_score === 1 ? "" : "s"}
+                            {q.language} · {q.max_score} mark{q.max_score === 1 ? "" : "s"}
                           </p>
                         )}
                         {q.type === "mcq" && (
@@ -737,8 +833,13 @@ export function ExamCreation() {
 
             {/* ── STEP 3: Start ── */}
             {step === 3 && (
-              <div className="space-y-5">
-                <h2 className="text-lg font-semibold text-text-primary">Review &amp; Start</h2>
+              <div className="space-y-5 pb-6">
+                <StepHeader
+                  index={3}
+                  total={3}
+                  title="Review & Start"
+                  subtitle="Confirm your exam configuration before launching it to students."
+                />
 
                 <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-3 text-sm">
                   <div className="flex items-center justify-between">
@@ -800,7 +901,13 @@ export function ExamCreation() {
                       Open Exam
                     </Button>
                   ) : (
-                    <StatusBadge status="waiting_room" />
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status="waiting_room" />
+                      <span className="flex items-center gap-1 text-xs text-text-secondary tnum">
+                        <Users className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                        {waitingCount} connected
+                      </span>
+                    </div>
                   )}
                   <Button
                     data-tour="teacher-start-exam-now"
@@ -819,71 +926,216 @@ export function ExamCreation() {
               </div>
             )}
           </div>
+
+          {/* Right: live parameters (step 1, editable) / summary (steps 2–3,
+              read-only) + setup progress — a sequential authoring flow, not
+              a set of parallel items, so progress stays step-based rather
+              than becoming a tab strip. */}
+          <div className="space-y-4">
+            {step === 1 ? (
+              <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-4">
+                <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-accent-500" strokeWidth={1.75} />
+                  Parameters
+                </h3>
+                <div>
+                  <Label htmlFor="time-limit" className="text-xs">Duration (min)</Label>
+                  <Input
+                    id="time-limit"
+                    type="number"
+                    min={1}
+                    value={settings.time_limit_minutes}
+                    onChange={(e) =>
+                      setSettings({ ...settings, time_limit_minutes: parseInt(e.target.value) || 30 })
+                    }
+                    className="mt-1 bg-bg-base border-border tnum"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="num-sets" className="text-xs">Question Sets</Label>
+                  <Input
+                    id="num-sets"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={settings.num_sets}
+                    onChange={(e) =>
+                      setSettings({ ...settings, num_sets: parseInt(e.target.value) || 1 })
+                    }
+                    className="mt-1 bg-bg-base border-border tnum"
+                  />
+                  <p className="text-[11px] text-text-muted mt-1">Different versions of the exam</p>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="violation-limit" className="text-xs">Violation Limit</Label>
+                    {settings.violation_limit <= 2 ? (
+                      <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-warning uppercase tracking-wide">
+                        <AlertTriangle className="w-3 h-3" strokeWidth={2.25} />
+                        High Sensitivity
+                      </span>
+                    ) : settings.violation_limit >= 6 ? (
+                      <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">
+                        Lenient
+                      </span>
+                    ) : null}
+                  </div>
+                  <Input
+                    id="violation-limit"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={settings.violation_limit}
+                    onChange={(e) =>
+                      setSettings({ ...settings, violation_limit: parseInt(e.target.value) || 3 })
+                    }
+                    className="mt-1 bg-bg-base border-border tnum"
+                  />
+                  <p className="text-[11px] text-text-muted mt-1">Auto-locks after this many</p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] text-sm space-y-2">
+                <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-2">
+                  Summary
+                </h3>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Type</span>
+                  <span className="tnum text-text-primary uppercase text-xs">
+                    {settings.question_type}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Sets</span>
+                  <span className="tnum text-text-primary">{settings.num_sets}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Duration</span>
+                  <span className="tnum text-text-primary">{settings.time_limit_minutes}m</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Violations</span>
+                  <span className="tnum text-text-primary">{settings.violation_limit}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Questions</span>
+                  <span className="tnum text-text-primary">{totalQuestions}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
+              <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-3">
+                Setup Progress
+              </h3>
+              <div className="space-y-1">
+                {SETUP_STEPS.map((s, i) => (
+                  <div key={s.id} className="relative flex items-start gap-3 px-1 py-1.5">
+                    {i < SETUP_STEPS.length - 1 && (
+                      <span
+                        className="absolute left-[9px] top-7 bottom-[-4px] w-px bg-border"
+                        aria-hidden="true"
+                      />
+                    )}
+                    <span
+                      className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center text-[11px] tnum flex-shrink-0 mt-0.5 ${
+                        step > s.id
+                          ? "bg-accent-success text-white"
+                          : step === s.id
+                          ? "border-2 border-accent-500 text-accent-500 bg-bg-surface"
+                          : "bg-bg-base border border-border text-text-muted"
+                      }`}
+                    >
+                      {step > s.id ? <Check className="w-3 h-3" strokeWidth={2.5} /> : s.id}
+                    </span>
+                    <div className="min-w-0">
+                      <div
+                        className={`text-sm font-medium ${
+                          step === s.id
+                            ? "text-text-primary"
+                            : step > s.id
+                            ? "text-accent-success"
+                            : "text-text-muted"
+                        }`}
+                      >
+                        {s.label}
+                      </div>
+                      <div className="text-[11px] text-text-muted mt-0.5">{s.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         /* Manage Exams List Tab */
-        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
-          <div className="p-4 border-b border-border bg-bg-elevated">
-            <h3 className="text-sm font-semibold text-text-primary">
-              My Exams List
-            </h3>
-          </div>
+        <div className="space-y-4">
+          {/* Status filter — the same pill/count chip pattern used for the
+              live exam roster filter (ActiveExam.jsx), not the reference's
+              nav-bar tab styling. */}
+          {!loadingExams && myExams.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter exams by status">
+              {MANAGE_FILTERS.map((f) => {
+                const isActiveFilter = manageFilter === f.key;
+                return (
+                  <button
+                    key={f.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActiveFilter}
+                    onClick={() => setManageFilter(f.key)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-[var(--radius-pill)] border text-xs font-semibold transition-colors duration-150",
+                      isActiveFilter
+                        ? "bg-accent-500/15 border-accent-500/30 text-accent-500"
+                        : "bg-transparent border-border text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary"
+                    )}
+                  >
+                    {f.label}
+                    <span
+                      className={cn(
+                        "tnum text-[10px] font-bold min-w-[18px] text-center px-1.5 py-0.5 rounded-[var(--radius-sm)]",
+                        isActiveFilter ? "bg-accent-500/20" : "bg-bg-surface-3 text-text-muted"
+                      )}
+                    >
+                      {manageFilterCounts[f.key]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {loadingExams ? (
-            <div className="divide-y divide-border">
+            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
               {[0, 1, 2].map((i) => (
-                <div key={i} className="p-4 flex items-center justify-between">
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-40" />
-                    <Skeleton className="h-3 w-64" />
+                <div key={i} className="p-5 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-4 w-16 rounded-[var(--radius-sm)]" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                    <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-8 w-full" />
                   </div>
+                  <Skeleton className="h-8 w-full" />
                 </div>
               ))}
             </div>
           ) : myExams.length === 0 ? (
-            <div className="p-12 text-center text-text-muted italic">
+            <div className="p-12 text-center text-text-muted italic bg-bg-surface border border-border rounded-[var(--radius-lg)]">
               No exams created yet.
             </div>
+          ) : filteredMyExams.length === 0 ? (
+            <div className="py-12 text-center text-text-muted italic bg-bg-surface border border-border rounded-[var(--radius-lg)]">
+              No exams match this filter.
+            </div>
           ) : (
-            <div className="divide-y divide-border">
-              {myExams.map((exam) => (
-                <div
-                  key={exam.id}
-                  className="p-4 flex items-center justify-between hover:bg-bg-elevated transition-colors duration-150"
-                >
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-semibold text-text-primary">
-                      {exam.title}
-                    </h4>
-                    <div className="flex items-center gap-3 text-xs text-text-secondary">
-                      <span className="capitalize tnum text-[10px] border border-border bg-bg-base px-1.5 py-0.5 rounded-[var(--radius-sm)] text-text-muted">
-                        Type: {exam.question_type}
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
-                        {exam.time_limit_minutes} mins
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span>Created: {new Date(exam.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={exam.status} />
-                    <Button
-                      onClick={() => handleExamClick(exam)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Manage / View
-                    </Button>
-                  </div>
-                </div>
+            <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+              {filteredMyExams.map((exam) => (
+                <ExamManageCard key={exam.id} exam={exam} onOpen={handleExamClick} />
               ))}
             </div>
           )}
@@ -960,7 +1212,7 @@ export function ExamCreation() {
                       Circle = correct answer (index {draft.correct_option})
                     </p>
                     <span className="tnum text-xs px-2 py-0.5 bg-bg-base border border-border rounded-[var(--radius-sm)] text-text-secondary">
-                      1 point (auto)
+                      1 mark (auto)
                     </span>
                   </div>
                 </div>
@@ -989,7 +1241,7 @@ export function ExamCreation() {
                   </div>
 
                   <div>
-                    <Label htmlFor="code-max-score">Max Score (Points)</Label>
+                    <Label htmlFor="code-max-score">Max Score (Marks)</Label>
                     <Input
                       id="code-max-score"
                       type="number"

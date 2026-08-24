@@ -2,6 +2,8 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { Plus, Edit2, X, Check, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "../../components/ui/button";
+import PageShell from "../../components/PageShell";
 
 export function AdminClasses() {
   const [classes, setClasses] = useState([]);
@@ -115,7 +117,7 @@ export function AdminClasses() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+    <PageShell>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-text-primary mb-1">
@@ -127,9 +129,9 @@ export function AdminClasses() {
       </div>
 
       {/* Add Class Card */}
-      <div className="p-6 bg-bg-surface border border-border rounded-lg shadow-xl">
+      <div className="p-6 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-accent-info" />
+          <BookOpen className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
           <span>Add New Class</span>
         </h3>
         <form onSubmit={handleAddClass} className="flex gap-3">
@@ -139,20 +141,17 @@ export function AdminClasses() {
             placeholder="e.g. FYBCA, SYBCA, TYBCA..."
             value={newClassName}
             onChange={(e) => setNewClassName(e.target.value)}
-            className="flex-1 bg-bg-base border border-border rounded-lg px-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info transition-colors"
+            className="flex-1 bg-bg-base border border-border rounded-[var(--radius-md)] px-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info transition-colors"
           />
-          <button
-            type="submit"
-            className="btn-press bg-accent-info hover:bg-accent-info/90 text-white px-5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Class</span>
-          </button>
+          <Button type="submit" className="bg-accent-info hover:bg-accent-info/90 text-white">
+            <Plus className="w-4 h-4" strokeWidth={1.75} />
+            Create Class
+          </Button>
         </form>
       </div>
 
       {/* Classes Directory list */}
-      <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+      <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
         {loading ? (
           <div className="py-12 text-center text-sm text-text-muted">
             Loading directory...
@@ -165,7 +164,7 @@ export function AdminClasses() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-border/80 text-[11px] font-semibold text-text-muted tracking-wider uppercase bg-white/[0.01]">
+                <tr className="border-b border-border/80 text-[11px] font-semibold text-text-muted tracking-wider uppercase bg-bg-elevated">
                   <th className="px-6 py-3.5 w-16">ID</th>
                   <th className="px-6 py-3.5">Class Name</th>
                   <th className="px-6 py-3.5">Created At</th>
@@ -230,6 +229,6 @@ export function AdminClasses() {
           </div>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 }

@@ -54,6 +54,8 @@ import {
 import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { getSocket } from "../../store/socket";
+import { addRecording } from "../../utils/recordingsStore";
+import { saveHandle } from "../../utils/recordingHandles";
 import { toast } from "sonner";
 
 // ─── ICE / STUN Configuration ─────────────────────────────────────────────────
@@ -380,6 +382,12 @@ export function LiveBroadcast() {
   const recordingOwnStreamRef = useRef(null);
   const recordingUsesBroadcastStreamRef = useRef(false);
   const fileWritableRef = useRef(null);
+  const recordingFsaHandleRef = useRef(null);    // the FileSystemFileHandle itself (browser path) — persisted to IndexedDB on stop so Session Recordings can re-open it later
+  const recordingElectronTokenRef = useRef(null); // open native write-stream token (Electron path)
+  const recordingElectronPathRef = useRef(null);  // real filesystem path (Electron path only)
+  const recordingFilenameRef = useRef(null);
+  const recordingStartedAtRef = useRef(null);
+  const recordingBytesWrittenRef = useRef(0);
   const screenTrackRef = useRef(null);    // MediaStreamTrack for screen sharing
   const micStreamRef = useRef(null);      // MediaStream from getUserMedia (mic)
   const peerConnectionsRef = useRef(new Map()); // Map<socketId, RTCPeerConnection>
@@ -1231,15 +1239,47 @@ export function LiveBroadcast() {
     if (recordingState === "off") {
       setRecordingError("");
 
+      // Three save paths, in priority order:
+      //  1. Electron desktop app — native save dialog, real filesystem path,
+      //     so Session Recordings' "Show in Folder" can actually work.
+      //  2. Browser with File System Access API (Chromium) — the existing
+      //     showSaveFilePicker flow; the file handle is kept so Session
+      //     Recordings can re-open it later, but browsers never expose a
+      //     real path to JS, so there's no OS-explorer reveal here.
+      //  3. Plain download fallback (Firefox/Safari, or FSA unsupported) —
+      //     unchanged; nothing to persist a handle to afterward.
+      const isElectron = typeof window !== "undefined" && !!window.electronAPI?.isElectron;
       const supportsFileSystemAccess = typeof window.showSaveFilePicker === "function";
+      const suggestedName = `session-recording-${Date.now()}.webm`;
 
-      if (supportsFileSystemAccess) {
+      recordingFsaHandleRef.current = null;
+      recordingElectronTokenRef.current = null;
+      recordingElectronPathRef.current = null;
+      recordingBytesWrittenRef.current = 0;
+      recordingFilenameRef.current = suggestedName;
+
+      if (isElectron) {
+        try {
+          const result = await window.electronAPI.startRecordingSave(suggestedName);
+          if (result.canceled) return;
+          recordingElectronTokenRef.current = result.token;
+          recordingElectronPathRef.current = result.filePath;
+          recordingFilenameRef.current = result.filePath.split(/[\\/]/).pop() || suggestedName;
+          console.log(`[DEBUG][RECORDING-ELECTRON] native write stream opened, target=${result.filePath}`);
+        } catch (err) {
+          console.error(`[DEBUG][RECORDING-ELECTRON] save dialog failed:`, err);
+          setRecordingError(err?.message || "Could not open the save dialog.");
+          return;
+        }
+      } else if (supportsFileSystemAccess) {
         try {
           const fileHandle = await window.showSaveFilePicker({
-            suggestedName: `session-recording-${Date.now()}.webm`,
+            suggestedName,
             types: [{ description: "WebM Video", accept: { "video/webm": [".webm"] } }],
           });
           fileWritableRef.current = await fileHandle.createWritable();
+          recordingFsaHandleRef.current = fileHandle;
+          recordingFilenameRef.current = fileHandle.name;
           console.log(`[DEBUG][RECORDING-FSA] writable stream opened, target=${fileHandle.name}`);
         } catch (err) {
           if (err.name !== "AbortError") {
@@ -1272,6 +1312,10 @@ export function LiveBroadcast() {
             try { await fileWritableRef.current.close(); } catch {}
             fileWritableRef.current = null;
           }
+          if (recordingElectronTokenRef.current) {
+            try { await window.electronAPI.closeRecordingFile(recordingElectronTokenRef.current); } catch {}
+            recordingElectronTokenRef.current = null;
+          }
           return;
         }
       }
@@ -1289,12 +1333,26 @@ export function LiveBroadcast() {
         const options = mimeType ? { mimeType } : {};
         const recorder = new MediaRecorder(stream, options);
         mediaRecorderRef.current = recorder;
+        recordingStartedAtRef.current = new Date().toISOString();
+        const startTimestamp = Date.now();
 
         recorder.ondataavailable = async (event) => {
           if (!event.data || event.data.size === 0) return;
-          if (fileWritableRef.current) {
+          if (recordingElectronTokenRef.current) {
+            try {
+              const buf = await event.data.arrayBuffer();
+              const result = await window.electronAPI.writeRecordingChunk(recordingElectronTokenRef.current, buf);
+              if (!result.ok) throw new Error(result.error || "write failed");
+              recordingBytesWrittenRef.current += buf.byteLength;
+              console.log(`[DEBUG][RECORDING-ELECTRON] chunk written to disk, size=${buf.byteLength}`);
+            } catch (err) {
+              console.error(`[DEBUG][RECORDING-ELECTRON] write failed:`, err);
+              setRecordingError("Failed to write to the selected file — recording may be incomplete.");
+            }
+          } else if (fileWritableRef.current) {
             try {
               await fileWritableRef.current.write(event.data);
+              recordingBytesWrittenRef.current += event.data.size;
               console.log(`[DEBUG][RECORDING-FSA] chunk written to disk, size=${event.data.size}`);
             } catch (err) {
               console.error(`[DEBUG][RECORDING-FSA] write failed:`, err);
@@ -1309,21 +1367,67 @@ export function LiveBroadcast() {
         };
 
         recorder.onstop = async () => {
-          if (fileWritableRef.current) {
+          const durationSeconds = Math.max(0, Math.round((Date.now() - startTimestamp) / 1000));
+          const baseEntry = {
+            id: `rec-${Date.now()}`,
+            filename: recordingFilenameRef.current || suggestedName,
+            startedAt: recordingStartedAtRef.current || new Date().toISOString(),
+            durationSeconds,
+            lectureName: sessionInfoRef.current?.lectureName || null,
+            subject: sessionInfoRef.current?.subject || null,
+          };
+
+          if (recordingElectronTokenRef.current) {
+            try {
+              await window.electronAPI.closeRecordingFile(recordingElectronTokenRef.current);
+              console.log(`[DEBUG][RECORDING-ELECTRON] file closed and saved successfully`);
+              addRecording({
+                ...baseEntry,
+                sizeBytes: recordingBytesWrittenRef.current || null,
+                kind: "electron",
+                filePath: recordingElectronPathRef.current,
+              });
+            } catch (err) {
+              console.error(`[DEBUG][RECORDING-ELECTRON] close failed:`, err);
+              setRecordingError("Error finalizing the saved file.");
+            }
+            recordingElectronTokenRef.current = null;
+            recordingElectronPathRef.current = null;
+          } else if (fileWritableRef.current) {
             try {
               await fileWritableRef.current.close();
               console.log(`[DEBUG][RECORDING-FSA] file closed and saved successfully`);
+              addRecording({
+                ...baseEntry,
+                sizeBytes: recordingBytesWrittenRef.current || null,
+                kind: "fsa",
+                filePath: null,
+              });
+              if (recordingFsaHandleRef.current) {
+                try {
+                  await saveHandle(baseEntry.id, recordingFsaHandleRef.current);
+                } catch (err) {
+                  console.error("[RECORDING-FSA] failed to persist file handle for later reopening:", err);
+                }
+              }
             } catch (err) {
               console.error(`[DEBUG][RECORDING-FSA] close failed:`, err);
               setRecordingError("Error finalizing the saved file.");
             }
             fileWritableRef.current = null;
+            recordingFsaHandleRef.current = null;
           } else {
             const finalType = recorder.mimeType || mimeType || "video/webm";
             const blob = new Blob(recordedChunksRef.current, { type: finalType });
             const url = URL.createObjectURL(blob);
             setRecordingDownloadUrl(url);
             console.log(`[DEBUG][RECORDING] stopped, finalBlobSizeBytes=${blob.size}`);
+            addRecording({
+              ...baseEntry,
+              sizeBytes: blob.size,
+              kind: "download",
+              filePath: null,
+            });
           }
 
           if (recordingOwnStreamRef.current) {
@@ -1347,6 +1451,10 @@ export function LiveBroadcast() {
         if (fileWritableRef.current) {
           try { await fileWritableRef.current.close(); } catch {}
           fileWritableRef.current = null;
+        }
+        if (recordingElectronTokenRef.current) {
+          try { await window.electronAPI.closeRecordingFile(recordingElectronTokenRef.current); } catch {}
+          recordingElectronTokenRef.current = null;
         }
         if (recordingOwnStreamRef.current) {
           recordingOwnStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -2385,12 +2493,16 @@ export function LiveBroadcast() {
               </button>
             </div>
           )}
-          {/* Note for browsers without File System Access API support */}
-          {typeof window.showSaveFilePicker !== "function" && (isRecording || (recordingDownloadUrl && recordingState === "off")) && (
-            <p className="text-xs text-text-muted mt-1 text-center w-full">
-              Your browser doesn't support direct-to-folder saving; a download link will appear here when you stop recording.
-            </p>
-          )}
+          {/* Note for browsers without File System Access API support — not
+              shown in the Electron app, which saves direct-to-folder via its
+              own native dialog regardless of browser API support. */}
+          {!(typeof window !== "undefined" && window.electronAPI?.isElectron) &&
+            typeof window.showSaveFilePicker !== "function" &&
+            (isRecording || (recordingDownloadUrl && recordingState === "off")) && (
+              <p className="text-xs text-text-muted mt-1 text-center w-full">
+                Your browser doesn't support direct-to-folder saving; a download link will appear here when you stop recording.
+              </p>
+            )}
         </div>
       </div>
 

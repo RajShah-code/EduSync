@@ -287,6 +287,10 @@ export function StudentDashboard() {
       if (!res.ok) {
         throw new Error(data.message || "Failed to join exam");
       }
+      // Joins the exam_waiting:<id> socket room so the teacher's live
+      // waiting-room count (ExamCreation.jsx Step 3) stays accurate.
+      const socket = getSocket();
+      if (socket) socket.emit("exam:join_waiting_room", { examId });
       navigate(`/student/exam/${examId}`);
     } catch (err) {
       toast.error(err.message);

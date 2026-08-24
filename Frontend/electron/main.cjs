@@ -1,6 +1,8 @@
-const { app, BrowserWindow, session, desktopCapturer, ipcMain } = require("electron");
+const { app, BrowserWindow, session, desktopCapturer, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const http = require("http");
+const fs = require("fs");
+const { randomUUID } = require("crypto");
 const serveHandler = require("serve-handler");
 const { exec } = require("child_process");
 
@@ -30,6 +32,58 @@ function captureWindowsUsername() {
 
 ipcMain.handle("get-windows-username", async () => {
   return await captureWindowsUsername();
+});
+
+// ── Session recording: native save-to-disk ──────────────────────────────────
+// Mirrors the browser build's File System Access API flow (showSaveFilePicker
+// + createWritable + incremental chunk writes) but with a real OS dialog and
+// a real filesystem path — the web API deliberately never exposes a path to
+// JS, so "show this file in Explorer/Finder" (recording:show-in-folder,
+// below) is only possible for recordings saved through this native path.
+const openRecordingStreams = new Map(); // token -> fs.WriteStream
+
+ipcMain.handle("recording:start-save", async (event, suggestedName) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showSaveDialog(win, {
+    defaultPath: suggestedName,
+    filters: [{ name: "WebM Video", extensions: ["webm"] }],
+  });
+  if (result.canceled || !result.filePath) {
+    return { canceled: true };
+  }
+  const token = randomUUID();
+  const stream = fs.createWriteStream(result.filePath);
+  openRecordingStreams.set(token, stream);
+  return { canceled: false, token, filePath: result.filePath };
+});
+
+ipcMain.handle("recording:write-chunk", (event, token, arrayBuffer) => {
+  const stream = openRecordingStreams.get(token);
+  if (!stream) return { ok: false, error: "No open recording stream for this token" };
+  return new Promise((resolve) => {
+    stream.write(Buffer.from(arrayBuffer), (err) => {
+      resolve(err ? { ok: false, error: err.message } : { ok: true });
+    });
+  });
+});
+
+ipcMain.handle("recording:close", (event, token) => {
+  const stream = openRecordingStreams.get(token);
+  if (!stream) return { ok: false, error: "No open recording stream for this token" };
+  return new Promise((resolve) => {
+    stream.end(() => {
+      openRecordingStreams.delete(token);
+      resolve({ ok: true });
+    });
+  });
+});
+
+ipcMain.handle("recording:show-in-folder", (event, filePath) => {
+  if (!filePath || !fs.existsSync(filePath)) {
+    return { ok: false, error: "File no longer exists at that path" };
+  }
+  shell.showItemInFolder(filePath);
+  return { ok: true };
 });
 
 function startStaticServer() {
