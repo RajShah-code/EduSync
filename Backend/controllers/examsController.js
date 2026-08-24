@@ -836,6 +836,29 @@ const getSessionExams = async (req, res) => {
   }
 };
 
+// Live count of students currently connected to this exam's waiting room —
+// backed by the exam_waiting:<id> Socket.IO room (see server.js's
+// exam:join_waiting_room handler), not a DB table, so it self-corrects on
+// disconnect without any extra bookkeeping. This endpoint exists only to
+// give the teacher's page an accurate number on initial load/revisit;
+// exam:waiting_count_update carries live updates after that.
+const getWaitingCount = async (req, res) => {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Access denied: teacher role required' });
+  }
+  const examId = parseInt(req.params.id);
+  try {
+    const [exam] = await sql`SELECT id FROM exams WHERE id = ${examId} AND created_by = ${req.user.id}`;
+    if (!exam) return res.status(403).json({ message: 'Unauthorized or exam not found' });
+
+    const io = req.app.get('io');
+    const count = io ? (io.sockets.adapter.rooms.get(`exam_waiting:${examId}`)?.size || 0) : 0;
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 const getMyExams = async (req, res) => {
   if (req.user.role !== 'teacher') {
     return res.status(403).json({ message: 'Access denied: teacher role required' });
@@ -943,6 +966,7 @@ module.exports = {
   getAvailableExams,
   joinExam,
   getMyExams,
+  getWaitingCount,
   // Exported for server.js timer restoration on restart (future use)
   scheduleExamTimer,
 };

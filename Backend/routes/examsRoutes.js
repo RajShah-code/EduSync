@@ -17,6 +17,7 @@ const {
   getAvailableExams,
   joinExam,
   getMyExams,
+  getWaitingCount,
 } = require('../controllers/examsController');
 
 // Teacher routes
@@ -25,6 +26,7 @@ router.get('/session/:sessionId', protect(['teacher']), getSessionExams);
 router.post('/:id/open', protect(['teacher']), openExam);
 router.get('/available', protect(['student']), getAvailableExams);
 router.get('/my-exams', protect(['teacher']), getMyExams);
+router.get('/:id/waiting-count', protect(['teacher']), getWaitingCount);
 router.get('/:id', protect(['teacher']), getExamById);
 router.post('/:id/sets/:setNumber/questions', protect(['teacher']), addQuestion);
 router.post('/:id/start', protect(['teacher']), startExam);

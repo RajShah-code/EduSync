@@ -204,6 +204,30 @@ io.on('connection', (socket) => {
     console.log(`[ExamSocket] Student ${userId} registered socket ${socket.id}`);
   });
 
+  // EVENT: exam:join_waiting_room
+  // Emitted by a student right after POST /exams/:id/join succeeds. Joining a
+  // Socket.IO room (rather than a DB row) gives an accurate, self-cleaning
+  // "how many students are actually here" count — the room's membership
+  // shrinks automatically on disconnect, no manual bookkeeping needed. The
+  // teacher's exam creation/manage screens read this via
+  // exam:waiting_count_update (below) and GET /exams/:id/waiting-count.
+  socket.on('exam:join_waiting_room', async (payload) => {
+    if (role !== 'student') return;
+    const examId = parseInt(payload?.examId);
+    if (!examId) return;
+    try {
+      const [exam] = await sql`SELECT created_by FROM exams WHERE id = ${examId}`;
+      if (!exam) return;
+      socket.join(`exam_waiting:${examId}`);
+      socket._examWaitingId = examId;
+      socket._examWaitingTeacherId = exam.created_by;
+      const count = io.sockets.adapter.rooms.get(`exam_waiting:${examId}`)?.size || 0;
+      io.to(`teacher:${exam.created_by}`).emit('exam:waiting_count_update', { examId, count });
+    } catch (err) {
+      console.error('[ExamSocket] exam:join_waiting_room error:', err);
+    }
+  });
+
   // Teacher joins their own room (room name = 'teacher:{userId}')
   // Students join a session room when they join a session (room name = 'session:{sessionId}')
   // The teacher ALSO joins 'session:{sessionId}' so all WebRTC signaling
@@ -1135,6 +1159,18 @@ io.on('connection', (socket) => {
     if (role === 'student') {
       examStudentSockets.delete(userId);
       console.log(`[ExamSocket] Student ${userId} socket cleaned up on disconnect`);
+    }
+    // Socket.IO has already removed this socket from exam_waiting:<id> by the
+    // time 'disconnect' fires, so the room's size already reflects the drop —
+    // just recompute and notify the teacher (io.to, not socket.to, per the
+    // same rule the session disconnect handler above already follows).
+    if (role === 'student' && socket._examWaitingId) {
+      const examId = socket._examWaitingId;
+      const teacherId = socket._examWaitingTeacherId;
+      const count = io.sockets.adapter.rooms.get(`exam_waiting:${examId}`)?.size || 0;
+      if (teacherId) {
+        io.to(`teacher:${teacherId}`).emit('exam:waiting_count_update', { examId, count });
+      }
     }
   });
 });
