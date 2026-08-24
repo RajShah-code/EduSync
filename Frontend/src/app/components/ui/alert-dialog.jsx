@@ -16,9 +16,13 @@ function AlertDialogTrigger({ ...props }) {
   );
 }
 
-function AlertDialogPortal({ ...props }) {
+function AlertDialogPortal({ container, ...props }) {
   return (
-    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+    <AlertDialogPrimitive.Portal
+      data-slot="alert-dialog-portal"
+      container={container}
+      {...props}
+    />
   );
 }
 
@@ -35,9 +39,9 @@ function AlertDialogOverlay({ className, ...props }) {
   );
 }
 
-function AlertDialogContent({ className, ...props }) {
+function AlertDialogContent({ className, container, ...props }) {
   return (
-    <AlertDialogPortal>
+    <AlertDialogPortal container={container}>
       <AlertDialogOverlay />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"

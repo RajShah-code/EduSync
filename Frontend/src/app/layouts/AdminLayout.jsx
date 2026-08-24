@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Users, Layers, LogOut, Shield } from "lucide-react";
+import { Users, Layers, LogOut, GraduationCap } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { Toaster } from "sonner";
 
@@ -12,7 +12,6 @@ const navigation = [
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [adminUser, setAdminUser] = useState(null);
 
   // Marks the document as "inside a dashboard shell" so html/body suppress
   // their own scroll (see theme.css's html.app-shell-active rule) — every
@@ -22,6 +21,32 @@ export function AdminLayout() {
   useEffect(() => {
     document.documentElement.classList.add("app-shell-active");
     return () => document.documentElement.classList.remove("app-shell-active");
+  }, []);
+
+  // Mirrors the [data-role] scope onto <body> so role-accent CSS variables
+  // (--accent-500, --ring, --primary, ...) still resolve correctly inside
+  // Radix Dialog/AlertDialog content, which portals to document.body and
+  // would otherwise sit outside the [data-role="admin"] wrapper div and
+  // fall back to :root's default (student orange).
+  useEffect(() => {
+    document.body.setAttribute("data-role", "admin");
+    return () => document.body.removeAttribute("data-role");
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("edusync_token");
+    localStorage.removeItem("edusync_user");
+    navigate("/");
+  };
+
+  const [displayUser, setDisplayUser] = useState(() =>
+    JSON.parse(localStorage.getItem("edusync_user") || "{}")
+  );
+
+  useEffect(() => {
+    const refresh = () => setDisplayUser(JSON.parse(localStorage.getItem("edusync_user") || "{}"));
+    window.addEventListener("edusync:user-updated", refresh);
+    return () => window.removeEventListener("edusync:user-updated", refresh);
   }, []);
 
   // Client-side authentication guard
@@ -42,7 +67,6 @@ export function AdminLayout() {
         navigate("/login");
         return;
       }
-      setAdminUser(user);
     } catch {
       localStorage.removeItem("edusync_token");
       localStorage.removeItem("edusync_user");
@@ -51,59 +75,36 @@ export function AdminLayout() {
     }
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("edusync_token");
-    localStorage.removeItem("edusync_user");
-    navigate("/");
-  };
-
-  if (!adminUser) return null; // Guard loading state
+  const adminInitials = (displayUser.name || "Admin")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="flex h-screen bg-bg-base" data-role="admin">
-      {/* Sidebar */}
-      <aside
-        className="flex flex-col bg-bg-surface"
-        style={{
-          width: "240px",
-          minWidth: "240px",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
+      {/* Sidebar — 3 distinct rounded blocks (brand / nav / user), tight gap
+          between them, rather than one continuous panel with dividers.
+          Structurally identical to TeacherLayout.jsx / StudentLayout.jsx —
+          only the [data-role="admin"] accent scope differs. */}
+      <aside className="w-16 min-w-16 md:w-[230px] md:min-w-[230px] flex flex-col gap-2 p-2 bg-bg-base transition-all duration-200">
         {/* Brand */}
-        <div
-          className="px-5 py-4 flex items-center gap-3"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div className="p-2 bg-accent-info/10 text-accent-info rounded-lg">
-            <Shield className="w-5 h-5" />
+        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface px-3 md:px-4 py-3.5 flex items-center gap-2.5 justify-center md:justify-start shrink-0">
+          <div
+            className="w-[26px] h-[26px] rounded-lg shrink-0 flex items-center justify-center"
+            style={{ background: "linear-gradient(155deg, var(--accent-700), color-mix(in srgb, var(--accent-700) 55%, var(--bg-base)))" }}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-white" strokeWidth={2} />
           </div>
-          <div>
-            <div
-              className="font-semibold text-text-primary"
-              style={{ fontSize: "15px", letterSpacing: "-0.01em" }}
-            >
-              Lab Control
-            </div>
-            <div
-              className="font-mono text-text-muted"
-              style={{
-                fontSize: "10px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                marginTop: "2px",
-              }}
-            >
-              Administrator
-            </div>
-          </div>
+          <span className="font-display font-semibold text-text-primary text-[14.5px] tracking-tight hidden md:inline">
+            EduSync
+          </span>
         </div>
 
         {/* Navigation */}
-        <nav
-          className="flex-1 py-3 overflow-y-auto"
-          style={{ padding: "12px 8px" }}
-        >
+        <nav className="flex-1 min-h-0 rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 space-y-0.5 overflow-y-auto">
           {navigation.map((item) => {
             const isActive =
               location.pathname === item.href ||
@@ -114,66 +115,56 @@ export function AdminLayout() {
                 key={item.name}
                 to={item.href}
                 data-tour={item.dataTour}
+                title={item.name}
                 className={cn(
-                  "flex items-center gap-3 py-2 rounded-lg text-sm mb-0.5 px-3 transition-colors",
-                  isActive 
-                    ? "bg-accent-info/10 text-accent-info" 
-                    : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
+                  "flex items-center gap-2.5 pr-3 py-2 text-[13px] rounded-[var(--radius-md)] justify-center md:justify-start",
+                  isActive ? "nav-active" : "nav-inactive"
                 )}
-                style={{
-                  borderRadius: "8px",
-                  fontSize: "13.5px",
-                  fontWeight: isActive ? 500 : 400,
-                }}
               >
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                <span>{item.name}</span>
+                <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
+                <span className="hidden md:inline">{item.name}</span>
               </Link>
             );
           })}
         </nav>
 
-        {/* User info */}
-        <div
-          className="p-3 space-y-1"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-        >
-          <div className="px-3 py-2">
-            <div className="text-sm font-medium text-text-primary">
-              {adminUser.name || "System Admin"}
+        {/* User info & Actions */}
+        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 shrink-0">
+          <div className="hidden md:flex items-center gap-2.5 px-1 py-1">
+            <div className="w-7 h-7 rounded-full bg-bg-surface-3 border border-border flex items-center justify-center text-[10.5px] font-semibold text-text-secondary shrink-0">
+              {adminInitials}
             </div>
-            <div
-              className="font-mono text-text-muted"
-              style={{ fontSize: "11px" }}
+            <div className="flex-1 min-w-0">
+              <div className="text-[12.5px] font-medium text-text-primary truncate">
+                {displayUser.name || "Admin"}
+              </div>
+              <div className="text-[10.5px] text-text-muted truncate">
+                {displayUser.email || "Admin"}
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="btn-press w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 transition-std shrink-0"
             >
-              {adminUser.email || "admin"}
-            </div>
+              <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
+            </button>
           </div>
+
+          {/* Collapsed (mobile) — icon-only logout, name/avatar hidden */}
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-text-secondary hover:text-accent-critical transition-colors rounded-lg hover:bg-accent-critical/10"
-            style={{ borderRadius: "8px" }}
+            title="Logout"
+            className="btn-press md:hidden w-full flex items-center justify-center py-2 text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
           >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
+            <LogOut className="w-4 h-4" strokeWidth={1.75} />
           </button>
-        </div>
-
-        {/* Version */}
-        <div
-          className="px-5 py-3 font-mono text-text-muted text-center"
-          style={{
-            fontSize: "11px",
-            borderTop: "1px solid rgba(255,255,255,0.04)",
-          }}
-        >
-          v2.5.0
         </div>
       </aside>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto bg-bg-base">
+        <main className="flex-1 overflow-y-auto page-enter">
           <Outlet />
         </main>
         <Toaster position="top-right" richColors />

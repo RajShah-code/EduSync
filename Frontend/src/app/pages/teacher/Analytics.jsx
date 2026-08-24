@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "../../config/api.js";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   LineChart,
   Line,
@@ -11,7 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { BarChart2, Users, CheckCircle2, Award, AlertTriangle } from "lucide-react";
+import { BarChart2, Users, CheckCircle2, Award, AlertTriangle, ChevronDown, Check, School } from "lucide-react";
 import { getSocket } from "../../store/socket";
 import { Skeleton } from "../../components/ui/skeleton";
 import PageShell from "../../components/PageShell";
@@ -63,6 +63,31 @@ export function Analytics() {
   const [loading, setLoading] = useState(true);
   const [fetchingClass, setFetchingClass] = useState(false);
   const [error, setError] = useState(null);
+
+  // Class picker — a manually-built dropdown rather than the shared Select
+  // primitive: Select's popper-mode Viewport is height-locked to its
+  // trigger (a known Radix/shadcn quirk), which clips a class list under a
+  // compact trigger to almost nothing. Same pattern already used for
+  // CodeOutputPanel.jsx's dock-position picker.
+  const [isClassMenuOpen, setIsClassMenuOpen] = useState(false);
+  const classMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (classMenuRef.current && !classMenuRef.current.contains(e.target)) {
+        setIsClassMenuOpen(false);
+      }
+    };
+    const handleEscape = (e) => {
+      if (e.key === "Escape") setIsClassMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   // Fetch target classes on mount
   const fetchClasses = useCallback(async () => {
@@ -208,21 +233,62 @@ export function Analytics() {
         </div>
 
         <div className="flex items-center gap-3">
-          <label htmlFor="class-select" className="text-xs text-text-muted font-medium uppercase tracking-wider">
+          <span id="class-select-label" className="text-xs text-text-muted font-medium uppercase tracking-wider">
             Select Class:
-          </label>
-          <select
-            id="class-select"
-            value={selectedClassId}
-            onChange={(e) => setSelectedClassId(e.target.value)}
-            className="bg-bg-surface border border-border rounded-lg px-3 py-1.5 text-sm text-text-primary font-medium focus:outline-none focus:border-accent-info"
-          >
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
+          </span>
+          <div className="relative" ref={classMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsClassMenuOpen((prev) => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={isClassMenuOpen}
+              aria-labelledby="class-select-label"
+              className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-[var(--radius-md)] bg-bg-surface border border-border text-sm font-medium text-text-primary hover:border-border-hover transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+            >
+              <School className="w-3.5 h-3.5 text-accent-500 shrink-0" strokeWidth={1.75} />
+              <span className="truncate max-w-[180px]">
+                {classes.find((c) => String(c.id) === String(selectedClassId))?.name || "Select a class"}
+              </span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-150 ${
+                  isClassMenuOpen ? "rotate-180" : ""
+                }`}
+                strokeWidth={1.75}
+              />
+            </button>
+
+            {isClassMenuOpen && (
+              <div
+                role="listbox"
+                aria-labelledby="class-select-label"
+                className="absolute right-0 top-full mt-1.5 w-56 max-h-72 overflow-y-auto bg-bg-elevated border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-modal)] z-50 py-1"
+              >
+                {classes.map((cls) => {
+                  const isSelected = String(cls.id) === String(selectedClassId);
+                  return (
+                    <button
+                      key={cls.id}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        setSelectedClassId(cls.id.toString());
+                        setIsClassMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-sm text-left transition-colors duration-100 ${
+                        isSelected
+                          ? "text-accent-500 font-semibold bg-accent-500/10"
+                          : "text-text-primary hover:bg-bg-surface-3"
+                      }`}
+                    >
+                      <span className="truncate">{cls.name}</span>
+                      {isSelected && <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.25} />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -2,25 +2,43 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router";
 import * as XLSX from "xlsx";
-import { 
-  Search, 
-  UserPlus, 
-  Edit2, 
-  Key, 
-  Trash2, 
-  X, 
-  Check, 
+import {
+  Search,
+  UserPlus,
+  Edit2,
+  Key,
+  Trash2,
+  X,
+  Check,
   Copy,
   AlertTriangle,
   UserCheck,
   HelpCircle,
   Upload,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { adminTourSteps } from "../../tours/adminTourSteps";
+import { Button } from "../../components/ui/button";
+
+const PAGE_SIZE = 10;
+
+
+// Role identity colors — deliberately the raw per-role scale tokens
+// (--student-500 / --teacher-500 / --admin-500), not --accent-*. This page
+// always renders under [data-role="admin"], so --accent-500 only ever
+// resolves to ink blue; a role badge needs to show that *role's* color
+// regardless of which role is viewing the page, so it reads the unscoped
+// :root scale directly instead.
+const ROLE_COLORS = {
+  admin: "var(--admin-500)",
+  teacher: "var(--teacher-500)",
+  student: "var(--student-500)",
+};
 
 export function AdminUsers() {
   const location = useLocation();
@@ -55,6 +73,20 @@ export function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Pagination — 10 users per page. Resets to page 1 whenever the active
+  // filters change, so a narrower result set never lands on a now-empty page.
+  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, classFilter, searchQuery]);
+
+  const handleRoleFilterChange = (value) => {
+    setRoleFilter(value);
+    // Class filter only applies to students — clear it once it's hidden so a
+    // stale selection doesn't silently narrow a later "All Roles" search.
+    if (value !== "student") setClassFilter("all");
+  };
 
   // Modals state
   const [selectedUser, setSelectedUser] = useState(null);
@@ -440,9 +472,16 @@ export function AdminUsers() {
     }
   };
 
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const paginatedUsers = users.slice(pageStart, pageStart + PAGE_SIZE);
+
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header + filters — fixed height; only the table card below grows
+          to fill whatever space remains on the current screen. */}
+      <div className="flex-shrink-0 px-6 pt-6 pb-4 space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-text-primary mb-1">
@@ -453,57 +492,57 @@ export function AdminUsers() {
           </p>
         </div>
         <div data-tour="admin-bulk" className="flex items-center gap-2">
-          <button
+          <Button
             data-tour="admin-restart-tour"
             onClick={handleRestartTour}
-            className="btn-press flex items-center justify-center gap-2 bg-bg-surface hover:bg-white/5 text-text-secondary hover:text-text-primary border border-border px-3.5 py-2 rounded-lg text-sm font-medium transition-all"
+            variant="outline"
             title="Restart App Tour"
           >
-            <HelpCircle className="w-4 h-4 text-accent-info" />
-            <span>Restart Tour</span>
-          </button>
-          <button
+            <HelpCircle className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+            Restart Tour
+          </Button>
+          <Button
             onClick={handleDownloadTemplate}
-            className="btn-press flex items-center justify-center gap-2 bg-bg-surface hover:bg-white/5 text-text-secondary hover:text-text-primary border border-border px-3.5 py-2 rounded-lg text-sm font-medium transition-all"
+            variant="outline"
             title="Download Excel Import Template"
           >
-            <Download className="w-4 h-4 text-accent-info" />
-            <span>Download Template</span>
-          </button>
-          <button
+            <Download className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+            Download Template
+          </Button>
+          <Button
             onClick={() => {
               setBulkFile(null);
               setBulkResults(null);
               setIsBulkModalOpen(true);
             }}
-            className="btn-press flex items-center justify-center gap-2 bg-bg-surface hover:bg-white/5 text-text-secondary hover:text-text-primary border border-border px-3.5 py-2 rounded-lg text-sm font-medium transition-all"
+            variant="outline"
             title="Bulk Import Users via Excel"
           >
-            <FileSpreadsheet className="w-4 h-4 text-accent-info" />
-            <span>Bulk Import</span>
-          </button>
-          <button
+            <FileSpreadsheet className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+            Bulk Import
+          </Button>
+          <Button
             data-tour="admin-provision"
             onClick={() => setIsCreateModalOpen(true)}
-            className="btn-press flex items-center justify-center gap-2 bg-accent-info hover:bg-accent-info/90 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            className="bg-accent-info hover:bg-accent-info/90 text-white"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>Provision User</span>
-          </button>
+            <UserPlus className="w-4 h-4" strokeWidth={1.75} />
+            Provision User
+          </Button>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div data-tour="admin-filters" className="p-4 bg-bg-surface border border-border rounded-lg flex flex-col md:flex-row gap-4 items-center">
+      <div data-tour="admin-filters" className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] flex flex-col md:flex-row gap-4 items-center flex-shrink-0">
         {/* Search */}
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" strokeWidth={1.75} />
           <input
             type="text"
             placeholder="Search by name or email/username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-bg-base border border-border rounded-lg pl-10 pr-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info transition-colors"
+            className="w-full bg-bg-base border border-border rounded-[var(--radius-md)] pl-10 pr-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info transition-colors"
           />
         </div>
 
@@ -512,8 +551,8 @@ export function AdminUsers() {
           <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Role:</label>
           <select
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-40"
+            onChange={(e) => handleRoleFilterChange(e.target.value)}
+            className="bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-40"
           >
             <option value="all">All Roles</option>
             <option value="teacher">Teachers</option>
@@ -522,26 +561,36 @@ export function AdminUsers() {
           </select>
         </div>
 
-        {/* Class Filter */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Class:</label>
-          <select
-            value={classFilter}
-            onChange={(e) => setClassFilter(e.target.value)}
-            className="bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-40"
-          >
-            <option value="all">All Classes</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Class Filter — student-only, mirrors the Provision modal's
+            show/hide-on-role pattern. Combines with role + search since
+            fetchData already sends all three as one query. */}
+        {roleFilter === "student" && (
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Class:</label>
+            <select
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-40"
+            >
+              <option value="all">All Classes</option>
+              {classes.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
       </div>
 
-      {/* Users Table */}
-      <div data-tour="admin-table" className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+      {/* Users Table — fills whatever vertical space remains below the
+          fixed header/filters, down to a small breathing-room gap above the
+          viewport edge (pb-6, matching the app's standard page padding).
+          The table body scrolls internally only if its own rows still don't
+          fit that space; header/filters/pagination never move. */}
+      <div className="flex-1 min-h-0 px-6 pb-6 flex flex-col">
+      <div data-tour="admin-table" className="flex-1 min-h-0 flex flex-col bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
         {loading ? (
           <div className="py-20 text-center text-sm text-text-muted">
             Fetching user directory...
@@ -551,7 +600,7 @@ export function AdminUsers() {
             No users found matching current filters
           </div>
         ) : (
-          <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
+          <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-bg-surface z-10">
                 <tr className="border-b border-border/80 text-[11px] font-semibold text-text-muted tracking-wider uppercase bg-bg-surface">
@@ -564,7 +613,7 @@ export function AdminUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {users.map((user) => (
+                {paginatedUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-white/[0.01] transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-text-primary">
                       {user.name}
@@ -573,13 +622,14 @@ export function AdminUsers() {
                       {user.email}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                        user.role === 'admin' 
-                          ? 'bg-accent-warning/10 text-accent-warning border border-accent-warning/20'
-                          : user.role === 'teacher'
-                          ? 'bg-accent-info/10 text-accent-info border border-accent-info/20'
-                          : 'bg-accent-success/10 text-accent-success border border-accent-success/20'
-                      }`}>
+                      <span
+                        className="inline-block px-2.5 py-0.5 rounded-[var(--radius-pill)] text-xs font-semibold uppercase tracking-wider border"
+                        style={{
+                          color: ROLE_COLORS[user.role],
+                          background: `color-mix(in srgb, ${ROLE_COLORS[user.role]} 12%, transparent)`,
+                          borderColor: `color-mix(in srgb, ${ROLE_COLORS[user.role]} 28%, transparent)`,
+                        }}
+                      >
                         {user.role}
                       </span>
                     </td>
@@ -626,6 +676,40 @@ export function AdminUsers() {
             </table>
           </div>
         )}
+
+        {/* Pagination — always visible below the (possibly internally
+            scrolling) table, never pushed off-screen by a long list. */}
+        {!loading && users.length > 0 && (
+          <div className="flex-shrink-0 flex items-center justify-between gap-4 flex-wrap px-4 py-3 border-t border-border">
+            <span className="text-xs tnum text-text-secondary">
+              {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, users.length)} of {users.length}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+              <span className="text-xs tnum text-text-primary px-2 min-w-[4.5rem] text-center">
+                Page {safePage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       </div>
 
       {/* ────────────────── CREATE USER MODAL ────────────────── */}

@@ -42,6 +42,16 @@ export function StudentLayout() {
     return () => document.documentElement.classList.remove("app-shell-active");
   }, []);
 
+  // Mirrors the [data-role] scope onto <body> so role-accent CSS variables
+  // (--accent-500, --ring, --primary, ...) still resolve correctly inside
+  // Radix Dialog/AlertDialog content, which portals to document.body and
+  // would otherwise sit outside the [data-role="student"] wrapper div and
+  // fall back to :root's default.
+  useEffect(() => {
+    document.body.setAttribute("data-role", "student");
+    return () => document.body.removeAttribute("data-role");
+  }, []);
+
   const [activeExam, setActiveExam] = useState(null); // { examId, title } | null
 
   // Check for currently active exam on mount

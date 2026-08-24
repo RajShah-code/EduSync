@@ -1177,7 +1177,14 @@ export function ExamScreen() {
           window.confirm, so it matches the app's dark theme/typography
           instead of an unstyled OS alert. */}
       <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
-        <AlertDialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-md">
+        {/* Portalled into the same element that goes fullscreen (containerRef) —
+            a dialog portalled to document.body by default is outside the
+            Fullscreen API's painted subtree and never actually appears on
+            screen while the exam is in fullscreen. */}
+        <AlertDialogContent
+          container={containerRef.current}
+          className="bg-bg-surface border-border text-text-primary sm:max-w-md"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle className="text-text-primary">
               Submit your exam?

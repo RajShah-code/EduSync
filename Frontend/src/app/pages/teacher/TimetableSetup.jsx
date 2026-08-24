@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import {
   Calendar,
@@ -86,9 +87,27 @@ function shouldAbbreviateSubject(subject) {
   return words.length > 1;
 }
 
+/**
+ * Client-side "today" must agree with the IST convention Backend/utils/
+ * istTime.js already uses (0=Monday..6=Sunday) — a raw new Date().getDay()
+ * reads the browser's local timezone, which silently disagrees with the
+ * server's notion of "today" (and the reminder cron) for any teacher not
+ * physically in IST. Mirrors istTime.js's Intl.DateTimeFormat approach
+ * instead of reintroducing that mismatch client-side.
+ */
+function getISTDayOfWeek(date = new Date()) {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Kolkata",
+    weekday: "short",
+  }).format(date);
+  const weekdayMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+  return weekdayMap[weekday] ?? 0;
+}
+
 export function TimetableSetup() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   // Core state
   const [classes, setClasses] = useState([]);
@@ -142,10 +161,12 @@ export function TimetableSetup() {
   // Empty state banner visibility
   const [showEmptyBanner, setShowEmptyBanner] = useState(true);
 
-  // Compute today's day_of_week in Monday=0..Saturday=5 convention (Sunday=0 in JS -> 0 default)
-  const jsDay = new Date().getDay();
-  const defaultDay = jsDay === 0 ? 0 : jsDay - 1;
-  const todayDow = jsDay === 0 ? null : jsDay - 1;
+  // Today's day_of_week in the app's Monday=0..Saturday=5 grid convention,
+  // IST-aware (see getISTDayOfWeek above). Sunday (6) has no column in this
+  // grid, so todayDow is null and no column gets highlighted.
+  const istDayOfWeek = getISTDayOfWeek();
+  const todayDow = istDayOfWeek === 6 ? null : istDayOfWeek;
+  const defaultDay = todayDow ?? 0;
 
   // Real-time form errors
   const timeError =
@@ -498,7 +519,7 @@ export function TimetableSetup() {
   if (loading) {
     return (
       <PageShell>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5">
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
             <Skeleton className="h-4 w-80" />
@@ -510,19 +531,19 @@ export function TimetableSetup() {
           </div>
         </div>
 
-        <div className="bg-bg-surface border border-border rounded-xl p-5 overflow-x-auto w-full">
-          <div className="min-w-[900px] space-y-3">
-            <div className="grid grid-cols-[64px_repeat(6,1fr)] gap-2">
-              <Skeleton className="h-8 w-8 mx-auto rounded-lg" />
+        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 overflow-x-auto w-full">
+          <div className="min-w-[900px] space-y-2">
+            <div className="grid grid-cols-[56px_repeat(6,1fr)] gap-2">
+              <Skeleton className="h-8 w-8 mx-auto rounded-[var(--radius-md)]" />
               {[0, 1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-8 w-full rounded-lg" />
+                <Skeleton key={i} className="h-8 w-full rounded-[var(--radius-pill)]" />
               ))}
             </div>
             {[0, 1, 2].map((row) => (
-              <div key={row} className="grid grid-cols-[64px_repeat(6,1fr)] gap-2">
+              <div key={row} className="grid grid-cols-[56px_repeat(6,1fr)] gap-2">
                 <Skeleton className="h-28 w-8 mx-auto" />
                 {[0, 1, 2, 3, 4, 5].map((col) => (
-                  <Skeleton key={col} className="h-28 w-full rounded-xl" />
+                  <Skeleton key={col} className="h-28 w-full rounded-[var(--radius-md)]" />
                 ))}
               </div>
             ))}
@@ -535,7 +556,7 @@ export function TimetableSetup() {
   if (loadError) {
     return (
       <PageShell>
-        <div className="bg-bg-surface border border-accent-critical/25 rounded-xl flex flex-col items-center justify-center gap-3 py-16">
+        <div className="bg-bg-surface border border-accent-critical/25 rounded-[var(--radius-lg)] flex flex-col items-center justify-center gap-3 py-16">
           <p className="text-sm text-text-secondary">Couldn't load your timetable.</p>
           <Button
             onClick={fetchInitialData}
@@ -562,7 +583,7 @@ export function TimetableSetup() {
       />
 
       {/* A. HEADER ROW */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-xl p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5">
         <div>
           <h1 className="text-[length:var(--text-xl)] font-bold text-text-primary tracking-tight flex items-center gap-2.5">
             <Calendar className="w-6 h-6 text-accent-info" />
@@ -611,7 +632,7 @@ export function TimetableSetup() {
 
       {/* Empty-state banner for first-time setup */}
       {entries.length === 0 && showEmptyBanner && (
-        <div className="bg-accent-info/10 border border-accent-info/20 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-accent-info/10 border border-accent-info/20 rounded-[var(--radius-lg)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
             <div className="p-2.5 rounded-lg bg-accent-info/20 border border-accent-info/30 text-accent-info shrink-0 mt-0.5 sm:mt-0">
               <Calendar className="w-5 h-5" />
@@ -647,91 +668,136 @@ export function TimetableSetup() {
         </div>
       )}
 
-      {/* B. WEEKLY GRID (SERIAL NUMBER ROWS 1, 2, 3...) */}
-      <div className="bg-bg-surface border border-border rounded-xl p-5 overflow-x-auto w-full">
-        <table className="w-full border-collapse min-w-[900px]">
-          <thead>
-            <tr>
-              <th className="w-16 pb-4 pt-1 text-center text-[length:var(--text-xs)] font-medium text-text-muted uppercase tracking-wider border-b border-border/80 px-2">
-                #
-              </th>
-              {DAYS.map((day) => {
-                const isToday = day.id === todayDow;
+      {/* B. WEEKLY GRID (SERIAL NUMBER ROWS 1, 2, 3...) — CSS Grid rather
+          than a <table>, so today's entire column can be one column-
+          spanning element (header + every cell beneath it) for the mount
+          highlight below, instead of scattered per-<tr> cells. */}
+      <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 overflow-x-auto w-full">
+        <div
+          className="relative grid gap-x-2 gap-y-2 min-w-[900px]"
+          style={{
+            gridTemplateColumns: "56px repeat(6, 1fr)",
+            gridTemplateRows: `auto repeat(${totalSerialRows}, minmax(108px, auto))`,
+          }}
+        >
+          {/* Today column highlight — animates in brighter on mount, fades
+              to a quiet resting tint over ~2s, then stays put (no loop).
+              initial→animate only ever fires once per mount, which is
+              exactly "once per page visit" here since this grid itself
+              only mounts once loading finishes. */}
+          {todayDow !== null && (
+            <motion.div
+              aria-hidden="true"
+              className="rounded-[var(--radius-lg)]"
+              style={{
+                gridColumn: todayDow + 2,
+                gridRow: `1 / span ${totalSerialRows + 1}`,
+                margin: "-6px -4px",
+                zIndex: 0,
+              }}
+              initial={
+                prefersReducedMotion
+                  ? false
+                  : {
+                      backgroundColor: "color-mix(in srgb, var(--accent-500) 20%, transparent)",
+                      boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent-500) 45%, transparent)",
+                    }
+              }
+              animate={{
+                backgroundColor: "color-mix(in srgb, var(--accent-500) 5%, transparent)",
+                boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent-500) 18%, transparent)",
+              }}
+              transition={{
+                duration: prefersReducedMotion ? 0.01 : 2.2,
+                delay: prefersReducedMotion ? 0 : 0.25,
+                ease: [0.23, 1, 0.32, 1],
+              }}
+            />
+          )}
+
+          {/* Header row */}
+          <div
+            style={{ gridColumn: 1, gridRow: 1, zIndex: 1 }}
+            className="pb-3 text-center text-[length:var(--text-xs)] font-medium text-text-muted uppercase tracking-wider border-b border-border/80"
+          >
+            #
+          </div>
+          {DAYS.map((day, dayIdx) => {
+            const isToday = day.id === todayDow;
+            return (
+              <div
+                key={day.id}
+                style={{ gridColumn: dayIdx + 2, gridRow: 1, zIndex: 1 }}
+                className="pb-3 flex justify-center border-b border-border/80"
+              >
+                <div
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-[var(--radius-pill)] border text-[length:var(--text-xs)] font-semibold uppercase tracking-wider ${
+                    isToday
+                      ? "bg-accent-500/15 border-accent-500/40 text-accent-500"
+                      : "bg-bg-base border-border/60 text-text-primary"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${isToday ? "bg-accent-500" : "bg-text-muted"}`} />
+                  <span>{day.fullName}</span>
+                  {isToday && <span className="text-[10px] font-bold tracking-normal normal-case opacity-80">· Today</span>}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Lecture rows */}
+          {serialRowIndices.map((serialNum, rowIdx) => (
+            <React.Fragment key={serialNum}>
+              <div
+                style={{ gridColumn: 1, gridRow: rowIdx + 2, zIndex: 1 }}
+                className="flex items-center justify-center text-[length:var(--text-xs)] tnum text-text-muted"
+              >
+                {serialNum}
+              </div>
+
+              {DAYS.map((day, dayIdx) => {
+                const dayLectures = getDayEntries(day.id);
+                const entry = dayLectures[serialNum - 1]; // 0-indexed lecture for this row
+                const typeAccent = entry?.session_type === "lab" ? "accent-live" : "accent-info";
+
                 return (
-                  <th
-                    key={day.id}
-                    className={`pb-4 pt-1 text-center text-[length:var(--text-xs)] font-semibold uppercase tracking-wider border-b border-border/80 px-2 ${
-                      isToday ? "bg-accent-info/10 text-accent-info rounded-t-lg" : "text-text-primary"
-                    }`}
-                  >
-                    <div
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border ${
-                        isToday
-                          ? "bg-accent-info/20 border-accent-info/40 text-accent-info ring-1 ring-accent-info/40"
-                          : "bg-bg-base border-border/60 text-text-primary"
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          isToday ? "bg-accent-info pulse-dot" : "bg-text-secondary"
-                        }`}
-                      />
-                      <span>{day.fullName}</span>
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
+                  <div key={day.id} style={{ gridColumn: dayIdx + 2, gridRow: rowIdx + 2, zIndex: 1 }} className="h-full">
+                    {!entry ? (
+                      /* Empty slot — quiet at rest, the add affordance only
+                         asserts itself on hover/focus rather than sitting
+                         as a permanent dashed button on every open slot. */
+                      <button
+                        onClick={() => handleOpenAddModal(day.id)}
+                        className="group/cell w-full h-full min-h-28 rounded-[var(--radius-md)] border border-dashed border-transparent hover:border-accent-info/40 hover:bg-accent-info/5 transition-[border-color,background-color] duration-150 ease-[var(--ease-out-strong)] flex flex-col items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                      >
+                        <div className="w-6 h-6 rounded-full border border-border/60 opacity-0 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100 flex items-center justify-center text-text-muted group-hover/cell:text-accent-info group-hover/cell:border-accent-info/40 transition-[opacity,color,border-color] duration-150">
+                          <Plus className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-[length:var(--text-xs)] font-medium text-text-muted opacity-0 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100 group-hover/cell:text-accent-info transition-opacity duration-150">
+                          Add Lecture
+                        </span>
+                      </button>
+                    ) : (
+                      /* Filled slot — a thin left accent bar carries the
+                         standard/lab distinction; card body stays neutral
+                         (bg-surface, primary/secondary text) so color reads
+                         as a category marker, not a full-card tint that
+                         fights the text for attention. */
+                      <div
+                        className="group/card relative h-full min-h-28 rounded-[var(--radius-md)] border border-border bg-bg-surface hover:border-border-hover hover:bg-bg-surface-3 transition-colors duration-150 overflow-hidden"
+                      >
+                        <span
+                          className="absolute left-0 top-0 bottom-0 w-[3px]"
+                          style={{ background: `var(--${typeAccent})` }}
+                          aria-hidden="true"
+                        />
 
-          <tbody className="divide-y divide-border/40">
-            {serialRowIndices.map((serialNum) => (
-              <tr key={serialNum} className="group hover:bg-bg-base/20 transition-colors">
-                {/* Serial Number Column - De-emphasized Plain Text */}
-                <td className="py-4 px-2 text-center text-[length:var(--text-xs)] tnum text-text-muted align-middle">
-                  {serialNum}
-                </td>
-
-                {/* Days MON-SAT (0-5) */}
-                {DAYS.map((day) => {
-                  const dayLectures = getDayEntries(day.id);
-                  const entry = dayLectures[serialNum - 1]; // 0-indexed lecture for this row
-                  const isToday = day.id === todayDow;
-
-                  return (
-                    <td
-                      key={day.id}
-                      className={`p-2 align-top w-1/6 min-w-[140px] ${
-                        isToday ? "bg-accent-info/[0.03]" : ""
-                      }`}
-                    >
-                      {!entry ? (
-                        /* Empty Cell: Dashed border with (+) Add Lecture */
-                        <button
-                          onClick={() => handleOpenAddModal(day.id)}
-                          className="w-full min-h-28 h-auto p-3 rounded-xl border border-dashed border-border/80 hover:border-accent-info/50 hover:bg-accent-info/5 transition-[transform,border-color,background-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] flex flex-col items-center justify-center gap-1.5 text-text-secondary hover:text-accent-info cursor-pointer group/cell focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-                        >
-                          <div className="w-7 h-7 rounded-full bg-bg-base border border-border/60 group-hover/cell:border-accent-info/40 flex items-center justify-center transition-colors">
-                            <Plus className="w-4 h-4" />
-                          </div>
-                          <span className="text-[length:var(--text-xs)] font-medium text-text-secondary group-hover/cell:text-accent-info">
-                            Add Lecture
-                          </span>
-                        </button>
-                      ) : (
-                        /* Filled Cell Card */
-                        <div
-                          className={`group/card relative rounded-xl p-3 border transition-[border-color] duration-150 ease-[var(--ease-out-strong)] flex flex-col justify-between min-h-28 h-auto gap-2 ${
-                            entry.session_type === "lab"
-                              ? "bg-accent-live/10 border-accent-live/30 hover:border-accent-live/60 text-accent-live"
-                              : "bg-accent-info/10 border-accent-info/30 hover:border-accent-info/60 text-accent-info"
-                          }`}
-                        >
+                        <div className="h-full flex flex-col justify-between gap-2 pl-4 pr-2.5 py-2.5">
                           {/* Action buttons on hover */}
-                          <div className="absolute top-2 right-2 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center gap-1 bg-bg-base/90 p-1 rounded-md border border-border shadow-sm z-10">
+                          <div className="absolute top-2 right-2 opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 transition-opacity flex items-center gap-1 bg-bg-elevated p-1 rounded-[var(--radius-sm)] border border-border shadow-sm z-10">
                             <button
                               onClick={(e) => handleOpenEditModal(entry, e)}
-                              className="p-1.5 hover:text-accent-info text-text-secondary transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                              className="p-1.5 hover:text-accent-info text-text-secondary transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Edit lecture"
                               aria-label="Edit lecture"
                             >
@@ -739,7 +805,7 @@ export function TimetableSetup() {
                             </button>
                             <button
                               onClick={(e) => handleDeleteEntry(entry.id, e)}
-                              className="p-1.5 hover:text-accent-critical text-text-secondary transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                              className="p-1.5 hover:text-accent-critical text-text-secondary transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                               title="Delete lecture"
                               aria-label="Delete lecture"
                             >
@@ -747,8 +813,8 @@ export function TimetableSetup() {
                             </button>
                           </div>
 
-                          {/* 1st Line: Subject (Reordered Hierarchy) with conditional Acronym & Tooltip */}
-                          <div className="font-semibold text-text-primary text-[length:var(--text-sm)] flex items-center gap-1.5 pr-14 min-w-0">
+                          {/* 1st line: subject */}
+                          <div className="font-semibold text-text-primary text-[length:var(--text-sm)] flex items-center gap-1.5 pr-12 min-w-0">
                             {entry.session_type === "lab" ? (
                               <FlaskConical className="w-3.5 h-3.5 text-accent-live shrink-0" />
                             ) : (
@@ -772,17 +838,15 @@ export function TimetableSetup() {
                             )}
                           </div>
 
-                          {/* 2nd Line: Time Range */}
-                          <div className="flex items-center justify-between tnum text-[length:var(--text-xs)] font-medium text-text-secondary">
-                            <span>
-                              {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
-                            </span>
+                          {/* 2nd line: time range */}
+                          <div className="tnum text-[length:var(--text-xs)] font-medium text-text-secondary">
+                            {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
                           </div>
 
-                          {/* 3rd Line: Class / Room & Alert indicator */}
+                          {/* 3rd line: class / room & reminder indicator */}
                           <div className="flex items-start justify-between text-[length:var(--text-xs)] text-text-secondary pt-1.5 border-t border-border/40 gap-1">
                             <div className="flex items-start gap-1 min-w-0">
-                              <School className="w-3 h-3 text-text-secondary shrink-0 mt-0.5" />
+                              <School className="w-3 h-3 text-text-muted shrink-0 mt-0.5" />
                               <span className="break-words leading-tight">
                                 {entry.class_name || "Class #" + entry.class_id}
                                 {entry.room && ` • ${entry.room}`}
@@ -807,37 +871,37 @@ export function TimetableSetup() {
                             )}
                           </div>
                         </div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="text-[length:var(--text-xs)] text-text-secondary mt-3">
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </div>
+        <p className="text-[length:var(--text-xs)] text-text-secondary mt-4">
           Each day's lectures are listed in the order they occur — row numbers are not synced across days.
         </p>
       </div>
 
       {/* C. LATE WARNING DELAY & REMINDER SUPPRESSION DATES PANEL */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Late Warning Delay Card (Teacher setting) */}
-        <div className="bg-bg-surface border border-border rounded-xl p-5 space-y-4 flex flex-col justify-between">
-          <div className="space-y-0.5">
+        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4 flex flex-col justify-between">
+          <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
               <Sliders className="w-4 h-4 text-accent-warning" />
               Late Warning Delay
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
-              Configure your single global late warning email threshold applied to all enabled lecture reminders.
+              Your global late-warning email threshold, applied to every lecture with reminders enabled.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-bg-base/80 border border-border/80 px-4 py-3 rounded-lg">
+          <div className="flex items-center gap-4 bg-bg-base border border-border px-4 py-3 rounded-[var(--radius-md)]">
             <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5 whitespace-nowrap">
               <Bell className="w-3.5 h-3.5 text-accent-warning" />
-              Set Late Warning Email:
+              Warn at
             </label>
             <input
               type="range"
@@ -847,15 +911,15 @@ export function TimetableSetup() {
               onChange={(e) => handleUpdateGlobalDelay(Number(e.target.value))}
               className="w-full accent-accent-warning cursor-pointer"
             />
-            <span className="text-[length:var(--text-xs)] tnum font-semibold text-accent-warning bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded shrink-0">
+            <span className="text-[length:var(--text-xs)] tnum font-semibold text-accent-warning bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded-[var(--radius-sm)] shrink-0">
               {defaultDelayMinutes} min
             </span>
           </div>
         </div>
 
         {/* Reminder Suppression Dates Card */}
-        <div className="bg-bg-surface border border-border rounded-xl p-5 space-y-4">
-          <div className="space-y-0.5">
+        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4">
+          <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
               <CalendarOff className="w-4 h-4 text-accent-warning" />
               Reminder Suppression Dates
@@ -894,12 +958,12 @@ export function TimetableSetup() {
               {exceptions.map((ex) => (
                 <div
                   key={ex.id}
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-accent-warning/10 border border-accent-warning/30 text-accent-warning text-[length:var(--text-xs)] tnum"
+                  className="flex items-center gap-2 px-2.5 py-1 rounded-[var(--radius-md)] bg-accent-warning/10 border border-accent-warning/30 text-accent-warning text-[length:var(--text-xs)] tnum"
                 >
                   <span>{ex.exception_date}</span>
                   <button
                     onClick={() => handleDeleteException(ex.id)}
-                    className="hover:text-accent-critical text-accent-warning transition-colors cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                    className="hover:text-accent-critical text-accent-warning transition-colors cursor-pointer rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                     title="Remove suppression date"
                     aria-label="Remove suppression date"
                   >
