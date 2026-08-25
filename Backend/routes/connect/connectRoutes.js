@@ -7,6 +7,7 @@ const {
   updateClassSubject,
   deleteClassSubject,
   updateOwnPostingMode,
+  deleteOwnArchivedClassroom,
 } = require('../../controllers/connect/classSubjectsController');
 const {
   getTeacherClassrooms,
@@ -59,6 +60,11 @@ router.get('/admin/announcements', protect(['admin']), getAdminAnnouncements);
 
 // ── Teacher: toggle their own classroom's posting_mode ──────────────────
 router.patch('/teacher/classrooms/:classSubjectId/posting-mode', protect(['teacher']), updateOwnPostingMode);
+
+// ── Teacher: delete their own classroom, but only once it's archived
+// (i.e. its curriculum allotment was removed/unassigned) — deleting a
+// still-live classroom stays admin-only via DELETE /admin/class-subjects. ─
+router.delete('/teacher/classrooms/:classSubjectId', protect(['teacher']), deleteOwnArchivedClassroom);
 
 // ── Polls — creation is teacher-of-that-classroom-only (checked inside the
 // controller via resolveClassroomAccess.isTeacher); list/vote/results are

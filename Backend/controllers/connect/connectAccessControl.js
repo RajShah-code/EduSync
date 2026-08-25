@@ -13,7 +13,7 @@ const sql = require('../../config/db');
 // classroom doesn't exist or this user has no relationship to it.
 async function resolveClassroomAccess(userId, role, classSubjectId) {
   const [classroom] = await sql`
-    SELECT id, teacher_id, class_id, subject_name, posting_mode
+    SELECT id, teacher_id, class_id, subject_name, posting_mode, status
     FROM connect_class_subjects
     WHERE id = ${classSubjectId}
   `;
@@ -39,8 +39,17 @@ async function resolveClassroomAccess(userId, role, classSubjectId) {
 // resolveClassroomAccess (i.e. read access is already established).
 function canSendMessage(access) {
   if (!access) return false;
+  if (access.classroom.status === 'archived') return false;
   if (access.isTeacher) return true;
   return access.classroom.posting_mode === 'open';
 }
 
-module.exports = { resolveClassroomAccess, canSendMessage };
+// isClassroomArchived — the one shared check every other write path
+// (announcements/polls/assignments/materials) layers on top of its own
+// isTeacher/access gate. An archived classroom is read-only: history stays
+// visible, but nothing new can be posted into it.
+function isClassroomArchived(access) {
+  return !!access && access.classroom.status === 'archived';
+}
+
+module.exports = { resolveClassroomAccess, canSendMessage, isClassroomArchived };

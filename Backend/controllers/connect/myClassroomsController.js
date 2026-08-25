@@ -13,7 +13,8 @@ const getTeacherClassrooms = async (req, res) => {
 
   try {
     const rows = await sql`
-      SELECT cs.id, cs.class_id, c.name AS class_name, cs.subject_name, cs.posting_mode, cs.created_at
+      SELECT cs.id, cs.class_id, c.name AS class_name, cs.subject_name, cs.posting_mode,
+        cs.semester, cs.status, cs.created_at
       FROM connect_class_subjects cs
       JOIN classes c ON c.id = cs.class_id
       WHERE cs.teacher_id = ${teacherId}
@@ -31,9 +32,16 @@ const getTeacherClassrooms = async (req, res) => {
       class_name: row.class_name,
       subject_name: row.subject_name,
       posting_mode: row.posting_mode,
+      semester: row.semester,
+      status: row.status,
       created_at: row.created_at,
-      display_name:
-        subjectCountByClass.get(row.class_id) > 1
+      // A synced classroom (has a semester) always shows the curriculum
+      // shape "ClassName(SemN) - Subject" — unambiguous on its own, so it
+      // skips the subject-count disambiguation below. Manually-created
+      // Connect classrooms (no semester) keep the original rule.
+      display_name: row.semester
+        ? `${row.class_name}(Sem${row.semester}) - ${row.subject_name}`
+        : subjectCountByClass.get(row.class_id) > 1
           ? `${row.class_name}(${row.subject_name})`
           : row.class_name,
     }));
@@ -65,7 +73,8 @@ const getStudentClassrooms = async (req, res) => {
     }
 
     const rows = await sql`
-      SELECT cs.id, cs.teacher_id, u.name AS teacher_name, cs.subject_name, cs.posting_mode, cs.created_at
+      SELECT cs.id, cs.teacher_id, u.name AS teacher_name, cs.subject_name, cs.posting_mode,
+        cs.semester, cs.status, cs.created_at
       FROM connect_class_subjects cs
       JOIN users u ON u.id = cs.teacher_id
       WHERE cs.class_id = ${student.class_id}
@@ -85,6 +94,8 @@ const getStudentClassrooms = async (req, res) => {
       teacher_name: row.teacher_name,
       subject_name: row.subject_name,
       posting_mode: row.posting_mode,
+      semester: row.semester,
+      status: row.status,
       created_at: row.created_at,
       display_name:
         teachersBySubject.get(row.subject_name).size > 1

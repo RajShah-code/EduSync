@@ -1,4 +1,5 @@
 const sql = require('../config/db');
+const { syncClassroomForAllotment, archiveClassroomForAllotment } = require('./connect/connectClassroomSync');
 
 // GET /admin/subject-allotments — list all allotments with joined subject/class/teacher names.
 // Optional filters: class_id, semester, teacher_id, subject_id
@@ -66,6 +67,20 @@ const createAllotment = async (req, res) => {
       VALUES (${class_id}, ${subject_id}, ${semesterNum}, ${targetTeacherId})
       RETURNING id, class_id, subject_id, semester, teacher_id, created_at;
     `;
+
+    // Materialize into a live EduSync Connect classroom the moment a
+    // teacher is attached — see connectClassroomSync.js. A teacher-less
+    // allotment ("offered, teacher TBD") has no Connect classroom yet.
+    if (targetTeacherId) {
+      await syncClassroomForAllotment({
+        allotmentId: created.id,
+        classId: created.class_id,
+        subjectId: created.subject_id,
+        teacherId: created.teacher_id,
+        semester: created.semester,
+      });
+    }
+
     res.status(201).json({ allotment: created });
   } catch (err) {
     if (err.code === '23505') {
@@ -110,6 +125,23 @@ const updateAllotment = async (req, res) => {
       WHERE id = ${id}
       RETURNING id, class_id, subject_id, semester, teacher_id, created_at;
     `;
+
+    // Keep the linked Connect classroom (if any) in sync: a non-null
+    // teacher creates/updates/reactivates it in place (same room, history
+    // preserved even across a reassignment); clearing the teacher archives
+    // it — read-only, never deleted. See connectClassroomSync.js.
+    if (updated.teacher_id) {
+      await syncClassroomForAllotment({
+        allotmentId: updated.id,
+        classId: updated.class_id,
+        subjectId: updated.subject_id,
+        teacherId: updated.teacher_id,
+        semester: updated.semester,
+      });
+    } else {
+      await archiveClassroomForAllotment(updated.id);
+    }
+
     res.json({ allotment: updated });
   } catch (err) {
     if (err.code === '23505') {
@@ -123,6 +155,11 @@ const updateAllotment = async (req, res) => {
 const deleteAllotment = async (req, res) => {
   const { id } = req.params;
   try {
+    // Archive the linked Connect classroom BEFORE the allotment row is
+    // gone (needs the still-valid subject_allotment_id to find it) — the
+    // classroom and its history are never deleted by this action.
+    await archiveClassroomForAllotment(id);
+
     const [deleted] = await sql`DELETE FROM subject_allotments WHERE id = ${id} RETURNING id`;
     if (!deleted) return res.status(404).json({ message: 'Allotment not found' });
     res.json({ message: 'Allotment deleted', id: deleted.id });

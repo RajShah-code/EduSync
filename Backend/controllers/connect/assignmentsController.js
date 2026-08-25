@@ -1,5 +1,5 @@
 const sql = require('../../config/db');
-const { resolveClassroomAccess } = require('./connectAccessControl');
+const { resolveClassroomAccess, isClassroomArchived } = require('./connectAccessControl');
 const { checkUploadRateLimit, decodeBase64File, uploadBufferToB2, getPresignedUrlForKey } = require('./connectB2Upload');
 
 function extFromFilename(filename) {
@@ -25,6 +25,9 @@ const createAssignment = async (req, res) => {
     const access = await resolveClassroomAccess(userId, role, classSubjectId);
     if (!access || !access.isTeacher) {
       return res.status(403).json({ message: 'Only the teacher of this classroom can create an assignment' });
+    }
+    if (isClassroomArchived(access)) {
+      return res.status(403).json({ message: 'This classroom has been archived and is read-only' });
     }
 
     let attachmentKey = null;
@@ -133,6 +136,9 @@ const submitAssignment = async (req, res) => {
     const access = await resolveClassroomAccess(userId, role, assignment.class_subject_id);
     if (!access) {
       return res.status(403).json({ message: 'You do not have access to this classroom' });
+    }
+    if (isClassroomArchived(access)) {
+      return res.status(403).json({ message: 'This classroom has been archived and is read-only' });
     }
 
     let fileKey = null;

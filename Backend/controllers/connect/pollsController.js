@@ -1,5 +1,5 @@
 const sql = require('../../config/db');
-const { resolveClassroomAccess } = require('./connectAccessControl');
+const { resolveClassroomAccess, isClassroomArchived } = require('./connectAccessControl');
 
 const MIN_OPTIONS = 2;
 
@@ -47,6 +47,9 @@ const createPoll = async (req, res) => {
     const access = await resolveClassroomAccess(userId, role, classSubjectId);
     if (!access || !access.isTeacher) {
       return res.status(403).json({ message: 'Only the teacher of this classroom can create a poll' });
+    }
+    if (isClassroomArchived(access)) {
+      return res.status(403).json({ message: 'This classroom has been archived and is read-only' });
     }
 
     const [poll] = await sql`
@@ -127,6 +130,9 @@ const voteOnPoll = async (req, res) => {
     const access = await resolveClassroomAccess(userId, role, poll.class_subject_id);
     if (!access) {
       return res.status(403).json({ message: 'You do not have access to this classroom' });
+    }
+    if (isClassroomArchived(access)) {
+      return res.status(403).json({ message: 'This classroom has been archived and is read-only' });
     }
 
     if (poll.closes_at && new Date(poll.closes_at) < new Date()) {
