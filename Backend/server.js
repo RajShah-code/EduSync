@@ -35,6 +35,7 @@ const io = new Server(server, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // same-origin/non-browser
       if (origin === 'http://localhost:5173') return callback(null, true);
+      if (origin === 'http://localhost:5174') return callback(null, true); // Connect-Frontend dev (vite.config.js)
       if (/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) return callback(null, true);
       return callback(new Error('Not allowed by CORS'));
     },
@@ -47,6 +48,12 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(helmet());
 app.use('/files', express.json({ limit: '35mb' }), filesRoutes);
+// Mirrors the /files limit above (base64-encoding a 20MB upload cap needs
+// ~26.7MB of body room) — must be mounted before the generic
+// bodyParser.json() below, same reason /files is, or its default (much
+// smaller) limit would reject the request before /connect's own 20MB
+// check in connectB2Upload.js ever runs.
+app.use('/connect', express.json({ limit: '35mb' }), require('./routes/connect/connectRoutes'));
 app.use(bodyParser.json());
 app.use('/auth', authRoutes);
 app.use('/users', protect(), usersRoutes);
@@ -1174,6 +1181,8 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+require('./controllers/connect/connectSocketController')(io);
 
 // Make io accessible in route controllers via req.app.get('io')
 app.set('io', io);
