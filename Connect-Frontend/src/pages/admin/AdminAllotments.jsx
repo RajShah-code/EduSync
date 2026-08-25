@@ -25,8 +25,6 @@ import {
   AlertCircle,
   CheckCircle2,
   Search,
-  Lock,
-  MessagesSquare,
   AlertTriangle,
   X,
   Layers,
@@ -49,7 +47,6 @@ export function AdminAllotments() {
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMode, setFilterMode] = useState("all"); // "all" | "open" | "teacher_only"
   const [filterClass, setFilterClass] = useState("all");
 
   // Create / Edit Modal State
@@ -58,7 +55,6 @@ export function AdminAllotments() {
   const [formTeacherId, setFormTeacherId] = useState("");
   const [formClassId, setFormClassId] = useState("");
   const [formSubjectName, setFormSubjectName] = useState("");
-  const [formPostingMode, setFormPostingMode] = useState("teacher_only");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
 
@@ -101,15 +97,11 @@ export function AdminAllotments() {
     const totalClassrooms = allotments.length;
     const uniqueTeacherIds = new Set(allotments.map((a) => a.teacher_id));
     const uniqueClassIds = new Set(allotments.map((a) => a.class_id));
-    const openDiscussions = allotments.filter((a) => a.posting_mode === "open").length;
-    const teacherOnly = allotments.filter((a) => a.posting_mode === "teacher_only").length;
 
     return {
       totalClassrooms,
       totalTeachers: uniqueTeacherIds.size,
       totalClasses: uniqueClassIds.size,
-      openDiscussions,
-      teacherOnly,
     };
   }, [allotments]);
 
@@ -138,7 +130,6 @@ export function AdminAllotments() {
     setFormTeacherId(teachers[0]?.id ? String(teachers[0].id) : "");
     setFormClassId(classes[0]?.id ? String(classes[0].id) : "");
     setFormSubjectName("");
-    setFormPostingMode("teacher_only");
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -149,7 +140,6 @@ export function AdminAllotments() {
     setFormTeacherId(String(item.teacher_id));
     setFormClassId(String(item.class_id));
     setFormSubjectName(item.subject_name);
-    setFormPostingMode(item.posting_mode || "teacher_only");
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -169,7 +159,6 @@ export function AdminAllotments() {
         const updated = await updateClassSubjectAllotment(editingItem.id, {
           teacher_id: Number(formTeacherId),
           subject_name: formSubjectName.trim(),
-          posting_mode: formPostingMode,
         });
 
         // Re-join names for local state update
@@ -196,7 +185,6 @@ export function AdminAllotments() {
           teacher_id: Number(formTeacherId),
           class_id: Number(formClassId),
           subject_name: formSubjectName.trim(),
-          posting_mode: formPostingMode,
         });
 
         const teacherObj = teachers.find((t) => Number(t.id) === Number(formTeacherId));
@@ -263,13 +251,10 @@ export function AdminAllotments() {
       item.class_name?.toLowerCase().includes(q) ||
       String(item.id).includes(q);
 
-    const matchesMode =
-      filterMode === "all" || item.posting_mode === filterMode;
-
     const matchesClass =
       filterClass === "all" || String(item.class_id) === String(filterClass);
 
-    return matchesSearch && matchesMode && matchesClass;
+    return matchesSearch && matchesClass;
   });
 
   return (
@@ -281,7 +266,7 @@ export function AdminAllotments() {
             Classroom Allotments & Cohort Control
           </h1>
           <p className="text-xs text-text-secondary mt-0.5">
-            Configure faculty subject assignments, manage classroom channels, and set posting permissions
+            Configure faculty subject assignments and manage classroom channels
           </p>
         </div>
 
@@ -346,7 +331,7 @@ export function AdminAllotments() {
       )}
 
       {/* SECTION 1: Cross-Classroom Overview Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {/* Card 1: Total Classrooms */}
         <Card className="border-border bg-bg-surface p-4">
           <div className="flex items-center justify-between">
@@ -394,26 +379,6 @@ export function AdminAllotments() {
             <span className="text-[11px] text-text-muted">student cohorts</span>
           </div>
         </Card>
-
-        {/* Card 4: Posting Permissions */}
-        <Card className="border-border bg-bg-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-text-secondary">Discussion Modes</span>
-            <div className="w-8 h-8 rounded-[var(--radius-md)] bg-accent-success/10 border border-accent-success/20 flex items-center justify-center text-accent-success">
-              <MessagesSquare className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-center gap-3 text-xs">
-            <span className="text-text-primary font-medium flex items-center gap-1 tnum">
-              <span className="w-2 h-2 rounded-full bg-accent-success" />
-              {overview.openDiscussions} Open
-            </span>
-            <span className="text-text-muted flex items-center gap-1 tnum">
-              <span className="w-2 h-2 rounded-full bg-text-muted" />
-              {overview.teacherOnly} Broadcast
-            </span>
-          </div>
-        </Card>
       </div>
 
       {/* SECTION 2: Allotments Table & Search Controls */}
@@ -439,17 +404,6 @@ export function AdminAllotments() {
               />
               <Search className="w-3.5 h-3.5 text-text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
             </div>
-
-            {/* Filter by Mode */}
-            <select
-              value={filterMode}
-              onChange={(e) => setFilterMode(e.target.value)}
-              className="bg-bg-base border border-border rounded-[var(--radius-md)] text-xs h-8 px-2 text-text-secondary focus:outline-none focus:ring-1 focus:ring-admin-500"
-            >
-              <option value="all">All Modes</option>
-              <option value="open">Open Discussion</option>
-              <option value="teacher_only">Announcements Only</option>
-            </select>
 
             {/* Filter by Class */}
             <select
@@ -482,7 +436,7 @@ export function AdminAllotments() {
               <BookOpen className="w-8 h-8 text-text-muted mb-2" />
               <p className="text-sm font-semibold text-text-primary">No classroom allotments found</p>
               <p className="text-xs text-text-secondary mt-1">
-                {searchQuery || filterMode !== "all" || filterClass !== "all"
+                {searchQuery || filterClass !== "all"
                   ? "Try adjusting your search query or filters."
                   : "Click 'New Allotment' to assign subjects to faculty members."}
               </p>
@@ -495,13 +449,11 @@ export function AdminAllotments() {
                   <th className="py-3 px-4">Subject Name</th>
                   <th className="py-3 px-4">Class / Cohort</th>
                   <th className="py-3 px-4">Assigned Faculty</th>
-                  <th className="py-3 px-4">Posting Mode</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
                 {filteredAllotments.map((row) => {
-                  const isOpen = row.posting_mode === "open";
                   return (
                     <tr
                       key={row.id}
@@ -533,26 +485,6 @@ export function AdminAllotments() {
                             {row.teacher_name}
                           </span>
                         </div>
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        {isOpen ? (
-                          <Badge
-                            variant="outline"
-                            className="bg-accent-success/10 text-accent-success border-accent-success/30 text-[10px] py-0 px-1.5 gap-1 font-normal"
-                          >
-                            <MessagesSquare className="w-3 h-3" />
-                            <span>Open Discussion</span>
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="bg-bg-surface-3 text-text-muted border-border text-[10px] py-0 px-1.5 gap-1 font-normal"
-                          >
-                            <Lock className="w-3 h-3" />
-                            <span>Faculty Broadcast</span>
-                          </Badge>
-                        )}
                       </td>
 
                       <td className="py-3.5 px-4 text-right">
@@ -683,46 +615,6 @@ export function AdminAllotments() {
                   className="bg-bg-base border-border text-xs h-9"
                   required
                 />
-              </div>
-
-              {/* Posting Mode Selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-text-primary">
-                  Default Posting Permission
-                </label>
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setFormPostingMode("teacher_only")}
-                    className={`p-3 rounded-[var(--radius-md)] border text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      formPostingMode === "teacher_only"
-                        ? "border-admin-500 bg-admin-500/10 text-text-primary"
-                        : "border-border bg-bg-base hover:bg-bg-surface-3 text-text-secondary"
-                    }`}
-                  >
-                    <div>
-                      <span className="text-xs font-semibold block">Faculty Only</span>
-                      <span className="text-[10px] text-text-muted">Broadcast channel</span>
-                    </div>
-                    <Lock className={`w-3.5 h-3.5 ${formPostingMode === "teacher_only" ? "text-admin-500" : "text-text-muted"}`} />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormPostingMode("open")}
-                    className={`p-3 rounded-[var(--radius-md)] border text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      formPostingMode === "open"
-                        ? "border-admin-500 bg-admin-500/10 text-text-primary"
-                        : "border-border bg-bg-base hover:bg-bg-surface-3 text-text-secondary"
-                    }`}
-                  >
-                    <div>
-                      <span className="text-xs font-semibold block">Open Discussion</span>
-                      <span className="text-[10px] text-text-muted">Students can chat</span>
-                    </div>
-                    <MessagesSquare className={`w-3.5 h-3.5 ${formPostingMode === "open" ? "text-admin-500" : "text-text-muted"}`} />
-                  </button>
-                </div>
               </div>
 
               {/* Modal Actions */}

@@ -15,12 +15,13 @@ import { API_BASE_URL, CONNECT_TOKEN_KEY } from "@/config/api";
  *     - PUT /connect/admin/class-subjects/:id
  *     - DELETE /connect/admin/class-subjects/:id
  * - Admin Helpers: GET /classes, GET /admin/users
- * - Teacher Mode: PATCH /connect/teacher/classrooms/:id/posting-mode
+ * - Teacher: DELETE /connect/teacher/classrooms/:id (archived classrooms only)
  * - Polls: GET & POST /connect/classrooms/:id/polls, POST /connect/polls/:id/vote
  * - Assignments: GET & POST /connect/classrooms/:id/assignments
  * - Submissions & Grading: POST /connect/assignments/:id/submit, GET /connect/assignments/:id/submissions, PUT /connect/submissions/:id/grade
  * - Study Materials / Media Library: GET & POST /connect/classrooms/:id/materials, GET /connect/materials/:id/download, DELETE /connect/materials/:id
- * 
+ * - Web Push: GET /connect/push/vapid-public-key, POST & DELETE /connect/push/subscribe
+ *
  * Uses the isolated `connect_edusync_token` stored in localStorage.
  * =======================================================================
  */
@@ -166,44 +167,6 @@ export async function sendClassroomMessage(classSubjectId, content) {
   } catch (err) {
     if (err instanceof ApiError) throw err;
     throw new ApiError(err.message || "Network error. Unable to send message.", 0);
-  }
-}
-
-/**
- * Updates the posting mode for a classroom (Teacher toggle).
- * Calls PATCH /connect/teacher/classrooms/:classSubjectId/posting-mode
- * 
- * @param {string|number} classSubjectId 
- * @param {"teacher_only" | "open"} postingMode 
- * @returns {Promise<Object>}
- */
-export async function updateClassroomPostingMode(classSubjectId, postingMode) {
-  const headers = getAuthHeaders();
-  const url = `${API_BASE_URL}/connect/teacher/classrooms/${classSubjectId}/posting-mode`;
-
-  try {
-    const res = await fetch(url, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ posting_mode: postingMode }),
-    });
-
-    if (res.status === 401) {
-      throw new ApiError("Session expired or unauthorized. Please sign in again.", 401);
-    }
-
-    if (res.ok) {
-      return await res.json();
-    }
-
-    const errorData = await res.json().catch(() => ({}));
-    throw new ApiError(
-      errorData.message || `Failed to update posting mode (HTTP ${res.status})`,
-      res.status
-    );
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-    return { success: true, posting_mode: postingMode };
   }
 }
 
@@ -411,14 +374,13 @@ export async function fetchAllClassSubjectsAdmin() {
  * Create a new class subject allotment (Admin only).
  * POST /connect/admin/class-subjects
  * 
- * @param {Object} payload 
+ * @param {Object} payload
  * @param {number|string} payload.teacher_id
  * @param {number|string} payload.class_id
  * @param {string} payload.subject_name
- * @param {"teacher_only" | "open"} [payload.posting_mode]
  * @returns {Promise<Object>} Created allotment
  */
-export async function createClassSubjectAllotment({ teacher_id, class_id, subject_name, posting_mode }) {
+export async function createClassSubjectAllotment({ teacher_id, class_id, subject_name }) {
   const headers = getAuthHeaders();
   const url = `${API_BASE_URL}/connect/admin/class-subjects`;
 
@@ -430,7 +392,6 @@ export async function createClassSubjectAllotment({ teacher_id, class_id, subjec
         teacher_id: Number(teacher_id),
         class_id: Number(class_id),
         subject_name: subject_name.trim(),
-        posting_mode: posting_mode || "teacher_only",
       }),
     });
 
@@ -466,21 +427,19 @@ export async function createClassSubjectAllotment({ teacher_id, class_id, subjec
  * Update an existing allotment (Admin only).
  * PUT /connect/admin/class-subjects/:id
  * 
- * @param {string|number} id 
- * @param {Object} payload 
+ * @param {string|number} id
+ * @param {Object} payload
  * @param {number|string} [payload.teacher_id]
  * @param {string} [payload.subject_name]
- * @param {"teacher_only" | "open"} [payload.posting_mode]
  * @returns {Promise<Object>} Updated allotment
  */
-export async function updateClassSubjectAllotment(id, { teacher_id, subject_name, posting_mode }) {
+export async function updateClassSubjectAllotment(id, { teacher_id, subject_name }) {
   const headers = getAuthHeaders();
   const url = `${API_BASE_URL}/connect/admin/class-subjects/${id}`;
 
   const payload = {};
   if (teacher_id !== undefined) payload.teacher_id = Number(teacher_id);
   if (subject_name !== undefined) payload.subject_name = subject_name.trim();
-  if (posting_mode !== undefined) payload.posting_mode = posting_mode;
 
   try {
     const res = await fetch(url, {
