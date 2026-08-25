@@ -1,0 +1,295 @@
+@import "tailwindcss";
+
+@custom-variant dark (&);
+
+:root {
+  color-scheme: dark;
+
+  /* Base Canvas & Surfaces — Pure Black dominant tone per DESIGN.md */
+  --bg-base: #000000;
+  --bg-surface: #111113;
+  --bg-elevated: #17171A;
+  --bg-surface-3: #1D1D21;
+  --border: #232327;
+  --border-hover: #2E2E33;
+
+  /* Text Colors */
+  --text-primary: #F1F2F5;
+  --text-secondary: #93969F;
+  --text-muted: #585C68;
+
+  /* Semantic status tokens (Fixed) */
+  --accent-live: #15803D;
+  --accent-success: #15803D;
+  --accent-warning: #DDA53D;
+  --accent-critical: #DC2626;
+  --accent-locked: #7A8699;
+
+  /* Role scales */
+  --student-50: #FEE6D4;  --student-300: #FFAC68; --student-500: #E6802D;
+  --student-700: #BA5500; --student-900: #571F05;
+
+  --teacher-50: #E4E5FF;  --teacher-300: #BFBBFF;  --teacher-500: #A799FF;
+  --teacher-700: #5A37C5; --teacher-900: #27154F;
+
+  --admin-50: #DBEAF8;    --admin-300: #89C4FB;    --admin-500: #4895DF;
+  --admin-700: #096DBA;   --admin-900: #012854;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Inter Tight', 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Default role fallback */
+  --accent-50: var(--teacher-50);
+  --accent-300: var(--teacher-300);
+  --accent-500: var(--teacher-500);
+  --accent-700: var(--teacher-700);
+  --accent-900: var(--teacher-900);
+  --accent-info: var(--accent-500);
+
+  /* Shadcn / UI tokens */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-700);
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-surface);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--bg-surface);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--bg-elevated);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--accent-critical);
+  --destructive-foreground: var(--text-primary);
+  --input: var(--border);
+  --input-background: var(--bg-base);
+  --ring: var(--accent-500);
+  --radius: var(--radius-md);
+
+  /* Easing */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Role Scopes */
+[data-role="teacher"] {
+  --accent-50: var(--teacher-50);
+  --accent-300: var(--teacher-300);
+  --accent-500: var(--teacher-500);
+  --accent-700: var(--teacher-700);
+  --accent-900: var(--teacher-900);
+  --primary: var(--teacher-700);
+  --ring: var(--teacher-500);
+  --accent-info: var(--teacher-500);
+}
+
+[data-role="student"] {
+  --accent-50: var(--student-50);
+  --accent-300: var(--student-300);
+  --accent-500: var(--student-500);
+  --accent-700: var(--student-700);
+  --accent-900: var(--student-900);
+  --primary: var(--student-700);
+  --ring: var(--student-500);
+  --accent-info: var(--student-500);
+}
+
+[data-role="admin"] {
+  --accent-50: var(--admin-50);
+  --accent-300: var(--admin-300);
+  --accent-500: var(--admin-500);
+  --accent-700: var(--admin-700);
+  --accent-900: var(--admin-900);
+  --primary: var(--admin-700);
+  --ring: var(--admin-500);
+  --accent-info: var(--admin-500);
+}
+
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-surface-3: var(--bg-surface-3);
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-accent-live: var(--accent-live);
+  --color-accent-success: var(--accent-success);
+  --color-accent-warning: var(--accent-warning);
+  --color-accent-critical: var(--accent-critical);
+  --color-accent-info: var(--accent-info);
+  --color-accent-locked: var(--accent-locked);
+
+  --color-accent-50: var(--accent-50);
+  --color-accent-300: var(--accent-300);
+  --color-accent-500: var(--accent-500);
+  --color-accent-700: var(--accent-700);
+  --color-accent-900: var(--accent-900);
+
+  --color-student-50: var(--student-50);
+  --color-student-300: var(--student-300);
+  --color-student-500: var(--student-500);
+  --color-student-700: var(--student-700);
+  --color-student-900: var(--student-900);
+
+  --color-teacher-50: var(--teacher-50);
+  --color-teacher-300: var(--teacher-300);
+  --color-teacher-500: var(--teacher-500);
+  --color-teacher-700: var(--teacher-700);
+  --color-teacher-900: var(--teacher-900);
+
+  --color-admin-50: var(--admin-50);
+  --color-admin-300: var(--admin-300);
+  --color-admin-500: var(--admin-500);
+  --color-admin-700: var(--admin-700);
+  --color-admin-900: var(--admin-900);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-ring: var(--ring);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-pill: var(--radius-pill);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+  }
+}
+
+/* Custom dark scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hover) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Tabular numerals — aligned digits without a monospace typeface */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Card hover — hairline border brightens, no shadow lift */
+.card-hover {
+  transition: border-color 180ms cubic-bezier(0.4, 0, 0.2, 1), background-color 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  border-color: var(--border-hover);
+}
+
+/* Button press micro-interaction */
+.btn-press {
+  transition: transform 120ms var(--ease-out-strong);
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Page enter animation */
+.page-enter {
+  animation: page-enter 220ms ease-out both;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Live indicators */
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(21, 128, 61, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(21, 128, 61, 0);
+  }
+}
+
+.live-pulse {
+  animation: live-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Reduced motion fallbacks */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .live-pulse,
+  .btn-press {
+    animation: none !important;
+    transform: none !important;
+  }
+}
