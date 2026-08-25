@@ -2,7 +2,12 @@ const sql = require('../../config/db');
 
 // GET /connect/push/vapid-public-key — the public key only, safe to expose
 // to any authenticated user (that's the whole point of it being public).
+// 503 if this deploy hasn't configured VAPID keys — the frontend's push
+// toggle should treat that as "notifications unavailable here", not crash.
 const getVapidPublicKey = (req, res) => {
+  if (!process.env.VAPID_PUBLIC_KEY) {
+    return res.status(503).json({ message: 'Push notifications are not configured on this server' });
+  }
   res.json({ publicKey: process.env.VAPID_PUBLIC_KEY });
 };
 
