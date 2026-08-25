@@ -14,6 +14,7 @@ import { AdminUsers } from "./pages/admin/AdminUsers";
 import { AdminClasses } from "./pages/admin/AdminClasses";
 import { AdminSubjects } from "./pages/admin/AdminSubjects";
 import { AdminSubjectAllotments } from "./pages/admin/AdminSubjectAllotments";
+import { AdminAppAllowlist } from "./pages/admin/AdminAppAllowlist";
 
 // Teacher Pages
 import { TeacherDashboard } from "./pages/teacher/TeacherDashboard";
@@ -76,6 +77,7 @@ export const router = createBrowserRouter([
           { path: "classes", Component: AdminClasses },
           { path: "subjects", Component: AdminSubjects },
           { path: "subject-allotments", Component: AdminSubjectAllotments },
+          { path: "app-allowlist", Component: AdminAppAllowlist },
         ],
       },
       // Teacher Routes

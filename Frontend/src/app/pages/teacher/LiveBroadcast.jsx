@@ -896,6 +896,18 @@ export function LiveBroadcast() {
         });
       };
 
+      // handler for teacher:app_violation — Electron's app-guard on a
+      // student's machine force-closed a process not on this class's
+      // allow-list. Live-only notification, not persisted (see
+      // app_allowlist_entries's comment in dbSetup.js for why).
+      const handleAppViolation = ({ student_id, process_name }) => {
+        const student = connectedStudentsRef.current.find((s) => s.student_id === student_id);
+        const studentName = student?.student_name || `Student ${student_id}`;
+        toast.warning(`${studentName} — ${process_name} was closed automatically`, {
+          description: "This app wasn't on the allow-list for this class.",
+        });
+      };
+
       // handler for teacher:resend_offer_to_student
       // Fired by the server when a student returns from a task page and the session
       // is in screen-share mode. Calls the identical createPeerConnectionForStudent
@@ -966,6 +978,7 @@ export function LiveBroadcast() {
       socket.on("teacher:student_status_update", handleStudentStatusUpdate);
       socket.on("teacher:rejoin_request", handleRejoinRequest);
       socket.on("teacher:resend_offer_to_student", handleResendOfferToStudent);
+      socket.on("teacher:app_violation", handleAppViolation);
 
       return () => {
         socket.off("connect", handleTeacherConnect);
@@ -976,6 +989,7 @@ export function LiveBroadcast() {
         socket.off("teacher:student_status_update", handleStudentStatusUpdate);
         socket.off("teacher:rejoin_request", handleRejoinRequest);
         socket.off("teacher:resend_offer_to_student", handleResendOfferToStudent);
+        socket.off("teacher:app_violation", handleAppViolation);
       };
     };
 

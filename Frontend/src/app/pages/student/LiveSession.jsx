@@ -7,6 +7,7 @@ import { CodeOutputPanel } from "../../components/CodeOutputPanel";
 import { sessionStore } from "../../store/sessionStore";
 import { getSocket } from "../../store/socket";
 import { useFocusGuard } from "../../hooks/useFocusGuard";
+import { useAppGuard } from "../../hooks/useAppGuard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { StatusBadge } from "../../components/StatusBadge";
 
@@ -122,6 +123,19 @@ export function LiveSession() {
     }
   })();
 
+  // Decode the student's class_id the same way — used by useAppGuard to
+  // fetch this class's OS-level app allow-list for the current broadcast.
+  const classId = (() => {
+    try {
+      const token = localStorage.getItem("edusync_token");
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.class_id ?? null;
+    } catch {
+      return null;
+    }
+  })();
+
   // ── WebRTC broadcast status ─────────────────────────────────────────────────
   // 'waiting'    — in session, waiting for teacher's WebRTC offer
   // 'connecting' — offer received, ICE negotiation in progress
@@ -204,6 +218,18 @@ export function LiveSession() {
   } = useFocusGuard({
     sessionId: joinedSession?.id ?? null,
     studentId,
+    enabled: isLive,
+  });
+
+  // useAppGuard is the ONLY hook that touches OS-level process enforcement
+  // (Electron only — see Frontend/electron/main.cjs). On plain web it just
+  // exposes the allow-list for the informational banner below; it never
+  // attempts enforcement there, since a browser has no way to see or close
+  // other OS processes at all.
+  const { allowList } = useAppGuard({
+    sessionId: joinedSession?.id ?? null,
+    studentId,
+    classId,
     enabled: isLive,
   });
 
@@ -942,7 +968,19 @@ export function LiveSession() {
                   • {joinedSession.lab_room ?? joinedSession.labRoom} — Live Session
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <span
+                  className="text-[11px] text-text-muted max-w-[280px] truncate"
+                  title={
+                    allowList.length > 0
+                      ? `Allowed apps for this session: ${allowList.map((a) => a.display_name || a.process_name).join(", ")}`
+                      : "No additional apps allowed for this session"
+                  }
+                >
+                  {allowList.length > 0
+                    ? `Allowed apps: ${allowList.map((a) => a.display_name || a.process_name).join(", ")}`
+                    : "No additional apps allowed"}
+                </span>
                 <StatusBadge status="live" />
               </div>
             </div>

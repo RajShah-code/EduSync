@@ -86,6 +86,97 @@ ipcMain.handle("recording:show-in-folder", (event, filePath) => {
   return { ok: true };
 });
 
+// ── Per-class OS-level app allow-list enforcement (broadcast sessions) ──────
+// See docs/PRD §10.5/§10.8 and Backend's app_allowlist_entries table. This
+// is the ONLY place in the codebase that enumerates or kills OS processes —
+// deliberately isolated the same way useFocusGuard.js isolates the
+// fullscreen/visibility APIs, so this can be extended (or ported to macOS/
+// Linux equivalents of tasklist/taskkill) without touching renderer code.
+//
+// SAFETY: the list below is hardcoded and NOT admin-configurable from the
+// DB, on purpose — an admin's allow-list only ever ADDS to what's allowed,
+// it can never narrow this list. This is what prevents a misconfigured or
+// too-narrow class allow-list from ever causing core OS processes (or this
+// app itself) to be force-closed.
+// Verified against a real `tasklist /FO CSV /NH` dump during development
+// (not written from memory alone) — that pass caught several genuinely
+// OS-critical entries (Secure System, LsaIso.exe, WUDFHost.exe, etc.) that
+// a from-memory list would have missed.
+const SYSTEM_SAFE_PROCESS_NAMES = new Set([
+  'explorer.exe', 'dwm.exe', 'csrss.exe', 'wininit.exe', 'winlogon.exe',
+  'services.exe', 'lsass.exe', 'svchost.exe', 'system', 'system idle process',
+  'secure system', 'registry', 'memory compression',
+  'smss.exe', 'fontdrvhost.exe', 'sihost.exe', 'taskhostw.exe', 'ctfmon.exe',
+  'searchindexer.exe', 'searchapp.exe', 'searchhost.exe', 'searchprotocolhost.exe',
+  'dllhost.exe', 'conhost.exe', 'runtimebroker.exe', 'shellexperiencehost.exe',
+  'shellhost.exe', 'startmenuexperiencehost.exe', 'applicationframehost.exe',
+  'aggregatorhost.exe', 'textinputhost.exe', 'audiodg.exe', 'spoolsv.exe',
+  'wudfhost.exe', 'wmiregistrationservice.exe', 'wmiprvse.exe',
+  'lsaiso.exe', 'ngciso.exe',
+  'securityhealthservice.exe', 'securityhealthsystray.exe', 'msmpeng.exe',
+  'mpdefendercoreservice.exe', 'nissrv.exe',
+]);
+// The Electron shell's own process (electron.exe in dev, the packaged
+// productName.exe in a built app) must never be closeable by its own guard.
+const SELF_PROCESS_NAME = path.basename(process.execPath).toLowerCase();
+
+let appGuardInterval = null;
+
+function parseTasklistCsv(stdout) {
+  // `tasklist /FO CSV /NH` — one CSV row per process, no header, columns
+  // quoted: "Image Name","PID","Session Name","Session#","Mem Usage"
+  return stdout
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      const cols = line.split('","').map((c) => c.replace(/^"|"$/g, ''));
+      return { imageName: cols[0], pid: cols[1] };
+    })
+    .filter((row) => row.imageName && row.pid);
+}
+
+ipcMain.handle('app-guard:start', (event, allowList) => {
+  if (appGuardInterval) clearInterval(appGuardInterval);
+
+  const allowedLower = new Set((allowList || []).map((n) => String(n).trim().toLowerCase()).filter(Boolean));
+
+  appGuardInterval = setInterval(() => {
+    exec('tasklist /FO CSV /NH', { windowsHide: true }, (error, stdout) => {
+      if (error || !stdout) return;
+      const processes = parseTasklistCsv(stdout);
+
+      for (const proc of processes) {
+        const nameLower = proc.imageName.toLowerCase();
+        if (nameLower === SELF_PROCESS_NAME) continue;
+        if (SYSTEM_SAFE_PROCESS_NAMES.has(nameLower)) continue;
+        if (allowedLower.has(nameLower)) continue;
+
+        exec(`taskkill /PID ${proc.pid} /F`, { windowsHide: true }, (killErr) => {
+          if (killErr) {
+            console.warn(`[AppGuard] Failed to close ${proc.imageName} (PID ${proc.pid}):`, killErr.message);
+            return;
+          }
+          console.log(`[AppGuard] Closed disallowed process: ${proc.imageName} (PID ${proc.pid})`);
+          event.sender.send('app-guard:violation', {
+            processName: proc.imageName,
+            timestamp: Date.now(),
+          });
+        });
+      }
+    });
+  }, 5000);
+
+  return { ok: true };
+});
+
+ipcMain.handle('app-guard:stop', () => {
+  if (appGuardInterval) {
+    clearInterval(appGuardInterval);
+    appGuardInterval = null;
+  }
+  return { ok: true };
+});
+
 function startStaticServer() {
   return new Promise((resolve, reject) => {
     const distPath = path.join(__dirname, "../dist");
@@ -160,6 +251,10 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   if (server) {
     server.close();
+  }
+  if (appGuardInterval) {
+    clearInterval(appGuardInterval);
+    appGuardInterval = null;
   }
   if (process.platform !== "darwin") {
     app.quit();
