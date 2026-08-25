@@ -12,6 +12,7 @@ Follow these steps to set up and run the application locally.
 3. Open `.env` and fill in:
    - `DATABASE_URL`: Set to your local PostgreSQL connection string (e.g., `postgresql://postgres:password@localhost:5432/EduSync`).
    - `JWT_SECRET`: Set to any random secret string.
+   - `VAPID_SUBJECT`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` *(optional, added Aug 25, 2026)*: power Web Push notifications for EduSync Connect. Generate a keypair with `npx web-push generate-vapid-keys`, set `VAPID_SUBJECT` to a `mailto:` contact address. **These are optional** — if any of the three is missing, push notifications silently disable themselves (`GET /connect/push/vapid-public-key` returns `503`, sending becomes a no-op) rather than crashing the server. On a deployed environment (e.g. Render), these must be set in that platform's own environment variable dashboard — a local `.env` file is never deployed.
 
 ## 3. Installation
 Install dependencies in both the Backend and Frontend folders:
