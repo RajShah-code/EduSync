@@ -1,6 +1,6 @@
 # EduSync Codebase Context
 
-Full-codebase technical reference, written from a from-scratch read of every file and folder in this repo (Aug 25, 2026). This is the deep-detail companion to `CLAUDE.md` (which stays short and gotcha-focused) — when `CLAUDE.md` isn't enough, this is where the exhaustive inventory lives. Written for a future session of mine to load fast and get oriented without re-reading the whole repo.
+Full-codebase technical reference, written from a from-scratch read of every file and folder in this repo (Aug 25, 2026; documentation sync pass Aug 26, 2026 covering 5 commits' worth of drift — open-discussion mode removed, the Subject Catalog + Subject Allotments admin feature and its one-way sync into Connect, live tab updates, Web Push notifications, and the admin-panel Dropdown component). This is the deep-detail companion to `CLAUDE.md` (which stays short and gotcha-focused) — when `CLAUDE.md` isn't enough, this is where the exhaustive inventory lives. Written for a future session of mine to load fast and get oriented without re-reading the whole repo.
 
 **Companies/products, read this first:** **Archway** is the parent company. **EduSync** and **EduSync Connect** are two separate products under it, sharing one backend + one Postgres database, otherwise separate codebases:
 - **EduSync** — the in-lab, live-session teaching platform (`Frontend/` + all of `Backend/` except the `connect/` subtrees). Positioned as **software**: primary distribution is the Electron desktop wrapper around this same web app, for lab PCs.
@@ -73,14 +73,16 @@ No shared root `package.json`/workspace — three independent Node projects (`Ba
 | `SessionList.jsx` | List of joinable sessions |
 | `StudentSettings.jsx` | `/users/me` |
 
-### Admin pages (`pages/admin/`, 2 files only)
+### Admin pages (`pages/admin/`, 4 files — added Aug 25, 2026)
 - `AdminUsers.jsx` — full CRUD + bulk-import
 - `AdminClasses.jsx` — `/classes` CRUD
+- `AdminSubjects.jsx` — CRUD for the `subjects` catalog (name + optional code), a standalone reusable list not tied to any class/semester
+- `AdminSubjectAllotments.jsx` — CRUD for `subject_allotments` (class + subject + semester + optional teacher); creating/updating one with a teacher auto-syncs a live EduSync Connect classroom, see §6.1/§6.2 below
 
 Root-level: `LandingPage.jsx` (marketing), `auth/Login.jsx`.
 
 ### Shared UI
-`components/ui/` — 45 shadcn-derived primitives. `components/` — 9 app-specific composites: `AppTour`, `CodeOutputPanel`, `PageShell`, `SessionResume`, `StatusBadge`, `StudentTile`, `TaskStatusModal`, `Timer`, `WhiteboardCanvas`, `WindowsAutoLogin`.
+`components/ui/` — 45 shadcn-derived primitives. `components/` — 10 app-specific composites: `AppTour`, `CodeOutputPanel`, `Dropdown` (added Aug 25, 2026 — the shared custom-styled picker; every native `<select>` across the admin panel now uses this instead), `PageShell`, `SessionResume`, `StatusBadge`, `StudentTile`, `TaskStatusModal`, `Timer`, `WhiteboardCanvas`, `WindowsAutoLogin`.
 
 ### Onboarding tours (undocumented in PRODUCT.md until this update)
 `react-joyride` + `components/AppTour.jsx` + `tours/{admin,student,teacher}TourSteps.js` + `tours/pageTours.js`, `data-tour="..."` attributes scattered across pages. Now documented as PRODUCT.md item 10.
@@ -110,7 +112,8 @@ React 18.3.1, React Router 7.13.0, Vite 6.3.5, Tailwind 4.1.12 (`@tailwindcss/vi
 | `/sessions` | `sessionsRoutes.js` | Root of the `session:<id>` room family — start/end/my-active/my-sessions/kick/session-students (teacher), active/join (student) |
 | `/attendance` | `attendanceRoutes.js` | Per-session report + decide; student's own attendance |
 | `/classes` (`protect()`) | `classesRoutes.js` | `GET /` any role, `POST/PUT` admin-only |
-| `/admin` (`protect(['admin'])`) | `adminRoutes.js` | User CRUD, bulk-import (multer+xlsx), roll-based transient passwords |
+| `/subjects` (`protect()`) | `subjectsRoutes.js` | Added Aug 25, 2026. `GET /` any role; `POST/PUT/DELETE` admin-only. The reusable subject catalog, see §2 and §11.5-equivalent below. |
+| `/admin` (`protect(['admin'])`) | `adminRoutes.js` | User CRUD, bulk-import (multer+xlsx), roll-based transient passwords; also `subjectAllotmentsController.js`'s `GET/POST/PUT/DELETE /admin/subject-allotments` (added Aug 25, 2026 — class+subject+semester+teacher allotments, syncs into Connect, see §6.1/§6.2) |
 | `/tasks` | `tasksRoutes.js` | Create/progress/submissions/score/extend/move_on (teacher); submit/autosave (student) |
 | `/doubts` | `doubtsRoutes.js` | Raise + own doubts (student); session doubts + resolve w/ line hints (teacher) |
 | `/exams` | `examsRoutes.js` | Largest controller — full lifecycle: create→addQuestion→open→start→submit→violation→end→score→results, plus waiting-room count |
@@ -184,6 +187,16 @@ exam_attempts(id, exam_id, student_id, exam_set_id, started_at, submitted_at,
 exam_answers(id, exam_attempt_id, question_id, selected_option, code_answer, score,
              UNIQUE(exam_attempt_id,question_id))
 exam_violations(id, exam_attempt_id, violation_type, occurred_at)
+
+-- Subject Catalog + Semester Allotments (added Aug 25, 2026) --
+subjects(id, name UNIQUE, code, created_at)                        -- reusable catalog, not class/semester-scoped
+subject_allotments(id, class_id→classes CASCADE, subject_id→subjects CASCADE,
+                    semester INTEGER CHECK(1-8), teacher_id→users SET NULL,
+                    created_at, UNIQUE(class_id,subject_id,semester,teacher_id))
+    -- teacher_id nullable = "offered, teacher TBD". Creating/updating with a
+    -- teacher auto-syncs a connect_class_subjects row (§6.1/§6.2); deleting
+    -- the allotment or clearing its teacher_id archives (never deletes) the
+    -- synced classroom.
 ```
 
 `files` (Email My Folder) — **no table at all**, fully stateless beyond the in-memory rate-limit map.
@@ -217,7 +230,7 @@ Own `createBrowserRouter`, teacher/student/admin layouts (same shape as `Fronten
 | `pages/teacher/TeacherClassrooms.jsx` | Grid of teacher's own classrooms |
 | `pages/student/StudentClassrooms.jsx` | Grid of student's enrolled classrooms |
 | `pages/ClassroomStream.jsx` | **The core screen (~1789L).** 5-tab view — Stream/Announcements/Polls/Assignments/Materials — shared between teacher and student via a `role` prop |
-| `pages/admin/AdminAllotments.jsx` | Admin CRUD for class-subject allotments |
+| `pages/admin/AdminAllotments.jsx` | Admin CRUD for class-subject allotments (manual entry point, free-text subject name, no semester) — a second, still-live entry point alongside EduSync's Subject Allotments admin feature's one-way sync (see §6.1); no longer exposes a posting-mode picker (removed Aug 25, 2026) |
 | `pages/admin/AdminAnnouncements.jsx` | Admin global/targeted announcement composer + history |
 
 **Components**: `common/` (7, all real/feature-specific) — `ClassroomCard`, `AnnouncementCard`, `PollCard`, `AssignmentCard`, `MaterialCard`, `StudentSubmissionModal`, `TeacherGradingModal`, `Header`. `ui/` (6, small shadcn subset) — `avatar`, `badge`, `button`, `card`, `input`, `label`.
@@ -230,7 +243,7 @@ Own `createBrowserRouter`, teacher/student/admin layouts (same shape as `Fronten
 
 **File upload**: real `FileReader.readAsDataURL` → base64, matching the backend's base64-JSON-body convention exactly (not multipart/multer).
 
-**Socket events used**: `connect:classroom:join`, `connect:message:new`, `connect:poll:updated` — verified to match the backend's actual event names verbatim.
+**Socket events used**: `connect:classroom:join`, `connect:message:new`, `connect:poll:updated`, plus — added Aug 25, 2026 — `connect:announcement:new`, `connect:assignment:new`, `connect:submission:graded`, `connect:material:new` (closing a prior gap where those three tabs only refreshed on mount/manual refresh) — verified to match the backend's actual event names verbatim.
 
 **Design system**: `src/index.css` is a **separate, hand-copied** value-identical copy of `DESIGN.md`'s tokens — not a shared file/package. If `DESIGN.md` changes, this needs manual re-sync; no automated sync mechanism exists.
 
@@ -242,34 +255,51 @@ Own `createBrowserRouter`, teacher/student/admin layouts (same shape as `Fronten
 
 ## 6. EduSync Connect Backend (`Backend/controllers/connect/`, `Backend/routes/connect/`)
 
-Built across 9 sequential phases in one long session (C1 allotments → C2 UI polish n/a-backend-only → C3 messaging → C4 announcements+posting-mode → C5 polls → C6 assignments → C7 materials → C8 unread-counts → C9 integration/regression). All mounted under `/connect` in `server.js`, all in `routes/connect/connectRoutes.js` (single router file, extended each phase).
+Built across 9 sequential phases in one long session (C1 allotments → C2 UI polish n/a-backend-only → C3 messaging → C4 announcements+posting-mode → C5 polls → C6 assignments → C7 materials → C8 unread-counts → C9 integration/regression), plus a later Aug 25–26, 2026 pass (not part of the original C1–C9 numbering) adding: the Subject Catalog/Allotments sync (§6.1), open-discussion mode's removal, live socket updates for announcements/assignments/materials/grading, and Web Push notifications. All mounted under `/connect` in `server.js`, all in `routes/connect/connectRoutes.js` (single router file, extended each phase).
 
 ### 6.1 Core concept
-One `connect_class_subjects` row = one (teacher, class, subject) allotment, admin-provisioned via `POST/GET/PUT/DELETE /connect/admin/class-subjects`. This is "the classroom" — everything else hangs off `class_subject_id`. A teacher's classroom list is their own allotments (`GET /connect/teacher/my-classrooms`); a student's is every allotment matching their single `users.class_id` (`GET /connect/student/my-classrooms`). Display-name disambiguation (documented decision, not silently picked): teacher view shows `"ClassName(Subject)"` only when that teacher teaches >1 subject to that class, else just `"ClassName"`; student view shows `"Subject(TeacherName)"` only when >1 teacher teaches that subject to their class, else just `"Subject"`.
+One `connect_class_subjects` row = one (teacher, class, subject) allotment. This is "the classroom" — everything else hangs off `class_subject_id`. A teacher's classroom list is their own allotments (`GET /connect/teacher/my-classrooms`); a student's is every allotment matching their single `users.class_id` (`GET /connect/student/my-classrooms`). Display-name disambiguation (documented decision, not silently picked): teacher view shows `"ClassName(Subject)"` only when that teacher teaches >1 subject to that class, else just `"ClassName"` — **unless the row has a `semester` (i.e. it's synced, see below), in which case it's always `"ClassName(SemN) - Subject"`, skipping the disambiguation rule entirely**; student view shows `"Subject(TeacherName)"` only when >1 teacher teaches that subject to their class, else just `"Subject"` (unaffected by semester).
+
+**Two entry points create/manage these rows** (added Aug 25, 2026 — previously only the first existed):
+1. **Connect's own admin page** — `POST/GET/PUT/DELETE /connect/admin/class-subjects`, free-text `subject_name`, no semester. `subject_allotment_id` stays `NULL` on rows created this way.
+2. **One-way sync from EduSync's Subject Catalog + Subject Allotments admin feature** (`Backend/controllers/connect/connectClassroomSync.js`, called from `subjectAllotmentsController.js`) — `subject_allotments` is the source of truth, Connect never writes back to it:
+   - `syncClassroomForAllotment(...)`: creating/updating an allotment with a non-null `teacher_id` upserts the linked classroom, keyed by a `subject_allotment_id` column on `connect_class_subjects` (so a teacher reassignment updates the *same* row, preserving message/poll/assignment history) — falling back to `connect_class_subjects`' own `UNIQUE(teacher_id,class_id,subject_name)` constraint if a manually-created row already matches (links/revives it rather than erroring).
+   - `archiveClassroomForAllotment(...)`: clearing an allotment's `teacher_id`, or deleting the allotment entirely, sets the linked classroom's `status = 'archived'` — **never deletes it**. Archived = read-only (history stays visible, no new posts of any kind via `isClassroomArchived()`/`canSendMessage()` in `connectAccessControl.js`) and dimmed in the UI (`ClassroomCard.jsx`). The owning teacher gets `DELETE /connect/teacher/classrooms/:id` to permanently remove it, but only once archived (refused on a still-active classroom, admin can still hard-delete a live one via `deleteClassSubject`).
 
 ### 6.2 Shared helpers (the load-bearing files)
-- **`connectAccessControl.js`** — `resolveClassroomAccess(userId, role, classSubjectId)`: returns `{classroom, isTeacher, isStudent}` if the user may read/enter this classroom (teacher owns the row, or student's `class_id` matches), else `null`. `canSendMessage(access)`: teacher always; student only if `posting_mode === 'open'`. **Every single Connect endpoint's access check goes through this one function** — reused identically across REST and Socket.io, confirmed by a dedicated full-surface audit in C9 (20 unauthorized-access attempts across every resource type, all correctly 403'd, including an admin-role edge case since admin is neither "owner-teacher" nor "student").
+- **`connectAccessControl.js`** — `resolveClassroomAccess(userId, role, classSubjectId)`: returns `{classroom, isTeacher, isStudent}` if the user may read/enter this classroom (teacher owns the row, or student's `class_id` matches), else `null`. `canSendMessage(access)`: **teacher only, and only if not archived** (updated Aug 25, 2026 — the old `posting_mode === 'open'` branch letting students post is gone; open-discussion mode was removed by product decision, students read + vote in polls, never post). `isClassroomArchived(access)`: the one shared check every other write path (announcements/polls/assignments/materials) layers on top of its own `isTeacher`/access gate — an archived classroom is read-only. **Every single Connect endpoint's access check goes through `resolveClassroomAccess`** — reused identically across REST and Socket.io, confirmed by a dedicated full-surface audit in C9 (20 unauthorized-access attempts across every resource type, all correctly 403'd, including an admin-role edge case since admin is neither "owner-teacher" nor "student").
 - **`connectB2Upload.js`** — shared B2 (Backblaze, S3-compatible) upload helpers: `uploadBufferToB2`, `getPresignedUrlForKey` (fresh URL generated on every read, never baked into the DB — DB stores the object *key*, not a URL, despite column names like `attachment_url`/`file_url`), `deleteObjectFromB2`, `checkUploadRateLimit`/`decodeBase64File` (20MB cap, 5 uploads/hour — **mirrored, not imported, from `filesRoutes.js`'s constants**, since that file can't be edited to export them; kept numerically identical by comment convention, confirmed still in sync as of C9 since both `assignmentsController.js` and `materialsController.js` `require()` this same module rather than redefining anything). Reuses the **same** B2 bucket as EduSync's own Email-My-Folder feature, under a `connect-assignments/` key prefix (materials additionally nest under `connect-assignments/materials/`).
-- **`connectSocketController.js`** — registers a **second, separate** `io.on('connection', ...)` listener (not edited into the existing one), handling `connect:classroom:join` (validates access, joins `connect:classroom:{id}` room, rejects with `connect:error` — doesn't disconnect the whole socket, since it's shared with the rest of the app) and `connect:message:send` (re-validates access + `posting_mode` server-side, persists, broadcasts `connect:message:new`).
+- **`connectSocketController.js`** — registers a **second, separate** `io.on('connection', ...)` listener (not edited into the existing one), handling `connect:classroom:join` (validates access, joins `connect:classroom:{id}` room, rejects with `connect:error` — doesn't disconnect the whole socket, since it's shared with the rest of the app) and `connect:message:send` (re-validates access, archived status, and teacher-only server-side, persists, broadcasts `connect:message:new`, then queues a push via `sendPushToUsers`).
+- **`connectClassroomSync.js`** (added Aug 25, 2026) — `syncClassroomForAllotment`/`archiveClassroomForAllotment`, the one-way sync from `subject_allotments` into `connect_class_subjects` — see §6.1.
+- **`connectNotify.js`** (added Aug 25, 2026) — recipient resolution for push: `resolveClassroomRecipients(classSubjectId)` returns `{teacherId, studentIds}` for one classroom; `resolveAllConnectRecipients()` returns every teacher/student across *every* classroom (used for `is_global` announcements). Both reuse the same `users.class_id` match `myClassroomsController.js` relies on, so recipient resolution can't drift from what "being in this classroom" means elsewhere.
+- **`connectPushSender.js`** (added Aug 25, 2026) — `sendPushToUsers(userIds, {title, body, url})`, the one shared Web Push entry point every trigger below calls. Wraps the `web-push` npm package; `webpush.setVapidDetails(...)` only runs if `VAPID_SUBJECT`/`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` are all set — **a real crash-on-boot bug was caught and fixed here** (commit `481f9c0`, Aug 26, 2026): calling `setVapidDetails` unconditionally at module load crashed the entire server (not just push) on Render, which only had the keys in a local `.env`, never in its own dashboard env vars. Now: missing/incomplete keys log a warning and every call becomes a silent no-op. A subscription that comes back 404/410 (expired/revoked) is deleted from `connect_push_subscriptions` on the spot.
+- **`pushController.js`** (added Aug 25, 2026) — `getVapidPublicKey` (`503` if unconfigured, per the fix above), `subscribe`/`unsubscribe` (upsert/delete by `endpoint`, the globally-unique key a browser's push subscription is keyed on).
 
 ### 6.3 Feature-by-feature endpoint map
 | Feature | Endpoints | Notes |
 |---|---|---|
-| Allotments (admin) | `POST/GET/PUT/DELETE /connect/admin/class-subjects` | |
-| My classrooms | `GET /connect/teacher/my-classrooms`, `GET /connect/student/my-classrooms` | Display-name logic, see 6.1 |
-| Posting-mode toggle | `PATCH /connect/teacher/classrooms/:id/posting-mode` | Teacher-only, own-row-only |
-| Messaging | `GET/POST /connect/classrooms/:id/messages` (cursor pagination on message `id`, `before`/`limit`) + Socket.io `connect:message:send`→`connect:message:new` | REST is a fallback path; socket is primary. REST send also broadcasts via `req.app.get('io')`. |
-| Announcements | `POST /connect/announcements` (role-branched: teacher→own classroom(s) only, admin→specific classroom(s) OR `is_global`, never both), `GET /connect/classrooms/:id/announcements` (targeted ∪ global), `GET /connect/admin/announcements` (admin's own history) | Teacher setting `is_global:true` gets a hard 403, not a silent strip |
-| Polls | `POST/GET /connect/classrooms/:id/polls`, `POST /connect/polls/:id/vote`, `GET /connect/polls/:id/results` | `UNIQUE(poll_id,user_id)` DB constraint — no vote-changing in v1, duplicate vote is a real 409 from the constraint, not just an app check. Vote broadcasts `connect:poll:updated` to the room. |
-| Assignments | `POST/GET /connect/classrooms/:id/assignments`, `POST /connect/assignments/:id/submit`, `GET /connect/assignments/:id/submissions`, `PUT /connect/submissions/:id/grade` | Resubmission is `ON CONFLICT (assignment_id,student_id) DO UPDATE` — same row, not a new one, and clears any prior grade. `is_late` computed once at submit time against `due_at`. Submission ownership for list/grade checked via `creator_id` directly (not "current classroom teacher," in case of a future reassignment). |
-| Materials | `POST/GET /connect/classrooms/:id/materials`, `GET /connect/materials/:id/download`, `DELETE /connect/materials/:id` | List returns metadata only, no baked link (materials are browsed repeatedly, unlike Email-My-Folder's one-time delivery). Delete removes the DB row **and** the real B2 object (verified via `HeadObjectCommand` returning 404 after delete, not just a claim). |
+| Allotments (admin) | `POST/GET/PUT/DELETE /connect/admin/class-subjects` | `posting_mode` is no longer client-settable (updated Aug 25, 2026) — every row is `teacher_only`. |
+| My classrooms | `GET /connect/teacher/my-classrooms`, `GET /connect/student/my-classrooms` | Display-name logic, see §6.1 |
+| Teacher: delete archived classroom | `DELETE /connect/teacher/classrooms/:id` | Added Aug 25, 2026. Own-row-only, and only once `status = 'archived'` (400 if still active) — see §6.1's sync/archive behavior. |
+| Messaging | `GET/POST /connect/classrooms/:id/messages` (cursor pagination on message `id`, `before`/`limit`) + Socket.io `connect:message:send`→`connect:message:new` | REST is a fallback path; socket is primary. REST send also broadcasts via `req.app.get('io')`. Both paths now also push-notify the classroom's students via `sendPushToUsers` (added Aug 25, 2026). |
+| Announcements | `POST /connect/announcements` (role-branched: teacher→own classroom(s) only, admin→specific classroom(s) OR `is_global`, never both), `GET /connect/classrooms/:id/announcements` (targeted ∪ global), `GET /connect/admin/announcements` (admin's own history) | Teacher setting `is_global:true` gets a hard 403, not a silent strip. Now also broadcasts `connect:announcement:new` to every targeted room (or every classroom room if global) and pushes: students always, **plus the owning teacher(s) when the announcement is admin-authored** (added Aug 25, 2026). |
+| Polls | `POST/GET /connect/classrooms/:id/polls`, `POST /connect/polls/:id/vote`, `GET /connect/polls/:id/results` | `UNIQUE(poll_id,user_id)` DB constraint — no vote-changing in v1, duplicate vote is a real 409 from the constraint, not just an app check. Vote broadcasts `connect:poll:updated` to the room. No push notification for polls (not in the agreed trigger list). |
+| Assignments | `POST/GET /connect/classrooms/:id/assignments`, `POST /connect/assignments/:id/submit`, `GET /connect/assignments/:id/submissions`, `PUT /connect/submissions/:id/grade` | Resubmission is `ON CONFLICT (assignment_id,student_id) DO UPDATE` — same row, not a new one, and clears any prior grade. `is_late` computed once at submit time against `due_at`. Submission ownership for list/grade checked via `creator_id` directly (not "current classroom teacher," in case of a future reassignment). Creating an assignment now broadcasts `connect:assignment:new` + pushes the classroom's students; grading now broadcasts `connect:submission:graded` + pushes that one student (added Aug 25, 2026). |
+| Materials | `POST/GET /connect/classrooms/:id/materials`, `GET /connect/materials/:id/download`, `DELETE /connect/materials/:id` | List returns metadata only, no baked link (materials are browsed repeatedly, unlike Email-My-Folder's one-time delivery). Delete removes the DB row **and** the real B2 object (verified via `HeadObjectCommand` returning 404 after delete, not just a claim). Uploading now broadcasts `connect:material:new` to the room (added Aug 25, 2026) — **no push notification** for materials (not in the agreed trigger list, socket-only). |
 | Unread counts | `POST /connect/classrooms/:id/mark-seen`, `GET /connect/unread-summary` | Single `last_seen_at` timestamp per (user, classroom) — not per-message read receipts. Summary is 3 batched aggregate queries (messages/announcements/ungraded-submissions) across *all* the user's classrooms at once, not N+1 per classroom. Ungraded-submissions count is **not** time-gated by `last_seen_at` — it's a standing "needs action" count, not a since-you-looked count. **No frontend consumer yet** — see §5. |
+| Web Push (added Aug 25, 2026) | `GET /connect/push/vapid-public-key` (`503` if unconfigured), `POST/DELETE /connect/push/subscribe` | `protect()`, no role restriction — both students and teachers subscribe. See §6.2's `connectPushSender.js`/`pushController.js`. |
 
 ### 6.4 Full `connect_*` schema (`config/dbSetup.js`, additive-only block)
 ```
 connect_class_subjects(id, teacher_id→users, class_id→classes, subject_name,
-    posting_mode CHECK∈{teacher_only,open} DEFAULT teacher_only, created_at,
+    posting_mode CHECK∈{teacher_only} DEFAULT teacher_only, created_at,
+    subject_allotment_id→subject_allotments SET NULL, semester INTEGER,
+    status CHECK∈{active,archived} DEFAULT active,
     UNIQUE(teacher_id,class_id,subject_name))
+    -- posting_mode's CHECK was tightened to teacher_only-only on Aug 25,
+    -- 2026 (existing 'open' rows migrated first) — see §6.1/§6.2.
+    -- subject_allotment_id/semester/status added same day for the sync
+    -- from EduSync's Subject Allotments feature — see §6.1.
 connect_messages(id, class_subject_id→connect_class_subjects CASCADE,
     sender_id→users, sender_role, content, created_at)
 connect_announcements(id, author_id→users, author_role, content,
@@ -290,6 +320,8 @@ connect_materials(id, class_subject_id→connect_class_subjects CASCADE, uploade
     title, file_url TEXT (B2 key) NOT NULL, file_type, file_size_bytes, created_at)
 connect_read_state(id, user_id→users, class_subject_id→connect_class_subjects CASCADE,
     last_seen_at, UNIQUE(user_id,class_subject_id))
+connect_push_subscriptions(id, user_id→users CASCADE, endpoint TEXT UNIQUE,
+    p256dh, auth, created_at)                      -- added Aug 25, 2026, one row per browser/device
 ```
 
 ### 6.5 `server.js` changes made for Connect (all additive, nothing existing edited)
