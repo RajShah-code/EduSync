@@ -487,6 +487,39 @@ const setup = async () => {
     `;
     console.log("Database Setup: connect_read_state table checked.");
 
+    // ── Subject Catalog + Semester-Based Allotments ─────────────────────────
+    // subjects: a reusable, standalone catalog (name/code), not tied to any
+    // one class or semester — the same "Data Structures" row is reused
+    // across every class/semester that teaches it.
+    await sql`
+      CREATE TABLE IF NOT EXISTS subjects (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        code VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (name)
+      );
+    `;
+    console.log("Database Setup: subjects table checked.");
+
+    // subject_allotments: one row = one concrete "Subject S is taught to
+    // Class C in Semester N (by Teacher T)" fact. teacher_id is nullable so
+    // a subject can be allotted to a class/semester before a teacher is
+    // assigned. ON DELETE SET NULL on teacher_id (not CASCADE) so removing
+    // a teacher doesn't erase the curriculum record itself.
+    await sql`
+      CREATE TABLE IF NOT EXISTS subject_allotments (
+        id SERIAL PRIMARY KEY,
+        class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+        subject_id INTEGER NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+        semester INTEGER NOT NULL CHECK (semester BETWEEN 1 AND 8),
+        teacher_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (class_id, subject_id, semester, teacher_id)
+      );
+    `;
+    console.log("Database Setup: subject_allotments table checked.");
+
     // 3. Seed default classes if none exist
     const [{ count: classCount }] = await sql`SELECT COUNT(*)::int FROM classes;`;
     if (classCount === 0) {

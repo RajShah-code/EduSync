@@ -15,6 +15,13 @@ const {
   deleteUser,
 } = require('../controllers/adminController');
 
+const {
+  listAllotments,
+  createAllotment,
+  updateAllotment,
+  deleteAllotment,
+} = require('../controllers/subjectAllotmentsController');
+
 // All endpoints registered here are prefix-guarded by /admin and restrict to 'admin' role
 // GET /admin/users
 router.get('/users', getUsers);
@@ -33,5 +40,17 @@ router.post('/users/:id/reset-password', resetUserPassword);
 
 // DELETE /admin/users/:id
 router.delete('/users/:id', deleteUser);
+
+// GET /admin/subject-allotments
+router.get('/subject-allotments', listAllotments);
+
+// POST /admin/subject-allotments
+router.post('/subject-allotments', createAllotment);
+
+// PUT /admin/subject-allotments/:id
+router.put('/subject-allotments/:id', updateAllotment);
+
+// DELETE /admin/subject-allotments/:id
+router.delete('/subject-allotments/:id', deleteAllotment);
 
 module.exports = router;
