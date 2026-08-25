@@ -172,12 +172,20 @@ const setup = async () => {
       ADD COLUMN IF NOT EXISTS default_reminder_delay_minutes INTEGER DEFAULT 5;
     `;
     
-    // Update users_role_check constraint to allow 'admin'
+    // Update users_role_check constraint to allow 'admin'.
+    // Wrapped in DO/EXCEPTION (not just DROP-then-ADD) because the DROP can
+    // report "does not exist, skipping" while the ADD still hits a
+    // duplicate — observed against the shared Neon DB, likely a replica/
+    // caching lag between the two statements. The EXCEPTION guard makes
+    // this idempotent regardless of that race.
     await sql`
       ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
     `;
     await sql`
-      ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('teacher', 'student', 'admin'));
+      DO $$ BEGIN
+        ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('teacher', 'student', 'admin'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
     `;
     console.log("Database Setup: users table columns and check constraint checked.");
 
@@ -307,6 +315,177 @@ const setup = async () => {
       );
     `;
     console.log("Database Setup: exam_violations table checked.");
+
+    // ── EduSync Connect (companion app) — additive-only foundation phase.
+    // connect_class_subjects is the source of truth for a "classroom group":
+    // one row = one (teacher, class, subject) allotment. posting_mode is
+    // decided per classroom by the teacher who owns it.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_class_subjects (
+        id SERIAL PRIMARY KEY,
+        teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+        subject_name VARCHAR(255) NOT NULL,
+        posting_mode VARCHAR(20) NOT NULL DEFAULT 'teacher_only' CHECK (posting_mode IN ('teacher_only', 'open')),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (teacher_id, class_id, subject_name)
+      );
+    `;
+    console.log("Database Setup: connect_class_subjects table checked.");
+
+    // connect_messages — real-time classroom messages, scoped to one
+    // connect_class_subjects row per message.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_messages (
+        id SERIAL PRIMARY KEY,
+        class_subject_id INTEGER NOT NULL REFERENCES connect_class_subjects(id) ON DELETE CASCADE,
+        sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        sender_role VARCHAR(20) NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log("Database Setup: connect_messages table checked.");
+
+    // connect_announcements — a teacher's own-classroom pin, or an admin's
+    // targeted/global broadcast. is_global = true means "every classroom" —
+    // connect_announcement_targets is intentionally left empty for those.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_announcements (
+        id SERIAL PRIMARY KEY,
+        author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        author_role VARCHAR(20) NOT NULL,
+        content TEXT NOT NULL,
+        is_global BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log("Database Setup: connect_announcements table checked.");
+
+    // connect_announcement_targets — one row per (announcement, classroom)
+    // it was sent to. Not populated at all when the announcement is_global.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_announcement_targets (
+        id SERIAL PRIMARY KEY,
+        announcement_id INTEGER NOT NULL REFERENCES connect_announcements(id) ON DELETE CASCADE,
+        class_subject_id INTEGER NOT NULL REFERENCES connect_class_subjects(id) ON DELETE CASCADE
+      );
+    `;
+    console.log("Database Setup: connect_announcement_targets table checked.");
+
+    // connect_polls — one poll per classroom. closes_at NULL means open
+    // indefinitely (no deadline).
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_polls (
+        id SERIAL PRIMARY KEY,
+        class_subject_id INTEGER NOT NULL REFERENCES connect_class_subjects(id) ON DELETE CASCADE,
+        creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        question TEXT NOT NULL,
+        closes_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log("Database Setup: connect_polls table checked.");
+
+    // connect_poll_options — the choices for a poll, in display order.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_poll_options (
+        id SERIAL PRIMARY KEY,
+        poll_id INTEGER NOT NULL REFERENCES connect_polls(id) ON DELETE CASCADE,
+        option_text TEXT NOT NULL,
+        display_order INTEGER NOT NULL DEFAULT 0
+      );
+    `;
+    console.log("Database Setup: connect_poll_options table checked.");
+
+    // connect_poll_votes — one vote per user per poll, enforced at the DB
+    // level (not just app logic) via UNIQUE(poll_id, user_id). No
+    // vote-changing in v1: a second vote attempt hits this constraint and
+    // is surfaced as a real 409, not silently overwritten.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_poll_votes (
+        id SERIAL PRIMARY KEY,
+        poll_id INTEGER NOT NULL REFERENCES connect_polls(id) ON DELETE CASCADE,
+        option_id INTEGER NOT NULL REFERENCES connect_poll_options(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (poll_id, user_id)
+      );
+    `;
+    console.log("Database Setup: connect_poll_votes table checked.");
+
+    // connect_assignments — attachment_url stores a B2 OBJECT KEY, not a
+    // baked presigned URL (those expire; a fresh one is generated per read
+    // in the controller). due_at NULL means no deadline.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_assignments (
+        id SERIAL PRIMARY KEY,
+        class_subject_id INTEGER NOT NULL REFERENCES connect_class_subjects(id) ON DELETE CASCADE,
+        creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        attachment_url TEXT,
+        due_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log("Database Setup: connect_assignments table checked.");
+
+    // connect_submissions — one row per (assignment, student), enforced at
+    // the DB level. A resubmission is an UPDATE of this same row (via
+    // ON CONFLICT DO UPDATE in the controller), never a second row.
+    // file_url stores a B2 object key, same convention as attachment_url
+    // above. is_late is computed once at submit time against due_at.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_submissions (
+        id SERIAL PRIMARY KEY,
+        assignment_id INTEGER NOT NULL REFERENCES connect_assignments(id) ON DELETE CASCADE,
+        student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        text_content TEXT,
+        file_url TEXT,
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_late BOOLEAN NOT NULL DEFAULT false,
+        grade NUMERIC,
+        feedback TEXT,
+        graded_at TIMESTAMP,
+        graded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        UNIQUE (assignment_id, student_id)
+      );
+    `;
+    console.log("Database Setup: connect_submissions table checked.");
+
+    // connect_materials — teacher-uploaded study materials for a classroom.
+    // file_url stores a B2 object key (same convention as
+    // connect_assignments.attachment_url) — download links are generated
+    // on-demand, not baked in, since materials are browsed repeatedly.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_materials (
+        id SERIAL PRIMARY KEY,
+        class_subject_id INTEGER NOT NULL REFERENCES connect_class_subjects(id) ON DELETE CASCADE,
+        uploader_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        file_url TEXT NOT NULL,
+        file_type VARCHAR(100),
+        file_size_bytes INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log("Database Setup: connect_materials table checked.");
+
+    // connect_read_state — one row per (user, classroom): the last time
+    // that user marked that classroom "seen". Deliberately a single
+    // timestamp, not per-message/per-announcement read flags — that would
+    // be a heavier, different feature.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_read_state (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        class_subject_id INTEGER NOT NULL REFERENCES connect_class_subjects(id) ON DELETE CASCADE,
+        last_seen_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (user_id, class_subject_id)
+      );
+    `;
+    console.log("Database Setup: connect_read_state table checked.");
 
     // 3. Seed default classes if none exist
     const [{ count: classCount }] = await sql`SELECT COUNT(*)::int FROM classes;`;
