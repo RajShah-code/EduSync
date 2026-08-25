@@ -5,7 +5,6 @@ import {
   fetchClassroomsByRole,
   fetchClassroomMessages,
   sendClassroomMessage,
-  updateClassroomPostingMode,
   fetchClassroomAnnouncements,
   createAnnouncement,
   fetchClassroomPolls,
@@ -81,9 +80,6 @@ export function ClassroomStream({ role = "teacher" }) {
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
 
-  const [postingMode, setPostingMode] = useState(classroom?.posting_mode || "teacher_only");
-  const [togglingMode, setTogglingMode] = useState(false);
-
   // Teacher Announcement Composer State
   const [showAnnouncementComposer, setShowAnnouncementComposer] = useState(false);
   const [announcementText, setAnnouncementText] = useState("");
@@ -136,7 +132,6 @@ export function ClassroomStream({ role = "teacher" }) {
 
     async function loadClassroom() {
       if (classroom) {
-        setPostingMode(classroom.posting_mode || "teacher_only");
         return;
       }
 
@@ -146,7 +141,6 @@ export function ClassroomStream({ role = "teacher" }) {
         const found = list.find((c) => String(c.id) === String(id));
         if (found && isMounted) {
           setClassroom(found);
-          setPostingMode(found.posting_mode || "teacher_only");
         } else if (isMounted) {
           setError("Classroom not found or you do not have permission to view it.");
         }
@@ -341,6 +335,41 @@ export function ClassroomStream({ role = "teacher" }) {
       );
     }
 
+    function handleNewAnnouncement(newAnnouncement) {
+      setAnnouncements((prev) => {
+        if (prev.some((a) => a.id === newAnnouncement.id)) return prev;
+        return [newAnnouncement, ...prev];
+      });
+    }
+
+    function handleNewAssignment(newAssignment) {
+      if (String(newAssignment.class_subject_id) === String(classSubjectId)) {
+        setAssignments((prev) => {
+          if (prev.some((a) => a.id === newAssignment.id)) return prev;
+          return [newAssignment, ...prev];
+        });
+      }
+    }
+
+    function handleSubmissionGraded(updatedSubmission) {
+      if (String(updatedSubmission.student_id) !== String(user?.id)) return;
+      setAssignments((prev) =>
+        prev.map((a) => {
+          if (a.id !== updatedSubmission.assignment_id) return a;
+          return { ...a, submission_status: "graded", my_submission: updatedSubmission };
+        })
+      );
+    }
+
+    function handleNewMaterial(newMaterial) {
+      if (String(newMaterial.class_subject_id) === String(classSubjectId)) {
+        setMaterials((prev) => {
+          if (prev.some((m) => m.id === newMaterial.id)) return prev;
+          return [newMaterial, ...prev];
+        });
+      }
+    }
+
     if (socket.connected) {
       handleConnect();
     } else {
@@ -349,13 +378,21 @@ export function ClassroomStream({ role = "teacher" }) {
 
     socket.on("connect:message:new", handleNewMessage);
     socket.on("connect:poll:updated", handlePollUpdated);
+    socket.on("connect:announcement:new", handleNewAnnouncement);
+    socket.on("connect:assignment:new", handleNewAssignment);
+    socket.on("connect:submission:graded", handleSubmissionGraded);
+    socket.on("connect:material:new", handleNewMaterial);
 
     return () => {
       socket.off("connect", handleConnect);
       socket.off("connect:message:new", handleNewMessage);
       socket.off("connect:poll:updated", handlePollUpdated);
+      socket.off("connect:announcement:new", handleNewAnnouncement);
+      socket.off("connect:assignment:new", handleNewAssignment);
+      socket.off("connect:submission:graded", handleSubmissionGraded);
+      socket.off("connect:material:new", handleNewMaterial);
     };
-  }, [classSubjectId]);
+  }, [classSubjectId, user?.id]);
 
   // 9. Scroll to bottom when new messages arrive (Stream tab only)
   useEffect(() => {
@@ -370,8 +407,7 @@ export function ClassroomStream({ role = "teacher" }) {
     const content = inputText.trim();
     if (!content || sending) return;
 
-    const canSend = isTeacher || postingMode === "open";
-    if (!canSend) return;
+    if (!isTeacher) return;
 
     setSending(true);
     setInputText("");
@@ -401,24 +437,6 @@ export function ClassroomStream({ role = "teacher" }) {
       setError(err.message || "Failed to deliver message. Please try again.");
     } finally {
       setSending(false);
-    }
-  };
-
-  // 11. Teacher Toggle Posting Mode
-  const handleTogglePostingMode = async () => {
-    if (!isTeacher || togglingMode) return;
-
-    const nextMode = postingMode === "open" ? "teacher_only" : "open";
-    setTogglingMode(true);
-    setPostingMode(nextMode);
-
-    try {
-      await updateClassroomPostingMode(classSubjectId, nextMode);
-    } catch (err) {
-      console.error("Failed to update posting mode:", err);
-      setPostingMode(postingMode);
-    } finally {
-      setTogglingMode(false);
     }
   };
 
@@ -717,7 +735,7 @@ export function ClassroomStream({ role = "teacher" }) {
   // unassigned in the main EduSync admin panel — read-only from here on,
   // history stays fully visible but nothing new can be posted.
   const isArchived = classroom?.status === "archived";
-  const canPost = (isTeacher || postingMode === "open") && !isArchived;
+  const canPost = isTeacher && !isArchived;
 
   const parsed = parseClassroomDisplayName(
     classroom?.display_name || classroom?.subject_name || classroom?.class_name || "Classroom"
@@ -763,42 +781,16 @@ export function ClassroomStream({ role = "teacher" }) {
           </div>
         </div>
 
-        {/* Right Controls: Posting Mode Badge & Teacher Switch */}
+        {/* Right Controls: Mode Badge & Refresh */}
         <div className="flex items-center gap-3">
-          {isTeacher && !isArchived ? (
-            <Button
-              variant={postingMode === "open" ? "secondary" : "outline"}
-              size="sm"
-              onClick={handleTogglePostingMode}
-              disabled={togglingMode}
-              className="h-8 text-xs gap-1.5 border-border"
-              title="Toggle student permission to send messages"
-            >
-              {postingMode === "open" ? (
-                <>
-                  <MessagesSquare className="w-3.5 h-3.5 text-accent-success" />
-                  <span className="hidden sm:inline">Mode: Open Discussion</span>
-                  <span className="sm:hidden">Open</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-3.5 h-3.5 text-text-muted" />
-                  <span className="hidden sm:inline">Mode: Announcements Only</span>
-                  <span className="sm:hidden">Broadcast</span>
-                </>
-              )}
-            </Button>
-          ) : isArchived ? (
+          {isArchived ? (
             <Badge variant="secondary" className="text-[11px] font-normal gap-1">
               <Archive className="w-3 h-3" />
               Archived — Read Only
             </Badge>
           ) : (
-            <Badge
-              variant={postingMode === "open" ? "success" : "secondary"}
-              className="text-[11px] font-normal"
-            >
-              {postingMode === "open" ? "Open Discussion" : "Announcements Only"}
+            <Badge variant="secondary" className="text-[11px] font-normal">
+              Announcements Only
             </Badge>
           )}
 

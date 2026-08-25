@@ -1,15 +1,57 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, MessagesSquare, Sparkles } from "lucide-react";
+import { LogOut, MessagesSquare, Sparkles, Bell, BellOff, Loader2 } from "lucide-react";
 import { getClassMonogram } from "@/lib/utils";
+import {
+  isPushSupported,
+  getCurrentSubscription,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/pushNotifications";
 
 export function Header({ role = "teacher", title = "Classrooms" }) {
   const { user, logout } = useAuth();
   const roleLabel = role === "teacher" ? "Faculty" : "Student";
   const userInitials = getClassMonogram(user?.name || (role === "teacher" ? "Prof" : "Student"));
+
+  // Notifications toggle — reflects whether THIS browser/device already has
+  // an active push subscription, not just a stored preference, since the
+  // browser/OS is the actual source of truth for permission state.
+  const [pushSupported] = useState(isPushSupported());
+  const [subscribed, setSubscribed] = useState(false);
+  const [checkingPush, setCheckingPush] = useState(true);
+  const [togglingPush, setTogglingPush] = useState(false);
+
+  useEffect(() => {
+    if (!pushSupported) {
+      setCheckingPush(false);
+      return;
+    }
+    getCurrentSubscription()
+      .then((sub) => setSubscribed(!!sub))
+      .finally(() => setCheckingPush(false));
+  }, [pushSupported]);
+
+  const handleTogglePush = async () => {
+    if (togglingPush) return;
+    setTogglingPush(true);
+    try {
+      if (subscribed) {
+        await unsubscribeFromPush();
+        setSubscribed(false);
+      } else {
+        await subscribeToPush();
+        setSubscribed(true);
+      }
+    } catch (err) {
+      console.error("[Push] toggle failed:", err.message);
+    } finally {
+      setTogglingPush(false);
+    }
+  };
 
   return (
     <header className="h-16 border-b border-border bg-bg-surface px-6 flex items-center justify-between sticky top-0 z-30">
@@ -55,6 +97,25 @@ export function Header({ role = "teacher", title = "Classrooms" }) {
             </span>
           </div>
         </div>
+
+        {pushSupported && !checkingPush && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleTogglePush}
+            disabled={togglingPush}
+            className={`h-8 px-2.5 ${subscribed ? "text-accent-500 hover:text-accent-500/80" : "text-text-muted hover:text-text-primary"}`}
+            title={subscribed ? "Turn off notifications" : "Turn on notifications"}
+          >
+            {togglingPush ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : subscribed ? (
+              <Bell className="w-4 h-4" />
+            ) : (
+              <BellOff className="w-4 h-4" />
+            )}
+          </Button>
+        )}
 
         <Button
           variant="ghost"

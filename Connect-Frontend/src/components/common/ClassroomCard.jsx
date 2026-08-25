@@ -9,7 +9,6 @@ import {
   MessageSquare,
   ArrowUpRight,
   Lock,
-  MessagesSquare,
   Calendar,
   Archive,
   Trash2,
@@ -30,7 +29,6 @@ export function ClassroomCard({
     class_name,
     subject_name,
     teacher_name,
-    posting_mode = "teacher_only",
     unread_messages = 0,
     created_at,
     status = "active",
@@ -123,8 +121,8 @@ export function ClassroomCard({
               </div>
             </div>
 
-            {/* Archived badge takes priority over unread/posting-mode —
-                an archived room is read-only, so those are moot. */}
+            {/* Archived badge takes priority over unread — an archived
+                room is read-only, so unread count is moot. */}
             {isArchived ? (
               <Badge variant="outline" className="gap-1 text-[10px] py-0 px-2 h-4 shrink-0 font-normal text-text-muted border-border">
                 <Archive className="w-3 h-3" />
@@ -137,7 +135,7 @@ export function ClassroomCard({
               </Badge>
             ) : (
               <Badge variant="secondary" className="text-[10px] py-0 px-2 h-4 shrink-0 font-normal">
-                {posting_mode === "open" ? "Open" : "Broadcast"}
+                Broadcast
               </Badge>
             )}
           </div>
@@ -152,17 +150,13 @@ export function ClassroomCard({
               <span className="text-text-primary truncate font-medium">{subject_name || parsed.detail || "General"}</span>
             </div>
 
-            {/* Channel mode */}
+            {/* Channel mode — every classroom is faculty broadcast only,
+                except an archived one which is read-only for everyone. */}
             <div className="flex items-center gap-1.5 text-text-secondary">
               {isArchived ? (
                 <div className="flex items-center gap-1 text-text-muted">
                   <Archive className="w-3.5 h-3.5 shrink-0" />
                   <span className="text-[11px]">Read-only</span>
-                </div>
-              ) : posting_mode === "open" ? (
-                <div className="flex items-center gap-1 text-accent-success">
-                  <MessagesSquare className="w-3.5 h-3.5 shrink-0" />
-                  <span className="text-[11px] font-medium">Open chat</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 text-text-muted">
