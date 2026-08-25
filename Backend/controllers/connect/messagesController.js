@@ -1,5 +1,5 @@
 const sql = require('../../config/db');
-const { resolveClassroomAccess, canSendMessage } = require('./connectAccessControl');
+const { resolveClassroomAccess, canSendMessage, isClassroomArchived } = require('./connectAccessControl');
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
@@ -66,6 +66,9 @@ const sendMessage = async (req, res) => {
     const access = await resolveClassroomAccess(userId, role, classSubjectId);
     if (!access) {
       return res.status(403).json({ message: 'You do not have access to this classroom' });
+    }
+    if (isClassroomArchived(access)) {
+      return res.status(403).json({ message: 'This classroom has been archived and is read-only' });
     }
     if (!canSendMessage(access)) {
       return res.status(403).json({ message: 'This classroom is teacher-only — students cannot post here' });

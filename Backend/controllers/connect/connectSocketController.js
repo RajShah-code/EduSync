@@ -1,5 +1,5 @@
 const sql = require('../../config/db');
-const { resolveClassroomAccess, canSendMessage } = require('./connectAccessControl');
+const { resolveClassroomAccess, canSendMessage, isClassroomArchived } = require('./connectAccessControl');
 
 // registerConnectSocketHandlers — attaches EduSync Connect's real-time
 // events onto the SAME Socket.io instance the rest of the app uses.
@@ -64,6 +64,13 @@ module.exports = function registerConnectSocketHandlers(io) {
           return socket.emit('connect:error', {
             classSubjectId,
             message: 'You do not have access to this classroom',
+          });
+        }
+        if (isClassroomArchived(access)) {
+          console.log(`[Connect] REJECTED send — classroom ${classSubjectId} is archived (read-only)`);
+          return socket.emit('connect:error', {
+            classSubjectId,
+            message: 'This classroom has been archived and is read-only',
           });
         }
         if (!canSendMessage(access)) {

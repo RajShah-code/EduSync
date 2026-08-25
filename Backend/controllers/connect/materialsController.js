@@ -1,5 +1,5 @@
 const sql = require('../../config/db');
-const { resolveClassroomAccess } = require('./connectAccessControl');
+const { resolveClassroomAccess, isClassroomArchived } = require('./connectAccessControl');
 const {
   checkUploadRateLimit,
   decodeBase64File,
@@ -34,6 +34,9 @@ const createMaterial = async (req, res) => {
     const access = await resolveClassroomAccess(userId, role, classSubjectId);
     if (!access || !access.isTeacher) {
       return res.status(403).json({ message: 'Only the teacher of this classroom can upload materials' });
+    }
+    if (isClassroomArchived(access)) {
+      return res.status(403).json({ message: 'This classroom has been archived and is read-only' });
     }
 
     const limit = checkUploadRateLimit(userId);

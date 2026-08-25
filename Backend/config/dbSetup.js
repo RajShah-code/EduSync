@@ -520,6 +520,21 @@ const setup = async () => {
     `;
     console.log("Database Setup: subject_allotments table checked.");
 
+    // Links a connect_class_subjects row back to the subject_allotments row
+    // that created it via the main EduSync admin panel's sync (see
+    // connectClassroomSync.js). NULL for classrooms Connect's own admin
+    // page created manually — those are untouched by the sync. Must be
+    // added after subject_allotments exists (the FK target above).
+    await sql`ALTER TABLE connect_class_subjects ADD COLUMN IF NOT EXISTS subject_allotment_id INTEGER REFERENCES subject_allotments(id) ON DELETE SET NULL;`;
+    // Populated only for synced classrooms — drives the richer
+    // "ClassName(SemN) - Subject" teacher-side display name.
+    await sql`ALTER TABLE connect_class_subjects ADD COLUMN IF NOT EXISTS semester INTEGER;`;
+    // 'active' | 'archived'. Deleting/unassigning the linked allotment
+    // archives (never deletes) the classroom — read-only, no new posts,
+    // history preserved. See connectClassroomSync.js.
+    await sql`ALTER TABLE connect_class_subjects ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived'));`;
+    console.log("Database Setup: connect_class_subjects sync columns (subject_allotment_id/semester/status) checked.");
+
     // 3. Seed default classes if none exist
     const [{ count: classCount }] = await sql`SELECT COUNT(*)::int FROM classes;`;
     if (classCount === 0) {

@@ -34,7 +34,7 @@ const createAnnouncement = async (req, res) => {
       // Ownership re-verified server-side for every target — never trust
       // the client's own list of "classrooms I teach".
       const owned = await sql`
-        SELECT id FROM connect_class_subjects
+        SELECT id, status FROM connect_class_subjects
         WHERE id = ANY(${targetIds}) AND teacher_id = ${userId}
       `;
       const ownedIds = new Set(owned.map((r) => r.id));
@@ -43,6 +43,14 @@ const createAnnouncement = async (req, res) => {
         return res.status(403).json({
           message: 'You can only post announcements to classrooms you teach',
           not_owned: notOwned,
+        });
+      }
+
+      const archived = owned.filter((r) => r.status === 'archived').map((r) => r.id);
+      if (archived.length > 0) {
+        return res.status(403).json({
+          message: 'This classroom has been archived and is read-only',
+          archived,
         });
       }
 
