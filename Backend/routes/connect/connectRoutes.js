@@ -6,7 +6,6 @@ const {
   listClassSubjects,
   updateClassSubject,
   deleteClassSubject,
-  updateOwnPostingMode,
   deleteOwnArchivedClassroom,
 } = require('../../controllers/connect/classSubjectsController');
 const {
@@ -34,6 +33,7 @@ const {
   deleteMaterial,
 } = require('../../controllers/connect/materialsController');
 const { markSeen, getUnreadSummary } = require('../../controllers/connect/notificationsController');
+const { getVapidPublicKey, subscribe, unsubscribe } = require('../../controllers/connect/pushController');
 
 // ── Admin: class-subject allotment management ──────────────────────────────
 router.post('/admin/class-subjects', protect(['admin']), createClassSubject);
@@ -57,9 +57,6 @@ router.post('/classrooms/:classSubjectId/messages', protect(), sendMessage);
 router.post('/announcements', protect(['teacher', 'admin']), createAnnouncement);
 router.get('/classrooms/:classSubjectId/announcements', protect(), getClassroomAnnouncements);
 router.get('/admin/announcements', protect(['admin']), getAdminAnnouncements);
-
-// ── Teacher: toggle their own classroom's posting_mode ──────────────────
-router.patch('/teacher/classrooms/:classSubjectId/posting-mode', protect(['teacher']), updateOwnPostingMode);
 
 // ── Teacher: delete their own classroom, but only once it's archived
 // (i.e. its curriculum allotment was removed/unassigned) — deleting a
@@ -99,5 +96,11 @@ router.delete('/materials/:id', protect(['teacher']), deleteMaterial);
 // classrooms, role-branched inside the controller. ────────────────────────
 router.post('/classrooms/:classSubjectId/mark-seen', protect(), markSeen);
 router.get('/unread-summary', protect(), getUnreadSummary);
+
+// ── Web Push — subscribe/unsubscribe this browser/device, no role
+// restriction (both students and teachers use this). ─────────────────────
+router.get('/push/vapid-public-key', protect(), getVapidPublicKey);
+router.post('/push/subscribe', protect(), subscribe);
+router.delete('/push/subscribe', protect(), unsubscribe);
 
 module.exports = router;

@@ -33,15 +33,14 @@ async function resolveClassroomAccess(userId, role, classSubjectId) {
   return null;
 }
 
-// canSendMessage — the posting_mode gate layered on top of read access.
-// Teacher can always send; a student can send only when posting_mode is
-// 'open'. Assumes `access` already came back non-null from
-// resolveClassroomAccess (i.e. read access is already established).
+// canSendMessage — only the teacher who owns the classroom can ever send.
+// "Open discussion" mode was removed by product decision: students read
+// and vote in polls, never post. Assumes `access` already came back
+// non-null from resolveClassroomAccess (i.e. read access is established).
 function canSendMessage(access) {
   if (!access) return false;
   if (access.classroom.status === 'archived') return false;
-  if (access.isTeacher) return true;
-  return access.classroom.posting_mode === 'open';
+  return access.isTeacher;
 }
 
 // isClassroomArchived — the one shared check every other write path

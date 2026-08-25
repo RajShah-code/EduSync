@@ -1,5 +1,45 @@
 const sql = require('../../config/db');
 const { resolveClassroomAccess } = require('./connectAccessControl');
+const { resolveClassroomRecipients, resolveAllConnectRecipients } = require('./connectNotify');
+const { sendPushToUsers } = require('./connectPushSender');
+
+// notifyAnnouncement — live-broadcasts + pushes one announcement to its
+// recipients. Students always get it; teachers only get it when the
+// announcement is admin-authored (per product decision — a teacher's own
+// announcement to their own classroom doesn't need to notify themselves).
+// Students and teachers get separate push payloads since their deep-link
+// URL differs (each role has its own classroom route).
+async function notifyAnnouncement({ io, announcement, isGlobal, targetIds, authorRole }) {
+  const notifyTeacherToo = authorRole === 'admin';
+  const title = 'New announcement';
+  const body = announcement.content.slice(0, 120);
+
+  if (isGlobal) {
+    const rooms = await sql`SELECT id FROM connect_class_subjects`;
+    for (const { id } of rooms) {
+      io?.to(`connect:classroom:${id}`).emit('connect:announcement:new', announcement);
+    }
+    const { teacherIds, studentIds } = await resolveAllConnectRecipients();
+    sendPushToUsers(studentIds, { title, body, url: '/student' })
+      .catch((err) => console.error('[Push] global announcement notify (students) failed:', err));
+    if (notifyTeacherToo) {
+      sendPushToUsers(teacherIds, { title, body, url: '/teacher' })
+        .catch((err) => console.error('[Push] global announcement notify (teachers) failed:', err));
+    }
+    return;
+  }
+
+  for (const classSubjectId of targetIds) {
+    io?.to(`connect:classroom:${classSubjectId}`).emit('connect:announcement:new', announcement);
+    const { teacherId, studentIds } = await resolveClassroomRecipients(classSubjectId);
+    sendPushToUsers(studentIds, { title, body, url: `/student/classrooms/${classSubjectId}` })
+      .catch((err) => console.error('[Push] announcement notify (students) failed:', err));
+    if (notifyTeacherToo) {
+      sendPushToUsers([teacherId], { title, body, url: `/teacher/classrooms/${classSubjectId}` })
+        .catch((err) => console.error('[Push] announcement notify (teacher) failed:', err));
+    }
+  }
+}
 
 // POST /connect/announcements — role-branched: teacher pins to classroom(s)
 // they own; admin targets specific classroom(s) (any teacher's) or goes
@@ -54,7 +94,10 @@ const createAnnouncement = async (req, res) => {
         });
       }
 
-      return res.status(201).json({ announcement: await insertAnnouncement({ userId, role, content, isGlobal: false, targetIds }) });
+      const announcement = await insertAnnouncement({ userId, role, content, isGlobal: false, targetIds });
+      notifyAnnouncement({ io: req.app.get('io'), announcement, isGlobal: false, targetIds, authorRole: role })
+        .catch((err) => console.error('[Connect] announcement notify failed:', err));
+      return res.status(201).json({ announcement });
     }
 
     if (role === 'admin') {
@@ -76,9 +119,10 @@ const createAnnouncement = async (req, res) => {
         }
       }
 
-      return res.status(201).json({
-        announcement: await insertAnnouncement({ userId, role, content, isGlobal: !!is_global, targetIds: is_global ? [] : targetIds }),
-      });
+      const announcement = await insertAnnouncement({ userId, role, content, isGlobal: !!is_global, targetIds: is_global ? [] : targetIds });
+      notifyAnnouncement({ io: req.app.get('io'), announcement, isGlobal: !!is_global, targetIds, authorRole: role })
+        .catch((err) => console.error('[Connect] announcement notify failed:', err));
+      return res.status(201).json({ announcement });
     }
 
     return res.status(403).json({ message: 'Only teachers and admins can create announcements' });
