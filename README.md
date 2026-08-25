@@ -129,3 +129,19 @@ Upon first backend server boot, a default admin account is automatically seeded 
 * **Password**: `admin123`
 
 *Note: For security reasons, please change this password in production or check with the project owner.*
+
+---
+
+## 📚 Documentation
+
+Detailed architectural, design, and product documentation can be found in the [`docs/`](./docs) folder:
+
+- 📖 [**Documentation Hub & Overview**](./docs/README.md)
+- 🎯 [**Product Vision & Feature Guide**](./docs/PRODUCT.md)
+- 📋 [**Product Requirements Document (PRD v1.4)**](./docs/PRD_Smart_Teaching_Lab_Management_Platform.md)
+- 🎨 [**Design System Specification ("The Night Lab")**](./docs/DESIGN.md)
+- 🏗️ [**Technical Architecture & Codebase Map**](./docs/codeBaseContext.md)
+- 📝 [**Development Context & Milestone History**](./docs/context.md)
+- ⚙️ [**Full Local Setup Guide**](./docs/SETUP.md)
+- 🤖 [**AI Assistant Context & Rules**](./docs/CLAUDE.md)
+

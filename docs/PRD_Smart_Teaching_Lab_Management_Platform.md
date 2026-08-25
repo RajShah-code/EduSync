@@ -1,12 +1,17 @@
 # Product Requirements Document (PRD)
 ## Smart Teaching & Lab Management Platform
-**Version:** 1.3
+**Version:** 1.4
 **Date:** August 2026
 **Status:** Draft — Section 9 (Admin module) still pending requirements;
 Section 10 added July 28, 2026 for a future Windows-login-based attendance
-capability (design-only, not yet built); Feature 10 (Section 3.2) updated
+capability (design-only, not yet built; partial client-side groundwork now
+exists, see Section 10.8); Feature 10 (Section 3.2) updated
 August 1, 2026 to reflect the shipped "Email My Folder" implementation,
-which diverges from the original wording below.
+which diverges from the original wording below; Section 11 added
+August 25, 2026 documenting **EduSync Connect**, a separate companion
+product under the same parent company (Archway) — not a section of this
+PRD's own scope, but tracked here for visibility since it shares this
+backend.
 
 ---
 
@@ -241,11 +246,14 @@ real use. The feature was split into two parts to address this:
 
 ##### Part A — Dashboard File Access *(original direction, NOT STARTED)*
 The original vision above — student logs into the platform from anywhere,
-browses past submissions/materials/recordings from a dashboard
-(`MyFiles.jsx` scaffold already exists from Phase 2, intentionally left
-untouched). Remains a possible future direction, particularly attractive
-if/once the backend is properly deployed (Phase 17) and can reasonably be
-expected to stay reachable. Not scoped in further detail yet.
+browses past submissions/materials/recordings from a dashboard. Remains a
+possible future direction, particularly attractive if/once the backend is
+properly deployed (Phase 17) and can reasonably be expected to stay
+reachable. Not scoped in further detail yet. *(Note, Aug 25, 2026: the
+`MyFiles.jsx` scaffold this section previously referenced no longer exists
+in the codebase — confirmed via a full frontend read; either renamed,
+removed, or superseded. If Part A is picked up, it starts from scratch,
+not from that file.)*
 
 ##### Part B — "Email My Folder" *(BUILT & SHIPPED, August 1, 2026)*
 A lab-only, no-server-dependency alternative that sidesteps the 24/7-uptime
@@ -341,7 +349,7 @@ preserved exactly as saved.
 |---|---|
 | Framework | React.js |
 | Styling | Tailwind CSS |
-| State Management | Zustand |
+| State Management | No global state library — per-layout React state passed to child pages via React Router's `<Outlet context={{...}}>`, plus two small localStorage-backed helpers (`store/sessionStore.js` for resumable-session state, `utils/recordingsStore.js` for the local recordings index). *(Corrected Aug 25, 2026 — this row previously said "Zustand," which was never actually adopted; it is not a dependency in `package.json`.)* |
 | Real-time UI Updates | Socket.io Client |
 | Code Editor (in-browser) | Monaco Editor |
 | Client-side zip creation | JSZip *(added Aug 1, 2026 — Feature 10 Part B)* |
@@ -562,6 +570,88 @@ specific build date. It is currently tracked under Phase 16 (Electron
 Desktop Port) in TASKS.md and should be scoped for actual implementation
 only after Raj has reviewed the full design document and, ideally,
 confirmed GPO access/cooperation with the lab's domain administrator.
+
+### 10.8 Partial Client-Side Groundwork Already Exists *(added Aug 25, 2026)*
+`Frontend/electron/main.cjs` already implements a real IPC handler,
+`get-windows-username`, that reads the logged-in Windows username from
+within the Electron shell. This is **not** the GPO-based server-side
+design above — it doesn't run at domain-login time, doesn't reach the
+backend on its own, and doesn't solve the "capture attendance the moment
+a student logs into any lab PC" requirement. But it confirms the narrower
+client-side piece (an Electron process reading `%USERNAME%`-equivalent
+from the OS) is already proven out in this codebase, not purely
+theoretical. Worth knowing before scoping actual implementation, so this
+isn't re-derived from zero.
+
+---
+
+## 11. EduSync Connect — Separate Companion Product *(added Aug 25, 2026)*
+
+### 11.1 Relationship to This PRD
+**EduSync Connect is not a feature of the product this PRD describes.**
+It is a distinct product under the same parent company, **Archway**,
+built as a standalone companion web application:
+
+- **EduSync** (this PRD's subject) — the in-lab, live-session platform.
+  Positioned as **software**: primary distribution is the Electron
+  desktop wrapper (`Frontend/`) around the same web app, for lab PCs.
+- **EduSync Connect** — a lightweight, always-on **web application**
+  (`Connect-Frontend/`, no desktop wrapper) for classroom messaging,
+  announcements, polls, assignments, and study materials — things a
+  teacher or student needs *between* live sessions, not during one.
+
+The two share one backend (`Backend/`) and one Postgres database — Connect
+adds its own tables (all prefixed `connect_*`) and its own route/socket
+surface (`/connect/*`, room family `connect:classroom:{id}`) alongside,
+never replacing, anything EduSync already has. Nothing in this section
+supersedes or modifies any feature above; it's recorded here purely for
+visibility since it lives in the same repository and shares infrastructure.
+
+### 11.2 Status
+Backend: complete across 9 build phases (allotments, real-time messaging,
+announcements, polls, assignments + grading, study materials, unread/
+notification counts, and a final cross-feature integration + regression
+pass). Frontend (`Connect-Frontend/`): feature-complete against every
+backend endpoint **except** the unread/notification-count pair (built,
+but not yet called by the frontend — no unread badges are visible in the
+UI yet). One known frontend bug (admin login redirects to the teacher
+dashboard rather than the admin one) is flagged but not fixed as of this
+PRD update — frontend work is out of scope for the pass that produced
+this note.
+
+### 11.3 Feature Summary
+1. **Classroom messaging** — real-time chat scoped to one classroom
+   (teacher+class+subject allotment), Socket.io with a REST fallback.
+   Per-classroom `posting_mode` (`teacher_only` / `open`), toggleable by
+   the owning teacher at any time.
+2. **Announcements** — teacher → own classroom(s); admin → specific
+   classroom(s) or a true global broadcast to every classroom at once.
+3. **Polls** — one vote per user per poll, enforced at the database
+   level; live result updates broadcast to the room on every vote.
+4. **Assignments** — optional attachment, text/file submission,
+   automatic late-flagging against a deadline, resubmission overwrites the
+   existing record (and clears any prior grade), teacher grading.
+5. **Study materials** — teacher-uploaded files, on-demand (not
+   list-time-baked) download links.
+6. **Unread/notification counts** — a last-seen-timestamp model (not
+   per-message read receipts) backing per-classroom unread badges;
+   backend-only as of this writing (see 11.2).
+
+### 11.4 Technical Notes Worth Preserving
+- File uploads across Connect (assignment attachments, submission files,
+  materials) reuse the **same** Backblaze B2 bucket this PRD's Feature 10
+  Part B already uses, under a `connect-assignments/` key prefix — not a
+  second bucket — and the same 20MB size cap / 5-per-hour rate limit,
+  enforced by one shared helper module so the numbers can't silently
+  drift apart across Connect's own sub-features.
+- Every Connect access check (read or write) goes through one shared
+  server-side helper resolving "does this user have access to this
+  classroom" (teacher owns it, or student's class matches it) — reused
+  identically by both the REST routes and the Socket.io handlers.
+- See `codeBaseContext.md` at the repo root for the full technical
+  breakdown (every endpoint, every table, every socket event) of both
+  EduSync and EduSync Connect — this PRD section is a summary, not the
+  authoritative technical reference.
 
 ---
 
