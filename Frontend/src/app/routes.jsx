@@ -12,6 +12,8 @@ import { Login } from "./pages/auth/Login";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { AdminUsers } from "./pages/admin/AdminUsers";
 import { AdminClasses } from "./pages/admin/AdminClasses";
+import { AdminSubjects } from "./pages/admin/AdminSubjects";
+import { AdminSubjectAllotments } from "./pages/admin/AdminSubjectAllotments";
 
 // Teacher Pages
 import { TeacherDashboard } from "./pages/teacher/TeacherDashboard";
@@ -72,6 +74,8 @@ export const router = createBrowserRouter([
           { index: true, Component: AdminUsers },
           { path: "users", Component: AdminUsers },
           { path: "classes", Component: AdminClasses },
+          { path: "subjects", Component: AdminSubjects },
+          { path: "subject-allotments", Component: AdminSubjectAllotments },
         ],
       },
       // Teacher Routes
