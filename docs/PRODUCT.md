@@ -6,6 +6,15 @@
 
 web
 
+## Company & Product Family
+
+**Archway** is the parent company. **EduSync** and **EduSync Connect** are two distinct products under Archway, sharing one backend and one Postgres database but otherwise separate codebases, separate frontends, and separate deployment targets:
+
+- **EduSync** (this document's primary subject) is the in-lab, session-driven teaching platform — live broadcast, monitoring, attendance, tasks, exams, recording, analytics. Positioned as **software** — its primary distribution target is the Electron desktop wrapper around the web app (`Frontend/`), for lab PCs.
+- **EduSync Connect** is a lightweight, always-available companion **web application** (`Connect-Frontend/`, no desktop wrapper) — classroom messaging, announcements, polls, assignments, and study materials, for anytime/anywhere access outside the live session window. It exists to give EduSync's teachers and students something to use *between* sessions, not to replace or duplicate anything EduSync does live in the lab.
+
+Do not conflate the two in scope or docs — a EduSync Connect feature request is not automatically an EduSync feature request, and vice versa. See "EduSync Connect" section below for its own scope; see `codeBaseContext.md` for the full technical breakdown of both codebases plus the shared backend.
+
 ## Users
 
 - **Faculty / Teacher** — runs live lab sessions, broadcasts screen/audio, assigns tasks and exams, monitors student focus/activity, reviews submissions and grades, views analytics.
@@ -45,6 +54,7 @@ The single mechanism a generic screen-share tool or LMS can't replicate: attenda
 7. Analytics dashboard — attendance trends, task completion rates, exam performance, at-risk student identification, exportable reports.
 8. Interactive doubt solver — students attach code snapshots to doubt requests; teachers reply with guidance and line-range hints highlighted in the student's editor.
 9. Admin console — classroom/student/teacher/log management; transient roll-based password generation exposed only at creation, never stored in plaintext. **Requirements not yet fully gathered** — scope of ambition (how far beyond basic CRUD) is an open question.
+10. Per-role guided onboarding tours (`react-joyride`) — a first-run walkthrough highlighting key controls, one tour script per role (teacher/student/admin). Not in the original PRD's numbered feature list; built and shipped since. Polish/retention feature, not core.
 
 **Explicitly out of scope:** native mobile app (web/desktop-first only — an Electron desktop wrapper exists around the same web frontend, which does not make the design language native), teacher↔student video/audio conferencing, third-party LMS integrations (Moodle, Canvas), AI-based grading/plagiarism detection (deferred), containerization (deferred to deployment).
 
@@ -52,13 +62,33 @@ The single mechanism a generic screen-share tool or LMS can't replicate: attenda
 
 **Accessibility:** no specific mandate or known user need established yet — do not invent one; treat as an open decision if it becomes material.
 
+## EduSync Connect (Companion Product)
+
+A separate Archway product, not a module of EduSync — see "Company & Product Family" above for the relationship. Scope as actually built (backend complete across 9 build phases; frontend feature-complete except one gap noted below):
+
+**Core unit: the "classroom."** One `connect_class_subjects` row = one (teacher, class, subject) allotment, admin-provisioned. A teacher's classroom list is their own allotments; a student's is every allotment matching their single `class_id`. Same class+subject taught by 2+ teachers, or 2+ subjects by the same teacher to the same class, are disambiguated automatically in the display name (`"Subject(TeacherName)"` / `"ClassName(Subject)"`) rather than shown as indistinguishable duplicates.
+
+**Features:**
+1. **Classroom messaging** — real-time chat scoped to one classroom, Socket.io (`connect:classroom:{id}` room) with a REST fallback send path. A teacher sets `posting_mode` per classroom (`teacher_only` = students read/comment-only, `open` = students can post too) and can toggle it themselves at any time.
+2. **Announcements** — a teacher pins one to their own classroom(s); an admin can target specific classroom(s) or broadcast one **globally** to every classroom at once. A student/teacher's feed is the union of classroom-targeted + global announcements.
+3. **Polls** — teacher creates, any classroom member votes once (DB-enforced, not just app-checked — no vote-changing in v1), live results broadcast to the room on every vote.
+4. **Assignments** — teacher creates (with an optional reference-material attachment), students submit text and/or a file, late-submission auto-flagged against a deadline, resubmission overwrites the same record rather than creating a new one (and clears any prior grade — a changed submission needs re-grading), teacher grades with a score + feedback.
+5. **Study materials** — teacher uploads files (notes/slides/resources) to a classroom; any member downloads via a freshly-generated link each time (not a link baked in at list-time, since materials are browsed repeatedly, not delivered once).
+6. **Unread/notification counts** — a lightweight last-seen-timestamp model (not per-message read receipts) driving per-classroom unread badges: unread messages, unread announcements, and (teacher-only) a standing count of ungraded submissions. **Backend-only as of this writing — `Connect-Frontend/` does not yet call this endpoint pair; no unread badges are visible in the UI yet.**
+
+**Storage**: file uploads (assignment attachments, submission files, materials) reuse the *same* Backblaze B2 bucket as EduSync's own "Email My Folder" feature, under a `connect-assignments/` key prefix — no second bucket, same size cap (20MB) and per-user rate limit (5 uploads/hour) as that feature, enforced by one shared helper module both features' Connect-side code imports (`Backend/controllers/connect/connectB2Upload.js`) so the two can't silently drift apart.
+
+**Access model**: every read/write is checked per-classroom via one shared helper (`resolveClassroomAccess` — teacher owns the row, or student's `class_id` matches it), reused identically across REST and Socket.io paths so the two can never diverge in what they allow.
+
+**Known gap, not yet fixed**: `Connect-Frontend/`'s login redirects an `admin`-role user to the teacher dashboard instead of the admin one, even though a full admin route tree exists and works if navigated to directly. Frontend bug, flagged for a future Connect-Frontend session — not fixed here (this was a backend-only integration pass).
+
 ## Brand Commitments
 
 Product name is **EduSync**. No logo or other locked visual asset exists yet. The PRD (Section 5, "Design & UX Constraints") volunteers binding tone constraints that any visual direction must honor: minimal, professional, academic in appearance; optimized for desktop lab systems as the primary target; no unnecessary animation or visual clutter; teacher dashboard clean and distraction-free; navigation simple and intuitive for a real lab environment. (Recorded as stated; not expanded into a visual world here.)
 
 ## Evidence on Hand
 
-No case studies, testimonials, press, or benchmark data exist. Do not fabricate any. The project's own PRD (`PRD_Smart_Teaching_Lab_Management_Platform.md`) is the primary source of product truth and should be treated as current as of this writing (Aug 2026, v1.3).
+No case studies, testimonials, press, or benchmark data exist. Do not fabricate any. The project's own PRD (`PRD_Smart_Teaching_Lab_Management_Platform.md`) is the primary source of product truth for EduSync; this document was refreshed against a full codebase read (both `Frontend/` and the new `Connect-Frontend/`) as of Aug 25, 2026, alongside the PRD's own v1.4 update covering EduSync Connect.
 
 ## Product Principles
 

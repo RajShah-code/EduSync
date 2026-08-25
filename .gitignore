@@ -54,6 +54,3 @@ Backend/scripts/verify*.js
 Backend/scripts/check_chrome.js
 Backend/scripts/test_launch*.js
 Backend/scripts/test_*.js
-
-context.md
-CLAUDE.md
