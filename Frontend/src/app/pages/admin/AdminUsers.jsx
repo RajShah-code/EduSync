@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { adminTourSteps } from "../../tours/adminTourSteps";
 import { Button } from "../../components/ui/button";
+import Dropdown from "../../components/Dropdown";
 
 const PAGE_SIZE = 10;
 
@@ -549,16 +550,18 @@ export function AdminUsers() {
         {/* Role Filter */}
         <div className="flex items-center gap-2 w-full md:w-auto">
           <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Role:</label>
-          <select
+          <Dropdown
             value={roleFilter}
-            onChange={(e) => handleRoleFilterChange(e.target.value)}
-            className="bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-40"
-          >
-            <option value="all">All Roles</option>
-            <option value="teacher">Teachers</option>
-            <option value="student">Students</option>
-            <option value="admin">Administrators</option>
-          </select>
+            onChange={handleRoleFilterChange}
+            aria-label="Filter by role"
+            className="px-3 py-2 w-full md:w-40"
+            options={[
+              { value: "all", label: "All Roles" },
+              { value: "teacher", label: "Teachers" },
+              { value: "student", label: "Students" },
+              { value: "admin", label: "Administrators" },
+            ]}
+          />
         </div>
 
         {/* Class Filter — student-only, mirrors the Provision modal's
@@ -567,18 +570,16 @@ export function AdminUsers() {
         {roleFilter === "student" && (
           <div className="flex items-center gap-2 w-full md:w-auto">
             <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Class:</label>
-            <select
+            <Dropdown
               value={classFilter}
-              onChange={(e) => setClassFilter(e.target.value)}
-              className="bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-40"
-            >
-              <option value="all">All Classes</option>
-              {classes.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
-            </select>
+              onChange={setClassFilter}
+              aria-label="Filter by class"
+              className="px-3 py-2 w-full md:w-40"
+              options={[
+                { value: "all", label: "All Classes" },
+                ...classes.map((cls) => ({ value: String(cls.id), label: cls.name })),
+              ]}
+            />
           </div>
         )}
       </div>
@@ -757,15 +758,17 @@ export function AdminUsers() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Role</label>
-                  <select
+                  <Dropdown
                     value={createForm.role}
-                    onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                    className="w-full bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
-                  >
-                    <option value="student">Student</option>
-                    <option value="teacher">Teacher</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                    onChange={(val) => setCreateForm({ ...createForm, role: val })}
+                    aria-label="Role"
+                    className="px-3 py-2 rounded-lg"
+                    options={[
+                      { value: "student", label: "Student" },
+                      { value: "teacher", label: "Teacher" },
+                      { value: "admin", label: "Admin" },
+                    ]}
+                  />
                 </div>
 
                 <div>
@@ -787,19 +790,14 @@ export function AdminUsers() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Class</label>
-                      <select
-                        required
+                      <Dropdown
                         value={createForm.class_id}
-                        onChange={(e) => setCreateForm({ ...createForm, class_id: e.target.value })}
-                        className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
-                      >
-                        <option value="">Select...</option>
-                        {classes.map((cls) => (
-                          <option key={cls.id} value={cls.id}>
-                            {cls.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => setCreateForm({ ...createForm, class_id: val })}
+                        aria-label="Class"
+                        placeholder="Select..."
+                        className="px-3 py-2 rounded-lg bg-bg-surface"
+                        options={classes.map((cls) => ({ value: String(cls.id), label: cls.name }))}
+                      />
                     </div>
 
                     <div>
@@ -893,34 +891,31 @@ export function AdminUsers() {
 
               <div>
                 <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Role</label>
-                <select
+                <Dropdown
                   value={editForm.role}
-                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                  className="w-full bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
-                >
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                  <option value="admin">Admin</option>
-                </select>
+                  onChange={(val) => setEditForm({ ...editForm, role: val })}
+                  aria-label="Role"
+                  className="px-3 py-2 rounded-lg"
+                  options={[
+                    { value: "student", label: "Student" },
+                    { value: "teacher", label: "Teacher" },
+                    { value: "admin", label: "Admin" },
+                  ]}
+                />
               </div>
 
               {editForm.role === "student" && (
                 <div className="grid grid-cols-2 gap-4 p-3 bg-bg-base rounded-lg border border-border/80">
                   <div>
                     <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Class</label>
-                    <select
-                      required
+                    <Dropdown
                       value={editForm.class_id}
-                      onChange={(e) => setEditForm({ ...editForm, class_id: e.target.value })}
-                      className="w-full bg-bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
-                    >
-                      <option value="">Select...</option>
-                      {classes.map((cls) => (
-                        <option key={cls.id} value={cls.id}>
-                          {cls.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setEditForm({ ...editForm, class_id: val })}
+                      aria-label="Class"
+                      placeholder="Select..."
+                      className="px-3 py-2 rounded-lg bg-bg-surface"
+                      options={classes.map((cls) => ({ value: String(cls.id), label: cls.name }))}
+                    />
                   </div>
 
                   <div>
