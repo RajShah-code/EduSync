@@ -11,4 +11,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   writeRecordingChunk: (token, arrayBuffer) => ipcRenderer.invoke("recording:write-chunk", token, arrayBuffer),
   closeRecordingFile: (token) => ipcRenderer.invoke("recording:close", token),
   showItemInFolder: (filePath) => ipcRenderer.invoke("recording:show-in-folder", filePath),
+
+  // Per-class OS-level app allow-list enforcement (broadcast sessions only).
+  // See Frontend/electron/main.cjs's app-guard IPC handlers for the actual
+  // process enumeration/kill logic — this is just the bridge.
+  startAppGuard: (allowList) => ipcRenderer.invoke("app-guard:start", allowList),
+  stopAppGuard: () => ipcRenderer.invoke("app-guard:stop"),
+  onAppViolation: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("app-guard:violation", listener);
+    return () => ipcRenderer.removeListener("app-guard:violation", listener);
+  },
 });

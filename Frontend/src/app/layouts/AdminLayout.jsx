@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Users, Layers, LogOut, GraduationCap, BookMarked, ClipboardList } from "lucide-react";
+import { Users, Layers, LogOut, GraduationCap, BookMarked, ClipboardList, ShieldCheck } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { Toaster } from "sonner";
 
@@ -9,6 +9,7 @@ const navigation = [
   { name: "Classes", href: "/admin/classes", icon: Layers, dataTour: "admin-classes" },
   { name: "Subjects", href: "/admin/subjects", icon: BookMarked },
   { name: "Allotments", href: "/admin/subject-allotments", icon: ClipboardList },
+  { name: "App Allow-List", href: "/admin/app-allowlist", icon: ShieldCheck },
 ];
 
 export function AdminLayout() {
