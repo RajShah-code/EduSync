@@ -1,6 +1,6 @@
 # Product Requirements Document (PRD)
 ## Smart Teaching & Lab Management Platform
-**Version:** 1.4
+**Version:** 1.5
 **Date:** August 2026
 **Status:** Draft — Section 9 (Admin module) still pending requirements;
 Section 10 added July 28, 2026 for a future Windows-login-based attendance
@@ -11,7 +11,11 @@ which diverges from the original wording below; Section 11 added
 August 25, 2026 documenting **EduSync Connect**, a separate companion
 product under the same parent company (Archway) — not a section of this
 PRD's own scope, but tracked here for visibility since it shares this
-backend.
+backend; Section 11 updated August 26, 2026 — open-discussion posting
+mode (11.3) was built and then removed by product decision, a Subject
+Catalog + Semester Allotments admin feature (new §11.5) now syncs
+curriculum data into Connect classrooms, and Web Push notifications
+(11.3) shipped for Connect.
 
 ---
 
@@ -585,7 +589,7 @@ isn't re-derived from zero.
 
 ---
 
-## 11. EduSync Connect — Separate Companion Product *(added Aug 25, 2026)*
+## 11. EduSync Connect — Separate Companion Product *(added Aug 25, 2026, updated Aug 26, 2026)*
 
 ### 11.1 Relationship to This PRD
 **EduSync Connect is not a feature of the product this PRD describes.**
@@ -622,8 +626,13 @@ this note.
 ### 11.3 Feature Summary
 1. **Classroom messaging** — real-time chat scoped to one classroom
    (teacher+class+subject allotment), Socket.io with a REST fallback.
-   Per-classroom `posting_mode` (`teacher_only` / `open`), toggleable by
-   the owning teacher at any time.
+   **Every classroom is teacher/admin-post-only.** An earlier
+   per-classroom `posting_mode` toggle (`teacher_only` / `open`, letting
+   students post when `open`) was built, then **removed by product
+   decision on August 25, 2026** — the `posting_mode` column, its DB
+   `CHECK` constraint, and the teacher-facing toggle endpoint/UI were all
+   locked down to `teacher_only` only; students now read and vote in
+   polls, never post.
 2. **Announcements** — teacher → own classroom(s); admin → specific
    classroom(s) or a true global broadcast to every classroom at once.
 3. **Polls** — one vote per user per poll, enforced at the database
@@ -636,6 +645,24 @@ this note.
 6. **Unread/notification counts** — a last-seen-timestamp model (not
    per-message read receipts) backing per-classroom unread badges;
    backend-only as of this writing (see 11.2).
+7. **Live tab updates + Web Push notifications** *(added Aug 25–26,
+   2026)* — Announcements, Assignments, and Materials tabs now update
+   live over the existing `connect:classroom:{id}` Socket.io room
+   (`connect:announcement:new`, `connect:assignment:new`,
+   `connect:submission:graded`, `connect:material:new`), closing a gap
+   where those three tabs previously only refreshed on mount or manual
+   refresh (messages and polls were already live). Separately, a VAPID-based
+   Web Push pipeline notifies students of new messages, new announcements,
+   new assignments, and assignment grading, even with the browser closed;
+   an admin-authored announcement additionally notifies the owning
+   teacher(s) of its target classroom(s) (a teacher's own announcement to
+   their own classroom does not self-notify). Push is optional
+   infrastructure: if `VAPID_SUBJECT`/`VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`
+   aren't set in the environment, `GET /connect/push/vapid-public-key`
+   returns `503` and sending silently no-ops — it does not crash the
+   server (a real crash-on-boot from this exact gap was caught and fixed
+   on Render, commit `481f9c0`, after VAPID keys were added only to a
+   local `.env` and not to the deployed environment).
 
 ### 11.4 Technical Notes Worth Preserving
 - File uploads across Connect (assignment attachments, submission files,
@@ -652,6 +679,42 @@ this note.
   breakdown (every endpoint, every table, every socket event) of both
   EduSync and EduSync Connect — this PRD section is a summary, not the
   authoritative technical reference.
+
+### 11.5 Subject Catalog + Semester Subject Allotments *(added Aug 26, 2026)*
+This is a **EduSync-side admin feature** (`Frontend/` + `Backend/` — not a
+Connect feature), recorded here because it feeds Connect classrooms
+automatically. Two new admin panel pages:
+- **Subject Catalog** (`AdminSubjects.jsx`, `subjects` table) — a reusable,
+  standalone list of subjects (name + optional code), not tied to any one
+  class or semester.
+- **Subject Allotments** (`AdminSubjectAllotments.jsx`, `subject_allotments`
+  table) — one row = "Subject S is taught to Class C in Semester N (by
+  Teacher T)"; `teacher_id` is nullable so a subject can be allotted before
+  a teacher is assigned.
+
+**One-way sync into Connect** (`Backend/controllers/connect/connectClassroomSync.js`):
+the moment an allotment has a `teacher_id`, a matching `connect_class_subjects`
+row is created/updated automatically — no separate manual step in Connect's
+own admin page. `subject_allotments` is the source of truth; Connect never
+writes back to it. Specifically:
+- Creating or updating an allotment with a teacher upserts the linked
+  classroom (keyed by a new `subject_allotment_id` column on
+  `connect_class_subjects`, so a teacher reassignment updates the *same*
+  classroom rather than creating a duplicate — message/poll/assignment
+  history is preserved).
+- Unassigning an allotment's teacher, or deleting the allotment entirely,
+  **archives** the linked classroom (`status = 'archived'`) — it is never
+  deleted. An archived classroom is read-only (existing history stays
+  visible, no new posts of any kind) and dimmed in the Connect UI; the
+  owning teacher gets a delete button to remove it permanently once
+  archived (admin can still delete a still-live classroom via Connect's
+  own admin page at any time).
+- **Connect's own admin allotments page (`Connect-Frontend/src/pages/admin/AdminAllotments.jsx`)
+  still exists and still works exactly as before** — free-text subject
+  name, no semester, admin-provisioned directly. This is **not a
+  replacement**: it's a second entry point into the same
+  `connect_class_subjects` table. A classroom created this way has
+  `subject_allotment_id = NULL` and is untouched by the sync.
 
 ---
 
