@@ -208,10 +208,46 @@ export async function updateClassroomPostingMode(classSubjectId, postingMode) {
 }
 
 /**
+ * Permanently deletes a classroom the caller (teacher) owns — only allowed
+ * once it has been archived (its curriculum allotment was removed/
+ * unassigned in the main EduSync admin panel). Deleting a still-active
+ * classroom stays admin-only.
+ * Calls DELETE /connect/teacher/classrooms/:classSubjectId
+ *
+ * @param {string|number} classSubjectId
+ * @returns {Promise<Object>}
+ */
+export async function deleteOwnClassroom(classSubjectId) {
+  const headers = getAuthHeaders();
+  const url = `${API_BASE_URL}/connect/teacher/classrooms/${classSubjectId}`;
+
+  try {
+    const res = await fetch(url, { method: "DELETE", headers });
+
+    if (res.status === 401) {
+      throw new ApiError("Session expired or unauthorized. Please sign in again.", 401);
+    }
+
+    if (res.ok) {
+      return await res.json();
+    }
+
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.message || `Failed to delete classroom (HTTP ${res.status})`,
+      res.status
+    );
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(err.message || "Network error. Unable to delete classroom.", 0);
+  }
+}
+
+/**
  * Fetch announcements for a specific classroom feed.
  * GET /connect/classrooms/:classSubjectId/announcements
- * 
- * @param {string|number} classSubjectId 
+ *
+ * @param {string|number} classSubjectId
  * @returns {Promise<Array>} Array of announcements
  */
 export async function fetchClassroomAnnouncements(classSubjectId) {

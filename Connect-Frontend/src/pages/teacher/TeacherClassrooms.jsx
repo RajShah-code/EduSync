@@ -196,6 +196,9 @@ export function TeacherClassrooms() {
                   state: { classroom: selected },
                 });
               }}
+              onDeleted={(deletedId) => {
+                setClassrooms((prev) => prev.filter((c) => c.id !== deletedId));
+              }}
             />
           ))}
         </div>

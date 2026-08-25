@@ -50,6 +50,7 @@ import {
   Paperclip,
   HardDrive,
   Loader2,
+  Archive,
 } from "lucide-react";
 
 export function ClassroomStream({ role = "teacher" }) {
@@ -712,7 +713,11 @@ export function ClassroomStream({ role = "teacher" }) {
     );
   };
 
-  const canPost = isTeacher || postingMode === "open";
+  // A classroom is archived when its curriculum allotment was removed/
+  // unassigned in the main EduSync admin panel — read-only from here on,
+  // history stays fully visible but nothing new can be posted.
+  const isArchived = classroom?.status === "archived";
+  const canPost = (isTeacher || postingMode === "open") && !isArchived;
 
   const parsed = parseClassroomDisplayName(
     classroom?.display_name || classroom?.subject_name || classroom?.class_name || "Classroom"
@@ -760,7 +765,7 @@ export function ClassroomStream({ role = "teacher" }) {
 
         {/* Right Controls: Posting Mode Badge & Teacher Switch */}
         <div className="flex items-center gap-3">
-          {isTeacher ? (
+          {isTeacher && !isArchived ? (
             <Button
               variant={postingMode === "open" ? "secondary" : "outline"}
               size="sm"
@@ -783,6 +788,11 @@ export function ClassroomStream({ role = "teacher" }) {
                 </>
               )}
             </Button>
+          ) : isArchived ? (
+            <Badge variant="secondary" className="text-[11px] font-normal gap-1">
+              <Archive className="w-3 h-3" />
+              Archived — Read Only
+            </Badge>
           ) : (
             <Badge
               variant={postingMode === "open" ? "success" : "secondary"}
@@ -826,6 +836,17 @@ export function ClassroomStream({ role = "teacher" }) {
           </Button>
         </div>
       </div>
+
+      {/* Archived banner — persistent across every tab, since read-only
+          applies to the whole classroom, not just one feature. */}
+      {isArchived && (
+        <div className="flex items-center gap-2.5 px-6 py-2.5 border-b border-border bg-bg-surface-3/40 text-xs text-text-muted shrink-0">
+          <Archive className="w-3.5 h-3.5 shrink-0" />
+          <span>
+            This classroom has been archived — you can view its history, but new posts aren&apos;t allowed.
+          </span>
+        </div>
+      )}
 
       {/* Tab Switcher: Stream vs Announcements vs Polls vs Assignments vs Materials */}
       <div className="flex items-center gap-1 px-6 border-b border-border bg-bg-surface/50 text-xs overflow-x-auto">
@@ -1103,6 +1124,14 @@ export function ClassroomStream({ role = "teacher" }) {
                   )}
                 </Button>
               </form>
+            ) : isArchived ? (
+              <div className="p-3 rounded-[var(--radius-md)] bg-bg-surface-3/60 border border-border flex items-center gap-2.5 text-xs text-text-secondary">
+                <Archive className="w-4 h-4 text-text-muted shrink-0" />
+                <p className="leading-relaxed">
+                  <span className="font-semibold text-text-primary">Archived: </span>
+                  This classroom is read-only. You can still read its full history above.
+                </p>
+              </div>
             ) : (
               <div className="p-3 rounded-[var(--radius-md)] bg-bg-surface-3/60 border border-border flex items-center gap-2.5 text-xs text-text-secondary">
                 <Lock className="w-4 h-4 text-text-muted shrink-0" />
@@ -1121,7 +1150,7 @@ export function ClassroomStream({ role = "teacher" }) {
           ───────────────────────────────────────────────────────────── */}
       {activeTab === "announcements" && (
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-bg-base/40">
-          {isTeacher && (
+          {isTeacher && !isArchived && (
             <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-4 transition-colors">
               {!showAnnouncementComposer ? (
                 <div className="flex items-center justify-between gap-3">
@@ -1238,7 +1267,7 @@ export function ClassroomStream({ role = "teacher" }) {
           ───────────────────────────────────────────────────────────── */}
       {activeTab === "polls" && (
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-bg-base/40">
-          {isTeacher && (
+          {isTeacher && !isArchived && (
             <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-4 transition-colors">
               {!showPollComposer ? (
                 <div className="flex items-center justify-between gap-3">
@@ -1418,7 +1447,7 @@ export function ClassroomStream({ role = "teacher" }) {
           ───────────────────────────────────────────────────────────── */}
       {activeTab === "assignments" && (
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-bg-base/40">
-          {isTeacher && (
+          {isTeacher && !isArchived && (
             <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-4 transition-colors">
               {!showAssignmentComposer ? (
                 <div className="flex items-center justify-between gap-3">
@@ -1574,6 +1603,8 @@ export function ClassroomStream({ role = "teacher" }) {
                   onOpenAction={(selected) => {
                     if (isTeacher) {
                       setActiveGradingAssignment(selected);
+                    } else if (isArchived && selected.submission_status === "not_submitted") {
+                      setError("This classroom has been archived — new submissions aren't accepted here.");
                     } else {
                       setActiveSubmissionAssignment(selected);
                     }
@@ -1591,7 +1622,7 @@ export function ClassroomStream({ role = "teacher" }) {
       {activeTab === "materials" && (
         <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-bg-base/40">
           {/* Teacher Upload Study Material Composer */}
-          {isTeacher && (
+          {isTeacher && !isArchived && (
             <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-4 transition-colors">
               {!showMaterialComposer ? (
                 <div className="flex items-center justify-between gap-3">
