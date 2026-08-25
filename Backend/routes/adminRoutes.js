@@ -22,6 +22,12 @@ const {
   deleteAllotment,
 } = require('../controllers/subjectAllotmentsController');
 
+const {
+  listAllAllowlist,
+  createEntry,
+  deleteEntry,
+} = require('../controllers/appAllowlistController');
+
 // All endpoints registered here are prefix-guarded by /admin and restrict to 'admin' role
 // GET /admin/users
 router.get('/users', getUsers);
@@ -52,5 +58,14 @@ router.put('/subject-allotments/:id', updateAllotment);
 
 // DELETE /admin/subject-allotments/:id
 router.delete('/subject-allotments/:id', deleteAllotment);
+
+// GET /admin/app-allowlist
+router.get('/app-allowlist', listAllAllowlist);
+
+// POST /admin/app-allowlist
+router.post('/app-allowlist', createEntry);
+
+// DELETE /admin/app-allowlist/:id
+router.delete('/app-allowlist/:id', deleteEntry);
 
 module.exports = router;
