@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext, useLocation } from "react-router";
-import { motion, useReducedMotion } from "motion/react";
+import { motion, useReducedMotion, AnimatePresence } from "motion/react";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { CodeOutputPanel } from "../../components/CodeOutputPanel";
@@ -53,6 +53,7 @@ import {
 } from "../../components/ui/alert-dialog";
 import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { getSocket } from "../../store/socket";
 import { addRecording } from "../../utils/recordingsStore";
 import { saveHandle } from "../../utils/recordingHandles";
@@ -210,12 +211,26 @@ export function LiveBroadcast() {
     setEditorLiveStatus,
   } = useOutletContext();
 
+  const prefersReducedMotion = useReducedMotion();
+
   const whiteboardRef = useRef(null);
   const teacherWhiteboardStrokesRef = useRef([]);
   const teacherWhiteboardBgColorRef = useRef("#17171A");
 
   // ── Modal / form state ──────────────────────────────────────────────────────
   const [showSetupModal, setShowSetupModal] = useState(false);
+  // pillTarget: which idle-bar control currently "owns" the shared oval pill
+  // background (migrated via Framer Motion's layoutId — see the Control Bar
+  // below). "start" is the resting state; clicking the schedule icon hands
+  // the pill to it for a brief settle-then-spin beat before the setup modal
+  // opens. scheduleIconLoading drives the spinner shown once the pill lands.
+  const [pillTarget, setPillTarget] = useState("start");
+  const [scheduleIconLoading, setScheduleIconLoading] = useState(false);
+  // startButtonLoading: a separate, in-place loading beat for a *direct*
+  // click on Start Lecture itself (no pill migration — it stays put, its
+  // own Play icon/label just swap to a spinner + "Starting…" for a moment).
+  const [startButtonLoading, setStartButtonLoading] = useState(false);
+  const morphTimersRef = useRef([]);
   const [showStopConfirm, setShowStopConfirm] = useState(false);
   const [showSessionInfoDialog, setShowSessionInfoDialog] = useState(false);
   const [formData, setFormData] = useState({
@@ -1147,6 +1162,50 @@ export function LiveBroadcast() {
     setModalError("");
     setShowSetupModal(true);
   };
+
+  // handleScheduleIconClick — drives the pill-migration sequence: hand the
+  // shared "active-pill" background to the schedule icon, wait for the
+  // layout spring to settle, show a brief spinner, then open the same setup
+  // modal Start Lecture opens directly (pre-filled if a lecture matches now).
+  const handleScheduleIconClick = () => {
+    if (pillTarget === "schedule") return; // sequence already in flight
+    setPillTarget("schedule");
+    // The pill-migration spring itself settles at ~450ms; the spinner +
+    // "Starting…" label fades in right after. The modal open is held back
+    // until ~1.6s total has elapsed so the animation always reads for a
+    // full 1-2s beat, even though prefilling from currentLecture (if any)
+    // is instant with no real loading to wait on.
+    const t1 = setTimeout(() => setScheduleIconLoading(true), 450);
+    const t2 = setTimeout(() => {
+      setScheduleIconLoading(false);
+      if (currentLecture) {
+        handlePrefillScheduledLecture(currentLecture);
+      } else {
+        handleOpenSetupModal();
+      }
+    }, 1600);
+    morphTimersRef.current.push(t1, t2);
+  };
+
+  // handleStartButtonClick — direct click on Start Lecture itself: no pill
+  // migration, it stays exactly where it is and just swaps its own Play
+  // icon/label for a spinner + "Starting…" for a short beat before the
+  // setup modal opens.
+  const handleStartButtonClick = () => {
+    if (startButtonLoading || pillTarget === "schedule") return;
+    setStartButtonLoading(true);
+    const t = setTimeout(() => {
+      setStartButtonLoading(false);
+      handleOpenSetupModal();
+    }, 1200);
+    morphTimersRef.current.push(t);
+  };
+
+  useEffect(() => {
+    return () => {
+      morphTimersRef.current.forEach(clearTimeout);
+    };
+  }, []);
 
   const handleStartBroadcast = async () => {
     if (!isFormValid) return;
@@ -2311,34 +2370,153 @@ export function LiveBroadcast() {
                    teacher is toggling rapidly in the center. */}
           <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
             {!isBroadcasting ? (
-              <div className="flex flex-col items-center gap-3">
-                {loadingTimetable ? (
-                  <Skeleton className="h-7 w-56 rounded-[var(--radius-md)]" />
-                ) : currentLecture ? (
-                  <button
-                    onClick={() => handlePrefillScheduledLecture(currentLecture)}
-                    className="px-3 py-1.5 bg-accent-info/10 hover:bg-accent-info/20 border border-accent-info/30 rounded-full text-xs text-accent-info font-medium transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] flex items-center gap-2"
-                    title="Click to pre-fill lecture setup"
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Current Scheduled: <strong className="text-text-primary">{currentLecture.subject || currentLecture.subject_name}</strong> {currentLecture.class_name ? `(${currentLecture.class_name})` : ""}</span>
-                    <span className="text-[10px] bg-accent-info/20 px-1.5 py-0.5 rounded-[var(--radius-sm)] text-accent-info font-semibold">Pre-fill</span>
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs font-medium text-text-muted">
-                    <Calendar className="w-3.5 h-3.5 text-text-muted/60" />
-                    <span>No Lecture Scheduled</span>
-                  </div>
-                )}
-                <Button
-                  data-tour="teacher-broadcast-start"
-                  onClick={handleOpenSetupModal}
-                  className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold px-7 h-11 rounded-full shadow-[var(--shadow-modal)]"
+              loadingTimetable ? (
+                <Skeleton className="h-12 w-64 rounded-full" />
+              ) : (
+                <motion.div
+                  layout
+                  transition={{ type: "spring", bounce: 0, duration: 0.45 }}
+                  className="flex items-center gap-1 bg-bg-elevated border border-border rounded-full p-1.5 shadow-[var(--shadow-modal)]"
                 >
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Lecture
-                </Button>
-              </div>
+                  {/* Schedule / calendar icon — LEFT. Its own resting look
+                      (violet tint + live pulse when a lecture matches now,
+                      muted otherwise) is unchanged; clicking it hands the
+                      shared "active-pill" background over from Start Lecture,
+                      then opens the same setup modal Start Lecture opens. */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={handleScheduleIconClick}
+                        aria-label={
+                          currentLecture
+                            ? `Scheduled now: ${currentLecture.subject || currentLecture.subject_name} — click to start`
+                            : "No lecture scheduled — click to start a lecture"
+                        }
+                        className={cn(
+                          "relative h-9 rounded-full flex items-center justify-center shrink-0 transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95",
+                          pillTarget === "schedule"
+                            ? "px-3.5 gap-1.5 text-white"
+                            : cn(
+                                "w-9",
+                                currentLecture
+                                  ? "text-accent-500 hover:bg-accent-500/25"
+                                  : "text-text-muted/50 bg-bg-surface-3"
+                              )
+                        )}
+                      >
+                        {pillTarget === "schedule" ? (
+                          <motion.div
+                            layoutId="active-pill"
+                            layout
+                            transition={{ type: "spring", bounce: 0, duration: 0.45 }}
+                            className="absolute inset-0 rounded-full bg-accent-500 shadow-[var(--shadow-modal)]"
+                          />
+                        ) : null}
+                        {pillTarget !== "schedule" && currentLecture && !prefersReducedMotion ? (
+                          <motion.span
+                            className="absolute inset-0 rounded-full"
+                            animate={{
+                              boxShadow: [
+                                "0 0 0 0 color-mix(in srgb, var(--accent-500) 0%, transparent)",
+                                "0 0 0 5px color-mix(in srgb, var(--accent-500) 12%, transparent)",
+                                "0 0 0 0 color-mix(in srgb, var(--accent-500) 0%, transparent)",
+                              ],
+                            }}
+                            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <Calendar className="w-4 h-4 relative shrink-0" />
+                        {pillTarget !== "schedule" && currentLecture ? (
+                          <span
+                            className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent-500"
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <AnimatePresence initial={false}>
+                          {scheduleIconLoading ? (
+                            <motion.span
+                              key="spinner"
+                              initial={{ width: 0, opacity: 0 }}
+                              animate={{ width: "auto", opacity: 1 }}
+                              exit={{ width: 0, opacity: 0 }}
+                              className="overflow-hidden flex items-center gap-1.5 relative whitespace-nowrap"
+                            >
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span className="text-xs font-semibold">Starting…</span>
+                            </motion.span>
+                          ) : null}
+                        </AnimatePresence>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      className="bg-bg-elevated border border-border text-text-primary px-3 py-2 rounded-[var(--radius-md)] shadow-[var(--shadow-modal)]"
+                    >
+                      {currentLecture ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-text-primary">
+                            {currentLecture.subject || currentLecture.subject_name}
+                          </span>
+                          <span className="text-text-secondary text-[11px]">
+                            {currentLecture.class_name ? `${currentLecture.class_name} · ` : ""}
+                            {currentLecture.start_time}–{currentLecture.end_time}
+                          </span>
+                          <span className="text-accent-500 text-[10px] font-medium mt-0.5">
+                            Click to start this lecture
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-text-secondary">No lecture scheduled right now.</span>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Start Lecture — RIGHT. Always mounted so data-tour and
+                      the click handler never disappear from the DOM; only
+                      its own classes/content morph between full pill (idle)
+                      and icon-only (mid pill-migration). */}
+                  <button
+                    type="button"
+                    data-tour="teacher-broadcast-start"
+                    onClick={handleStartButtonClick}
+                    className={cn(
+                      "relative h-9 rounded-full flex items-center justify-center font-semibold shrink-0 transition-[color] duration-150 ease-[var(--ease-out-strong)] active:scale-95",
+                      pillTarget === "start"
+                        ? "px-6 text-white"
+                        : "w-9 text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
+                    )}
+                  >
+                    {pillTarget === "start" ? (
+                      <motion.div
+                        layoutId="active-pill"
+                        layout
+                        transition={{ type: "spring", bounce: 0, duration: 0.45 }}
+                        className="absolute inset-0 rounded-full bg-accent-success shadow-[var(--shadow-modal)]"
+                      />
+                    ) : null}
+                    {startButtonLoading ? (
+                      <Loader2 className="w-4 h-4 relative shrink-0 animate-spin" />
+                    ) : (
+                      <Play className="w-4 h-4 relative shrink-0" />
+                    )}
+                    <AnimatePresence initial={false}>
+                      {pillTarget === "start" ? (
+                        <motion.span
+                          key={startButtonLoading ? "starting-label" : "label"}
+                          initial={{ width: 0, opacity: 0 }}
+                          animate={{ width: "auto", opacity: 1 }}
+                          exit={{ width: 0, opacity: 0 }}
+                          className="overflow-hidden whitespace-nowrap ml-2 relative"
+                        >
+                          {startButtonLoading ? "Starting…" : "Start Lecture"}
+                        </motion.span>
+                      ) : null}
+                    </AnimatePresence>
+                  </button>
+                </motion.div>
+              )
             ) : (
               <div className="w-full flex items-center justify-between gap-4 flex-wrap">
                 {/* 1. Status cluster — live dot, timer, info (read-only, own pill) */}
@@ -2582,7 +2760,18 @@ export function LiveBroadcast() {
       </Dialog>
 
       {/* ── Session Setup Modal ──────────────────────────────────────────────── */}
-      <Dialog open={showSetupModal} onOpenChange={setShowSetupModal}>
+      <Dialog
+        open={showSetupModal}
+        onOpenChange={(open) => {
+          setShowSetupModal(open);
+          if (!open) {
+            // Modal dismissed (cancel, or after a successful start) — hand
+            // the pill back to its resting position on Start Lecture.
+            setPillTarget("start");
+            setScheduleIconLoading(false);
+          }
+        }}
+      >
         <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-text-primary">
@@ -2711,7 +2900,11 @@ export function LiveBroadcast() {
               disabled={!isFormValid || startLoading}
               className="bg-accent-info hover:bg-accent-info/90 text-white disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Monitor className="w-4 h-4 mr-2" />
+              {startLoading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Monitor className="w-4 h-4 mr-2" />
+              )}
               {startLoading ? "Starting…" : "Start Lecture"}
             </Button>
           </DialogFooter>
