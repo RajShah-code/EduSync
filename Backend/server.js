@@ -61,6 +61,7 @@ app.use('/sessions', sessionRoutes);
 app.use('/attendance', attendanceRoutes);
 
 app.use('/classes', protect(), classesRoutes);
+app.use('/subjects', protect(), require('./routes/subjectsRoutes'));
 app.use('/admin', protect(['admin']), adminRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/doubts', doubtsRoutes);
