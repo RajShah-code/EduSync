@@ -62,6 +62,7 @@ app.use('/attendance', attendanceRoutes);
 
 app.use('/classes', protect(), classesRoutes);
 app.use('/subjects', protect(), require('./routes/subjectsRoutes'));
+app.use('/app-allowlist', protect(), require('./routes/appAllowlistRoutes'));
 app.use('/admin', protect(['admin']), adminRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/doubts', doubtsRoutes);
@@ -1070,6 +1071,30 @@ io.on('connection', (socket) => {
       });
     } catch (err) {
       console.error('[Socket] student:focus_regained relay error:', err);
+    }
+  });
+
+  // EVENT: student:app_violation
+  // Emitted by useAppGuard.js (student side, Electron only — the web build
+  // has no way to detect this) when Electron's main-process app-guard
+  // force-closes a process that wasn't on the class's allow-list. Relayed
+  // to the teacher's session room, same shape as the focus-loss events
+  // above — live-only, not persisted (see app_allowlist_entries's own
+  // comment in dbSetup.js for why).
+  // Payload in : { session_id, student_id, process_name, timestamp }
+  // Payload out: { student_id, session_id, process_name, timestamp }
+  socket.on('student:app_violation', (payload) => {
+    try {
+      if (role !== 'student') return;
+      const { session_id, student_id, process_name, timestamp } = payload;
+      io.to(`teacher_session:${session_id}`).emit('teacher:app_violation', {
+        student_id,
+        session_id,
+        process_name,
+        timestamp,
+      });
+    } catch (err) {
+      console.error('[Socket] student:app_violation relay error:', err);
     }
   });
 

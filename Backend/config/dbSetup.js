@@ -568,6 +568,27 @@ const setup = async () => {
     await sql`ALTER TABLE connect_class_subjects ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived'));`;
     console.log("Database Setup: connect_class_subjects sync columns (subject_allotment_id/semester/status) checked.");
 
+    // ── Per-class OS-level app allow-list (broadcast sessions) ──────────────
+    // One row = one process allowed to run on a student's machine while a
+    // broadcast session for this class is live. A class with zero rows
+    // means "nothing extra allowed beyond Electron's own hardcoded
+    // system-safe list" (see Frontend/electron/main.cjs) — that hardcoded
+    // list is intentionally NOT stored here or admin-editable, so a narrow
+    // allow-list can never accidentally cause core OS processes to be
+    // closed. Enforcement itself (Electron-only; the web build only
+    // displays this list) lives in main.cjs's app-guard IPC handlers.
+    await sql`
+      CREATE TABLE IF NOT EXISTS app_allowlist_entries (
+        id SERIAL PRIMARY KEY,
+        class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+        process_name VARCHAR(255) NOT NULL,
+        display_name VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (class_id, process_name)
+      );
+    `;
+    console.log("Database Setup: app_allowlist_entries table checked.");
+
     // 3. Seed default classes if none exist
     const [{ count: classCount }] = await sql`SELECT COUNT(*)::int FROM classes;`;
     if (classCount === 0) {
