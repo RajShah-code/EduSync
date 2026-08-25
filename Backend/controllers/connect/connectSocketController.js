@@ -1,5 +1,7 @@
 const sql = require('../../config/db');
 const { resolveClassroomAccess, canSendMessage, isClassroomArchived } = require('./connectAccessControl');
+const { resolveClassroomRecipients } = require('./connectNotify');
+const { sendPushToUsers } = require('./connectPushSender');
 
 // registerConnectSocketHandlers — attaches EduSync Connect's real-time
 // events onto the SAME Socket.io instance the rest of the app uses.
@@ -91,6 +93,13 @@ module.exports = function registerConnectSocketHandlers(io) {
         const room = `connect:classroom:${classSubjectId}`;
         io.to(room).emit('connect:message:new', payload);
         console.log(`[Connect] User ${userId} (${role}) sent message ${created.id} to room ${room}`);
+
+        const { studentIds } = await resolveClassroomRecipients(classSubjectId);
+        sendPushToUsers(studentIds, {
+          title: `New message — ${socket.user.name}`,
+          body: content.trim().slice(0, 120),
+          url: `/student/classrooms/${classSubjectId}`,
+        }).catch((pushErr) => console.error('[Push] message notify failed:', pushErr));
       } catch (err) {
         console.error('[Connect] connect:message:send failed:', err);
         socket.emit('connect:error', { classSubjectId, message: 'Server error' });

@@ -1,5 +1,7 @@
 const sql = require('../../config/db');
 const { resolveClassroomAccess, canSendMessage, isClassroomArchived } = require('./connectAccessControl');
+const { resolveClassroomRecipients } = require('./connectNotify');
+const { sendPushToUsers } = require('./connectPushSender');
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
@@ -85,6 +87,13 @@ const sendMessage = async (req, res) => {
     if (io) {
       io.to(`connect:classroom:${classSubjectId}`).emit('connect:message:new', payload);
     }
+
+    const { studentIds } = await resolveClassroomRecipients(classSubjectId);
+    sendPushToUsers(studentIds, {
+      title: `New message — ${req.user.name}`,
+      body: content.trim().slice(0, 120),
+      url: `/student/classrooms/${classSubjectId}`,
+    }).catch((err) => console.error('[Push] message notify failed:', err));
 
     res.status(201).json({ message: payload });
   } catch (err) {

@@ -1,6 +1,8 @@
 const sql = require('../../config/db');
 const { resolveClassroomAccess, isClassroomArchived } = require('./connectAccessControl');
 const { checkUploadRateLimit, decodeBase64File, uploadBufferToB2, getPresignedUrlForKey } = require('./connectB2Upload');
+const { resolveClassroomRecipients } = require('./connectNotify');
+const { sendPushToUsers } = require('./connectPushSender');
 
 function extFromFilename(filename) {
   if (!filename || typeof filename !== 'string') return '';
@@ -53,6 +55,16 @@ const createAssignment = async (req, res) => {
       VALUES (${classSubjectId}, ${userId}, ${title.trim()}, ${description || null}, ${attachmentKey}, ${due_at || null})
       RETURNING id, class_subject_id, creator_id, title, description, attachment_url, due_at, created_at;
     `;
+
+    const io = req.app.get('io');
+    io?.to(`connect:classroom:${classSubjectId}`).emit('connect:assignment:new', assignment);
+
+    const { studentIds } = await resolveClassroomRecipients(classSubjectId);
+    sendPushToUsers(studentIds, {
+      title: 'New assignment',
+      body: title.trim(),
+      url: `/student/classrooms/${classSubjectId}`,
+    }).catch((err) => console.error('[Push] assignment notify failed:', err));
 
     res.status(201).json({
       assignment: { ...assignment, attachment_url: await getPresignedUrlForKey(assignment.attachment_url) },
@@ -230,7 +242,7 @@ const gradeSubmission = async (req, res) => {
 
   try {
     const [row] = await sql`
-      SELECT s.id, s.assignment_id, a.creator_id
+      SELECT s.id, s.assignment_id, s.student_id, a.creator_id, a.class_subject_id, a.title
       FROM connect_submissions s
       JOIN connect_assignments a ON a.id = s.assignment_id
       WHERE s.id = ${submissionId}
@@ -246,6 +258,15 @@ const gradeSubmission = async (req, res) => {
       WHERE id = ${submissionId}
       RETURNING id, assignment_id, student_id, text_content, file_url, submitted_at, is_late, grade, feedback, graded_at, graded_by;
     `;
+
+    const io = req.app.get('io');
+    io?.to(`connect:classroom:${row.class_subject_id}`).emit('connect:submission:graded', updated);
+
+    sendPushToUsers([row.student_id], {
+      title: 'Assignment graded',
+      body: `${row.title}: ${grade}`,
+      url: `/student/classrooms/${row.class_subject_id}`,
+    }).catch((err) => console.error('[Push] grading notify failed:', err));
 
     res.json({ submission: { ...updated, file_url: await getPresignedUrlForKey(updated.file_url) } });
   } catch (err) {

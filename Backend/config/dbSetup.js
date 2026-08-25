@@ -333,6 +333,21 @@ const setup = async () => {
     `;
     console.log("Database Setup: connect_class_subjects table checked.");
 
+    // "Open discussion" mode removed by product decision: only teachers/
+    // admins ever post; students read + vote in polls only. Migrate any
+    // existing 'open' rows first, then tighten the CHECK so it can never
+    // come back — DO/EXCEPTION-guarded the same way users_role_check is,
+    // for the same DROP/ADD race reason documented on that block below.
+    await sql`UPDATE connect_class_subjects SET posting_mode = 'teacher_only' WHERE posting_mode = 'open';`;
+    await sql`ALTER TABLE connect_class_subjects DROP CONSTRAINT IF EXISTS connect_class_subjects_posting_mode_check;`;
+    await sql`
+      DO $$ BEGIN
+        ALTER TABLE connect_class_subjects ADD CONSTRAINT connect_class_subjects_posting_mode_check CHECK (posting_mode IN ('teacher_only'));
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `;
+    console.log("Database Setup: connect_class_subjects posting_mode locked to teacher_only.");
+
     // connect_messages — real-time classroom messages, scoped to one
     // connect_class_subjects row per message.
     await sql`
@@ -486,6 +501,24 @@ const setup = async () => {
       );
     `;
     console.log("Database Setup: connect_read_state table checked.");
+
+    // connect_push_subscriptions — Web Push subscriptions (one row per
+    // user per browser/device, since the same user can have several).
+    // endpoint is the push service URL the browser hands back on
+    // subscribe — globally unique by construction. p256dh/auth are the
+    // subscription's own public key + auth secret, required by the Web
+    // Push protocol for encrypting the payload — not application secrets.
+    await sql`
+      CREATE TABLE IF NOT EXISTS connect_push_subscriptions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        endpoint TEXT NOT NULL UNIQUE,
+        p256dh TEXT NOT NULL,
+        auth TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    console.log("Database Setup: connect_push_subscriptions table checked.");
 
     // ── Subject Catalog + Semester-Based Allotments ─────────────────────────
     // subjects: a reusable, standalone catalog (name/code), not tied to any

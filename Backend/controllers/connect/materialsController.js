@@ -63,6 +63,8 @@ const createMaterial = async (req, res) => {
       RETURNING id, class_subject_id, uploader_id, title, file_type, file_size_bytes, created_at;
     `;
 
+    req.app.get('io')?.to(`connect:classroom:${classSubjectId}`).emit('connect:material:new', material);
+
     res.status(201).json({ material });
   } catch (err) {
     res.status(err.status || 500).json({ message: err.message || 'Server error', error: err.message });
