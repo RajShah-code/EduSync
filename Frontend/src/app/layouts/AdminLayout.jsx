@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Users, Layers, LogOut, GraduationCap } from "lucide-react";
+import { Users, Layers, LogOut, GraduationCap, BookMarked, ClipboardList } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { Toaster } from "sonner";
 
 const navigation = [
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Classes", href: "/admin/classes", icon: Layers, dataTour: "admin-classes" },
+  { name: "Subjects", href: "/admin/subjects", icon: BookMarked },
+  { name: "Allotments", href: "/admin/subject-allotments", icon: ClipboardList },
 ];
 
 export function AdminLayout() {
