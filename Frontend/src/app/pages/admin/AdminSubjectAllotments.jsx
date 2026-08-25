@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
+import Dropdown from "../../components/Dropdown";
 
 const SEMESTERS = Array.from({ length: 8 }, (_, i) => i + 1);
 
@@ -225,45 +226,45 @@ export function AdminSubjectAllotments() {
 
           <div className="flex items-center gap-2 w-full md:w-auto">
             <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Class:</label>
-            <select
+            <Dropdown
               value={filterClass}
-              onChange={(e) => setFilterClass(e.target.value)}
-              className="bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-36"
-            >
-              <option value="all">All Classes</option>
-              {classes.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={setFilterClass}
+              aria-label="Filter by class"
+              className="px-3 py-2 w-full md:w-36"
+              options={[
+                { value: "all", label: "All Classes" },
+                ...classes.map((c) => ({ value: String(c.id), label: c.name })),
+              ]}
+            />
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
             <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Semester:</label>
-            <select
+            <Dropdown
               value={filterSemester}
-              onChange={(e) => setFilterSemester(e.target.value)}
-              className="bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-32"
-            >
-              <option value="all">All Semesters</option>
-              {SEMESTERS.map((s) => (
-                <option key={s} value={s}>Semester {s}</option>
-              ))}
-            </select>
+              onChange={setFilterSemester}
+              aria-label="Filter by semester"
+              className="px-3 py-2 w-full md:w-32"
+              options={[
+                { value: "all", label: "All Semesters" },
+                ...SEMESTERS.map((s) => ({ value: String(s), label: `Semester ${s}` })),
+              ]}
+            />
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
             <label className="text-xs text-text-secondary font-medium whitespace-nowrap">Teacher:</label>
-            <select
+            <Dropdown
               value={filterTeacher}
-              onChange={(e) => setFilterTeacher(e.target.value)}
-              className="bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info w-full md:w-40"
-            >
-              <option value="all">All Teachers</option>
-              <option value="unassigned">Unassigned</option>
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
+              onChange={setFilterTeacher}
+              aria-label="Filter by teacher"
+              className="px-3 py-2 w-full md:w-40"
+              options={[
+                { value: "all", label: "All Teachers" },
+                { value: "unassigned", label: "Unassigned" },
+                ...teachers.map((t) => ({ value: String(t.id), label: t.name })),
+              ]}
+            />
           </div>
         </div>
       </div>
@@ -375,51 +376,43 @@ export function AdminSubjectAllotments() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Class</label>
-                  <select
-                    required
+                  <Dropdown
                     value={formClassId}
-                    onChange={(e) => setFormClassId(e.target.value)}
+                    onChange={setFormClassId}
+                    aria-label="Class"
+                    placeholder="Select..."
                     disabled={Boolean(editingItem)}
-                    className="w-full bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    <option value="" disabled>Select...</option>
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    className="px-3 py-2 rounded-lg"
+                    options={classes.map((c) => ({ value: String(c.id), label: c.name }))}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Semester</label>
-                  <select
-                    required
+                  <Dropdown
                     value={formSemester}
-                    onChange={(e) => setFormSemester(e.target.value)}
-                    className="w-full bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
-                  >
-                    {SEMESTERS.map((s) => (
-                      <option key={s} value={s}>Semester {s}</option>
-                    ))}
-                  </select>
+                    onChange={setFormSemester}
+                    aria-label="Semester"
+                    className="px-3 py-2 rounded-lg"
+                    options={SEMESTERS.map((s) => ({ value: String(s), label: `Semester ${s}` }))}
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">Subject</label>
-                <select
-                  required
+                <Dropdown
                   value={formSubjectId}
-                  onChange={(e) => setFormSubjectId(e.target.value)}
+                  onChange={setFormSubjectId}
+                  aria-label="Subject"
+                  placeholder="Select..."
                   disabled={Boolean(editingItem)}
-                  className="w-full bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <option value="" disabled>Select...</option>
-                  {subjects.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}{s.code ? ` (${s.code})` : ""}
-                    </option>
-                  ))}
-                </select>
+                  className="px-3 py-2 rounded-lg"
+                  options={subjects.map((s) => ({
+                    value: String(s.id),
+                    label: `${s.name}${s.code ? ` (${s.code})` : ""}`,
+                  }))}
+                />
                 {editingItem && (
                   <p className="text-[10px] text-text-muted mt-1">
                     Class and subject are locked after creation — delete and recreate to change either.
@@ -431,16 +424,17 @@ export function AdminSubjectAllotments() {
                 <label className="block text-xs font-semibold text-text-secondary uppercase mb-1">
                   Teacher <span className="text-[10px] text-text-muted normal-case">(optional — assign later if unsure)</span>
                 </label>
-                <select
+                <Dropdown
                   value={formTeacherId}
-                  onChange={(e) => setFormTeacherId(e.target.value)}
-                  className="w-full bg-bg-base border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-info"
-                >
-                  <option value="">Unassigned</option>
-                  {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                  ))}
-                </select>
+                  onChange={setFormTeacherId}
+                  aria-label="Teacher"
+                  placeholder="Unassigned"
+                  className="px-3 py-2 rounded-lg"
+                  options={[
+                    { value: "", label: "Unassigned" },
+                    ...teachers.map((t) => ({ value: String(t.id), label: `${t.name} (${t.email})` })),
+                  ]}
+                />
               </div>
 
               <div className="flex justify-end gap-2 border-t border-border pt-4 mt-2">
