@@ -149,7 +149,7 @@ export function Login() {
 
         {/* Version Footer */}
         <div className="mt-6 text-center text-xs text-text-muted font-mono">
-          v2.5.0
+          v2.0.0
         </div>
       </div>
     </div>
