@@ -62,9 +62,10 @@ export function StudentTile({ student, onClick, className, children }) {
           <div className={cn("absolute inset-0", getOverlay())} />
         )}
 
-        {/* Status Badge - Top Right */}
+        {/* Status Badge - Top Right. Icon/dot suppressed here so the monitor
+            grid reads as clean text pills (badge label only). */}
         <div className="absolute top-2 right-2">
-          <StatusBadge status={student.status} />
+          <StatusBadge status={student.status} className="[&>span:first-child]:hidden" />
         </div>
       </div>
 
@@ -74,17 +75,17 @@ export function StudentTile({ student, onClick, className, children }) {
           {displayName}
         </div>
         {student.joinedAt && (
-          <div className="text-xs text-text-muted font-mono tnum">
+          <div className="text-xs text-text-muted tnum">
             Joined: {new Date(student.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
         )}
         {student.status === "idle" && student.lastExitAt && (
-          <div className="text-xs font-mono text-accent-warning tnum">
+          <div className="text-xs text-accent-warning tnum">
             Away since: {new Date(student.lastExitAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </div>
         )}
         {student.status === "idle" && student.idleTime !== undefined && (
-          <div className="text-xs font-mono text-accent-warning tnum">
+          <div className="text-xs text-accent-warning tnum">
             Not Viewing: {Math.floor(student.idleTime / 60)}m {student.idleTime % 60}s
           </div>
         )}
