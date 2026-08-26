@@ -300,6 +300,7 @@ export function StudentMonitor() {
                   <span className="text-text-secondary font-medium">Status:</span>
                   <StatusBadge
                     status={deriveConnectionStatus(selectedStudent, { useActive: true })}
+                    className="[&>span:first-child]:hidden"
                   />
                 </div>
                 <div className="flex justify-between items-center">

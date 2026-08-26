@@ -1,19 +1,19 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useRef, useEffect } from "react";
-import { useOutletContext, useLocation } from "react-router";
+import { useOutletContext, useLocation, useNavigate } from "react-router";
 import { motion, useReducedMotion, AnimatePresence } from "motion/react";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { CodeOutputPanel } from "../../components/CodeOutputPanel";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
-import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 import {
   Pause,
   Play,
   Monitor,
+  ScreenShare,
   Circle,
   MonitorStop,
   Eye,
@@ -31,7 +31,7 @@ import {
   Calendar,
   Maximize2,
   Minimize2,
-  PhoneOff,
+  MonitorX,
   Info,
 } from "lucide-react";
 import {
@@ -1188,6 +1188,7 @@ export function LiveBroadcast() {
   }, []);
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Auto-open and pre-fill broadcast modal when navigated from Today's Schedule "Start Now" button
   useEffect(() => {
@@ -2210,9 +2211,6 @@ export function LiveBroadcast() {
                       playsInline
                       className="absolute inset-0 w-full h-full object-contain"
                     />
-                    <div className="absolute top-4 left-4 z-10">
-                      <StatusBadge status="live" />
-                    </div>
                     <div className="absolute top-4 right-4 z-10">
                       <button
                         type="button"
@@ -2588,7 +2586,7 @@ export function LiveBroadcast() {
                     {startButtonLoading ? (
                       <Loader2 className="w-4 h-4 relative shrink-0 animate-spin" />
                     ) : (
-                      <Play className="w-4 h-4 relative shrink-0" />
+                      <Monitor className="w-4 h-4 relative shrink-0" />
                     )}
                     <AnimatePresence initial={false}>
                       {pillTarget === "start" ? (
@@ -2677,7 +2675,7 @@ export function LiveBroadcast() {
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
                   >
-                    {isScreenSharing ? <MonitorStop className="w-4 h-4" /> : <Monitor className="w-4 h-4" />}
+                    {isScreenSharing ? <MonitorStop className="w-4 h-4" /> : <ScreenShare className="w-4 h-4" />}
                     {isScreenSharing ? "Stop Sharing" : "Start Screen Share"}
                   </button>
 
@@ -2719,13 +2717,16 @@ export function LiveBroadcast() {
 
                 {/* 3. Participant count + End — right edge, kept close together */}
                 <div className="flex items-center gap-2.5 shrink-0">
-                  <div
-                    className="flex items-center gap-1.5 px-3 py-2 bg-bg-elevated/90 backdrop-blur border border-border rounded-full text-xs text-text-secondary font-medium"
-                    title={`${connectedStudents.length} ${connectedStudents.length === 1 ? "student" : "students"} connected`}
+                  <button
+                    type="button"
+                    onClick={() => navigate("/teacher/monitor")}
+                    title={`${connectedStudents.length} ${connectedStudents.length === 1 ? "student" : "students"} connected — open Student Monitor`}
+                    aria-label="Open Student Monitor"
+                    className="flex items-center gap-1.5 px-3 py-2 bg-bg-elevated/90 backdrop-blur border border-border rounded-full text-xs text-text-secondary font-medium hover:text-text-primary hover:border-border-hover transition-[color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
                   >
                     <Users className="w-3.5 h-3.5" />
                     <span className="tnum">{connectedStudents.length}</span>
-                  </div>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setShowStopConfirm(true)}
@@ -2733,7 +2734,7 @@ export function LiveBroadcast() {
                     aria-label="End lecture"
                     className="h-11 px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center gap-2 font-medium text-sm shadow-[var(--shadow-modal)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
                   >
-                    <PhoneOff className="w-[18px] h-[18px]" />
+                    <MonitorX className="w-[18px] h-[18px]" />
                     End
                   </button>
                 </div>
