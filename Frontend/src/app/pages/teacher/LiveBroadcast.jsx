@@ -82,6 +82,10 @@ const formatTime = (totalSeconds) => {
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 };
 
+// Trim a "HH:MM:SS" (or already-"HH:MM") clock string down to "HH:MM" —
+// timetable rows come back with seconds the teacher never needs to read.
+const toHHMM = (t) => (typeof t === "string" ? t.slice(0, 5) : t);
+
 // LiveDot — the "this session is live" indicator that sits in front of the
 // timer. Deliberately subtle: a slow dim→glow→dim cycle (opacity + a soft
 // box-shadow bloom), never a hard blink, since it sits directly next to text
@@ -2193,10 +2197,14 @@ export function LiveBroadcast() {
                 >
                   {/* Language selector */}
                   <Select value={editorLanguage} onValueChange={handleLanguageChange}>
-                    <SelectTrigger data-tour="broadcast-languages" size="sm">
+                    <SelectTrigger
+                      data-tour="broadcast-languages"
+                      size="sm"
+                      className="rounded-[var(--radius-md)] bg-bg-elevated hover:bg-bg-elevated"
+                    >
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="shadow-[var(--shadow-dropdown)]">
                       {LANGUAGES.map((l) => (
                         <SelectItem key={l.id} value={l.id}>
                           {l.label}
@@ -2442,12 +2450,6 @@ export function LiveBroadcast() {
                           />
                         ) : null}
                         <Calendar className="w-4 h-4 relative shrink-0" />
-                        {pillTarget !== "schedule" && currentLecture ? (
-                          <span
-                            className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent-500"
-                            aria-hidden="true"
-                          />
-                        ) : null}
                         <AnimatePresence initial={false}>
                           {scheduleIconLoading ? (
                             <motion.span
@@ -2475,7 +2477,7 @@ export function LiveBroadcast() {
                           </span>
                           <span className="text-text-secondary text-[11px]">
                             {currentLecture.class_name ? `${currentLecture.class_name} · ` : ""}
-                            {currentLecture.start_time}–{currentLecture.end_time}
+                            {toHHMM(currentLecture.start_time)}–{toHHMM(currentLecture.end_time)}
                           </span>
                           <span className="text-accent-500 text-[10px] font-medium mt-0.5">
                             Click to start this lecture
@@ -2507,7 +2509,7 @@ export function LiveBroadcast() {
                         layoutId="active-pill"
                         layout
                         transition={{ type: "spring", bounce: 0, duration: 0.45 }}
-                        className="absolute inset-0 rounded-full bg-accent-success shadow-[var(--shadow-modal)]"
+                        className="absolute inset-0 rounded-full bg-accent-700 shadow-[var(--shadow-modal)]"
                       />
                     ) : null}
                     {startButtonLoading ? (

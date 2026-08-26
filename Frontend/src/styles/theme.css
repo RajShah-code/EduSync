@@ -79,6 +79,10 @@
   /* Shadows — hairline-first; shadows reserved for overlays */
   --shadow-card: none;
   --shadow-modal: 0 4px 6px rgba(0,0,0,0.4), 0 24px 48px rgba(0,0,0,0.5);
+  /* Dropdown — a lighter lift than Modal for small popper surfaces (Select
+     menus, etc.) that sit close to their trigger and shouldn't read as a
+     full modal detaching from the canvas. */
+  --shadow-dropdown: 0 2px 6px rgba(0,0,0,0.3), 0 10px 24px rgba(0,0,0,0.35);
   --shadow-focus: 0 0 0 2px rgba(72,149,223,0.4);
   --shadow-glow-live: none;
   --shadow-card-soft: none;
