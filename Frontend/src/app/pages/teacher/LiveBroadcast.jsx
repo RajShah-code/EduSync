@@ -379,6 +379,67 @@ export function LiveBroadcast() {
   // ── Code editor state ───────────────────────────────────────────────────────
   const [editorCode, setEditorCode] = useState("");
   const [editorLanguage, setEditorLanguage] = useState("javascript");
+  // langMenuOpen: the language <Select> is controlled so it can open on hover
+  // (not just click) and close again when the pointer leaves it.
+  //
+  // We do NOT drive the close off the trigger's mouseleave: Radix Select sets
+  // `body { pointer-events: none }` while open, which makes the browser fire a
+  // spurious mouseleave on the trigger the instant it opens — that fought the
+  // reopen-on-mouseenter and produced a rapid open/close flicker. Instead, while
+  // the menu is open we watch pointer *coordinates* on the window and hit-test
+  // them against the trigger and list rects (with a few px of slop so the gap
+  // between them counts as "inside"). Leave both for >120ms → close. Radix still
+  // owns the other close paths — pick an item, Esc, click outside.
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const langMenuCloseTimerRef = useRef(null);
+
+  const cancelLangMenuClose = () => {
+    if (langMenuCloseTimerRef.current) {
+      clearTimeout(langMenuCloseTimerRef.current);
+      langMenuCloseTimerRef.current = null;
+    }
+  };
+  const openLangMenu = () => {
+    cancelLangMenuClose();
+    setLangMenuOpen(true);
+  };
+  const scheduleLangMenuClose = () => {
+    if (langMenuCloseTimerRef.current) return;
+    langMenuCloseTimerRef.current = setTimeout(() => {
+      langMenuCloseTimerRef.current = null;
+      setLangMenuOpen(false);
+    }, 120);
+  };
+  useEffect(() => cancelLangMenuClose, []);
+
+  useEffect(() => {
+    if (!langMenuOpen) return;
+    const HIT_SLOP = 10;
+    const within = (el, x, y) => {
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return (
+        x >= r.left - HIT_SLOP &&
+        x <= r.right + HIT_SLOP &&
+        y >= r.top - HIT_SLOP &&
+        y <= r.bottom + HIT_SLOP
+      );
+    };
+    const handlePointerMove = (e) => {
+      const trigger = document.querySelector('[data-tour="broadcast-languages"]');
+      const content = document.querySelector('[data-slot="select-content"]');
+      if (within(trigger, e.clientX, e.clientY) || within(content, e.clientX, e.clientY)) {
+        cancelLangMenuClose();
+      } else {
+        scheduleLangMenuClose();
+      }
+    };
+    window.addEventListener("pointermove", handlePointerMove);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      cancelLangMenuClose();
+    };
+  }, [langMenuOpen]);
   // outputMode controls what the output panel shows:
   //   'none'    — panel hidden
   //   'iframe'  — rendered iframe only (HTML / CSS)
@@ -2196,10 +2257,16 @@ export function LiveBroadcast() {
                   style={{ height: "44px" }}
                 >
                   {/* Language selector */}
-                  <Select value={editorLanguage} onValueChange={handleLanguageChange}>
+                  <Select
+                    value={editorLanguage}
+                    onValueChange={handleLanguageChange}
+                    open={langMenuOpen}
+                    onOpenChange={setLangMenuOpen}
+                  >
                     <SelectTrigger
                       data-tour="broadcast-languages"
                       size="sm"
+                      onMouseEnter={openLangMenu}
                       className="rounded-[var(--radius-md)] bg-bg-elevated hover:bg-bg-elevated"
                     >
                       <SelectValue />
@@ -2436,20 +2503,26 @@ export function LiveBroadcast() {
                           />
                         ) : null}
                         {pillTarget !== "schedule" && currentLecture && !prefersReducedMotion ? (
+                          // A lecture is scheduled right now — the icon itself
+                          // breathes (opacity dim→bright + a soft violet glow
+                          // that fades with it), the same slow 2.4s cadence as
+                          // the live-session LiveDot. No expanding ring; the
+                          // pulse lives on the glyph, not around it.
                           <motion.span
-                            className="absolute inset-0 rounded-full"
-                            animate={{
-                              boxShadow: [
-                                "0 0 0 0 color-mix(in srgb, var(--accent-500) 0%, transparent)",
-                                "0 0 0 5px color-mix(in srgb, var(--accent-500) 12%, transparent)",
-                                "0 0 0 0 color-mix(in srgb, var(--accent-500) 0%, transparent)",
-                              ],
+                            className="relative flex items-center justify-center shrink-0"
+                            style={{
+                              filter:
+                                "drop-shadow(0 0 3px color-mix(in srgb, var(--accent-500) 50%, transparent))",
                             }}
+                            animate={{ opacity: [0.5, 1, 0.5] }}
                             transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
                             aria-hidden="true"
-                          />
-                        ) : null}
-                        <Calendar className="w-4 h-4 relative shrink-0" />
+                          >
+                            <Calendar className="w-4 h-4" />
+                          </motion.span>
+                        ) : (
+                          <Calendar className="w-4 h-4 relative shrink-0" />
+                        )}
                         <AnimatePresence initial={false}>
                           {scheduleIconLoading ? (
                             <motion.span
@@ -2468,10 +2541,10 @@ export function LiveBroadcast() {
                     </TooltipTrigger>
                     <TooltipContent
                       side="top"
-                      className="bg-bg-elevated border border-border text-text-primary px-3 py-2 rounded-[var(--radius-md)] shadow-[var(--shadow-modal)]"
+                      className="bg-bg-elevated border border-accent-500/40 text-text-primary px-3.5 py-2.5 rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] max-w-[240px]"
                     >
                       {currentLecture ? (
-                        <div className="flex flex-col gap-0.5">
+                        <div className="flex flex-col gap-1">
                           <span className="font-semibold text-text-primary">
                             {currentLecture.subject || currentLecture.subject_name}
                           </span>
