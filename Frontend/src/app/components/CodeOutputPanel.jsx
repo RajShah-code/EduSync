@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { AlignBottomSimple as PanelBottom, AlignRightSimple as PanelRight, AlignLeftSimple as PanelLeft, AlignTopSimple as PanelTop, CaretDown as ChevronDown } from "@phosphor-icons/react";
+import { IconLayoutBottombar as PanelBottom, IconLayoutSidebarRight as PanelRight, IconLayoutSidebar as PanelLeft, IconLayoutNavbar as PanelTop, IconChevronDown as ChevronDown } from "@tabler/icons-react";
 
 export function CodeOutputPanel({
   outputMode = "none",

@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { House as Home, CalendarCheck, SignOut as LogOut, Eye, EyeSlash as EyeOff, Broadcast as Radio, Code, FileText, Envelope as Mail, Gear as Settings, GraduationCap } from "@phosphor-icons/react";
+import { IconHome as Home, IconCalendarCheck as CalendarCheck, IconLogout as LogOut, IconEye as Eye, IconEyeOff as EyeOff, IconBroadcast as Radio, IconCode as Code, IconFileText as FileText, IconMail as Mail, IconSettings as Settings, IconSchool as GraduationCap } from "@tabler/icons-react";
 import { cn } from "../components/ui/utils";
 import { sessionStore } from "../store/sessionStore"; // kept in place but no longer source of truth
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";

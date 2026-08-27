@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Editor from "@monaco-editor/react";
-import { X, Clock, Medal as Award, Question as HelpCircle, Warning as AlertTriangle } from "@phosphor-icons/react";
+import { IconX as X, IconClock as Clock, IconAward as Award, IconHelpCircle as HelpCircle, IconAlertTriangle as AlertTriangle } from "@tabler/icons-react";
 import { StatusBadge } from "./StatusBadge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";

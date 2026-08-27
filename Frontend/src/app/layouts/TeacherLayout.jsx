@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { SquaresFour as LayoutDashboard, Broadcast as Radio, Monitor, ClipboardText as ClipboardList, FileText, CalendarCheck, ChartBar as BarChart3, VideoCamera as Video, CalendarBlank as Calendar, Gear as Settings, SignOut as LogOut, Check, X, Warning as AlertTriangle, GraduationCap, CaretDown as ChevronDown } from "@phosphor-icons/react";
+import { IconLayoutDashboard as LayoutDashboard, IconBroadcast as Radio, IconDeviceDesktop as Monitor, IconClipboardText as ClipboardList, IconFileText as FileText, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendar as Calendar, IconSettings as Settings, IconLogout as LogOut, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown } from "@tabler/icons-react";
 import { cn } from "../components/ui/utils";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
 import { Toaster } from "../components/ui/sonner";

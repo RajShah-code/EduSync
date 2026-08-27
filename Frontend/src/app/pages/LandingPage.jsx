@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { ArrowRight, Play, PlayCircle, Monitor, ChartBar as BarChart3, CaretDown as ChevronDown } from "@phosphor-icons/react";
+import { IconArrowRight as ArrowRight, IconPlayerPlay as Play, IconPlayerPlay as PlayCircle, IconDeviceDesktop as Monitor, IconChartBar as BarChart3, IconChevronDown as ChevronDown } from "@tabler/icons-react";
 
 // ─── Scroll-reveal hook ──────────────────────────────────────────────────────
 function useScrollReveal() {

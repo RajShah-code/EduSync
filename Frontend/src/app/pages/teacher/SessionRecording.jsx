@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { VideoCamera as Video, FolderOpen, PlayCircle, Trash as Trash2, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Clock, HardDrive, DownloadSimple as Download } from "@phosphor-icons/react";
+import { IconVideo as Video, IconFolderOpen as FolderOpen, IconPlayerPlay as PlayCircle, IconTrash as Trash2, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconClock as Clock, IconDatabase as HardDrive, IconDownload as Download } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
 import PageShell from "../../components/PageShell";
 import { getRecordings, deleteRecording } from "../../utils/recordingsStore";

@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Pencil, Eraser, Minus, Square, Circle, Trash as Trash2, Moon, Sun, ArrowUUpLeft as Undo2, ArrowUUpRight as Redo2 } from "@phosphor-icons/react";
+import { IconPencil as Pencil, IconEraser as Eraser, IconMinus as Minus, IconSquare as Square, IconCircle as Circle, IconTrash as Trash2, IconMoon as Moon, IconSun as Sun, IconArrowBackUp as Undo2, IconArrowForwardUp as Redo2 } from "@tabler/icons-react";
 
 const PRESET_COLORS = [
   "#FFFFFF",

@@ -11,7 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { ChartBar as BarChart2, Users, CheckCircle as CheckCircle2, Medal as Award, Warning as AlertTriangle, CaretDown as ChevronDown, Check, ChalkboardSimple as School } from "@phosphor-icons/react";
+import { IconChartBar as BarChart2, IconUsers as Users, IconCircleCheck as CheckCircle2, IconAward as Award, IconAlertTriangle as AlertTriangle, IconChevronDown as ChevronDown, IconCheck as Check, IconChalkboard as School } from "@tabler/icons-react";
 import { getSocket } from "../../store/socket";
 import { Skeleton } from "../../components/ui/skeleton";
 import PageShell from "../../components/PageShell";

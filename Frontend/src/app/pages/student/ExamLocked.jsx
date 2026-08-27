@@ -1,4 +1,4 @@
-import { ShieldSlash as ShieldOff } from "@phosphor-icons/react";
+import { IconShieldOff as ShieldOff } from "@tabler/icons-react";
 import { StatusBadge } from "../../components/StatusBadge";
 
 const REASON_LABELS = {

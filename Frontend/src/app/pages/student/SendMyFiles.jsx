@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
-import { FolderOpen, File, Envelope as Mail, PaperPlaneTilt as Send, Warning as AlertTriangle, CheckCircle as CheckCircle2, FileZip as FileArchive, CircleNotch as Loader2, Info, X, Trash as Trash2 } from "@phosphor-icons/react";
+import { IconFolderOpen as FolderOpen, IconFile as File, IconMail as Mail, IconSend as Send, IconAlertTriangle as AlertTriangle, IconCircleCheck as CheckCircle2, IconFileZip as FileArchive, IconLoader2 as Loader2, IconInfoCircle as Info, IconX as X, IconTrash as Trash2 } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";

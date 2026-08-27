@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { Plus, PencilSimple as Edit2, X, Check, BookBookmark as BookMarked, Trash as Trash2, Warning as AlertTriangle } from "@phosphor-icons/react";
+import { IconPlus as Plus, IconPencil as Edit2, IconX as X, IconCheck as Check, IconBookmark as BookMarked, IconTrash as Trash2, IconAlertTriangle as AlertTriangle } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import PageShell from "../../components/PageShell";

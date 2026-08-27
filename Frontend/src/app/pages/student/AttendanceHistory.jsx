@@ -2,7 +2,7 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
-import { CalendarCheck, Funnel as Filter, CaretLeft as ChevronLeft, CaretRight as ChevronRight, CaretDown as ChevronDown, ArrowsDownUp as ArrowUpDown, Warning as TriangleAlert } from "@phosphor-icons/react";
+import { IconCalendarCheck as CalendarCheck, IconFilter as Filter, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconChevronDown as ChevronDown, IconArrowsUpDown as ArrowUpDown, IconAlertTriangle as TriangleAlert } from "@tabler/icons-react";
 import { getSocket } from "../../store/socket";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { AppTour } from "../../components/AppTour";

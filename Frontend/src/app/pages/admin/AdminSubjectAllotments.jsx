@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useMemo } from "react";
-import { Plus, PencilSimple as Edit2, Trash as Trash2, X, Warning as AlertTriangle, ClipboardText as ClipboardList, MagnifyingGlass as Search, UserMinus as UserX } from "@phosphor-icons/react";
+import { IconPlus as Plus, IconPencil as Edit2, IconTrash as Trash2, IconX as X, IconAlertTriangle as AlertTriangle, IconClipboardText as ClipboardList, IconSearch as Search, IconUserMinus as UserX } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import Dropdown from "../../components/Dropdown";

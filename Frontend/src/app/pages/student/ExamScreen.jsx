@@ -23,7 +23,7 @@ import {
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
 import { cn } from "../../components/ui/utils";
-import { Clock, ShieldCheck, CaretLeft as ChevronLeft, CaretRight as ChevronRight, CaretDown as ChevronDown, CircleNotch as Loader2, FileText, Play, AlignRightSimple as PanelRight, AlignLeftSimple as PanelLeft, AlignTopSimple as PanelTop, AlignBottomSimple as PanelBottom, X } from "@phosphor-icons/react";
+import { IconClock as Clock, IconShieldCheck as ShieldCheck, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconChevronDown as ChevronDown, IconLoader2 as Loader2, IconFileText as FileText, IconPlayerPlay as Play, IconLayoutSidebarRight as PanelRight, IconLayoutSidebar as PanelLeft, IconLayoutNavbar as PanelTop, IconLayoutBottombar as PanelBottom, IconX as X } from "@tabler/icons-react";
 
 // Dock options for the code-question console panel — a manually-built
 // dropdown (matching CodeOutputPanel.jsx's pattern below) rather than the
