@@ -27,9 +27,10 @@ colors:
   admin-700: "#096DBA"
   admin-900: "#012854"
   teacher-50: "#E4E5FF"
-  teacher-300: "#BFBBFF"
-  teacher-500: "#A799FF"
-  teacher-700: "#5A37C5"
+  teacher-300: "#cda8f0"
+  teacher-500: "#af74e5"
+  teacher-600: "#933fdb"
+  teacher-700: "#6b1fad"
   teacher-900: "#27154F"
 typography:
   display:
@@ -111,7 +112,7 @@ Two independent color systems share the canvas: a **role accent** (exactly one a
 
 ### Primary — Role Accents (one active per session, via `[data-role]`)
 - **Student Orange** (`--student-500` `#E6802D`, ranging `--student-50` `#FEE6D4` wash to `--student-900` `#571F05` deep): the active accent throughout the student experience — nav, buttons, focus rings, badges.
-- **Teacher Royal Violet** (`--teacher-500` `#A799FF`, ranging `--teacher-50` `#E4E5FF` to `--teacher-900` `#27154F`): the active accent throughout the teacher/faculty experience.
+- **Teacher Royal Violet** (`--teacher-700` `#6b1fad` → `--teacher-300` `#cda8f0`): the active accent throughout the teacher/faculty experience. Each step now carries a job: **700 `#6b1fad`** — primary action buttons ("start something"); **600 `#933fdb`** — secondary buttons (navigate / add), the selected state of a nav/segmented button (e.g. Exam page's Create / Manage toggle); **500 `#af74e5`** — icon + text, the highlight fill/border of a selected tab (sidebar Exam / Live Lecture, exam question-format radios, the exam step-progress numbers), and the focus ring; **300 `#cda8f0`** — a lighter complement border paired with icon+text, **opt-in only** (applied where explicitly asked, not by default). `--teacher-50` / `--teacher-900` are currently unused on the teacher side.
 - **Admin Ink Blue** (`--admin-500` `#4895DF`, ranging `--admin-50` `#DBEAF8` to `--admin-900` `#012854`): the active accent throughout the admin console.
 
 ### Neutral
