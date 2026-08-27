@@ -5,18 +5,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import {
-  Pencil,
-  Eraser,
-  Minus,
-  Square,
-  Circle,
-  Trash2,
-  Moon,
-  Sun,
-  Undo2,
-  Redo2,
-} from "lucide-react";
+import { Pencil, Eraser, Minus, Square, Circle, Trash as Trash2, Moon, Sun, ArrowUUpLeft as Undo2, ArrowUUpRight as Redo2 } from "@phosphor-icons/react";
 
 const PRESET_COLORS = [
   "#FFFFFF",

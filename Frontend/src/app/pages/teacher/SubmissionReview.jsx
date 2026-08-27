@@ -6,10 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
-import {
-  ChevronLeft, Code, FileCode, CheckCircle,
-  Award, Clock, RefreshCw
-} from "lucide-react";
+import { CaretLeft as ChevronLeft, Code, FileCode, CheckCircle, Medal as Award, Clock, ArrowsClockwise as RefreshCw } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
 

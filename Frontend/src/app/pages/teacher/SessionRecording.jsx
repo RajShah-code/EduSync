@@ -1,16 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import {
-  Video,
-  FolderOpen,
-  PlayCircle,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  HardDrive,
-  Download,
-} from "lucide-react";
+import { VideoCamera as Video, FolderOpen, PlayCircle, Trash as Trash2, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Clock, HardDrive, DownloadSimple as Download } from "@phosphor-icons/react";
 import { Button } from "../../components/ui/button";
 import PageShell from "../../components/PageShell";
 import { getRecordings, deleteRecording } from "../../utils/recordingsStore";

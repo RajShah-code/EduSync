@@ -23,21 +23,7 @@ import {
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
 import { cn } from "../../components/ui/utils";
-import {
-  Clock,
-  ShieldCheck,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Loader2,
-  FileText,
-  Play,
-  PanelRight,
-  PanelLeft,
-  PanelTop,
-  PanelBottom,
-  X,
-} from "lucide-react";
+import { Clock, ShieldCheck, CaretLeft as ChevronLeft, CaretRight as ChevronRight, CaretDown as ChevronDown, CircleNotch as Loader2, FileText, Play, AlignRightSimple as PanelRight, AlignLeftSimple as PanelLeft, AlignTopSimple as PanelTop, AlignBottomSimple as PanelBottom, X } from "@phosphor-icons/react";
 
 // Dock options for the code-question console panel — a manually-built
 // dropdown (matching CodeOutputPanel.jsx's pattern below) rather than the

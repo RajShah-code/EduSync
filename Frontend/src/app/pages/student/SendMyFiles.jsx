@@ -1,19 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import JSZip from "jszip";
-import {
-  FolderOpen,
-  File,
-  Mail,
-  Send,
-  AlertTriangle,
-  CheckCircle2,
-  FileArchive,
-  Loader2,
-  Info,
-  X,
-  Trash2,
-} from "lucide-react";
+import { FolderOpen, File, Envelope as Mail, PaperPlaneTilt as Send, Warning as AlertTriangle, CheckCircle as CheckCircle2, FileZip as FileArchive, CircleNotch as Loader2, Info, X, Trash as Trash2 } from "@phosphor-icons/react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";

@@ -43,8 +43,14 @@
   --admin-50: #DBEAF8;    --admin-300: #89C4FB;    --admin-500: #4895DF;
   --admin-700: #096DBA;   --admin-900: #012854;      /* Ink Blue */
 
-  --teacher-50: #E4E5FF;  --teacher-300: #BFBBFF;  --teacher-500: #A799FF;
-  --teacher-700: #5A37C5; --teacher-900: #27154F;    /* Royal Violet */
+  /* Royal Violet — role scale for the teacher side. Meanings:
+       700  #6b1fad  primary action buttons ("start something")
+       600  #933fdb  secondary buttons (navigate / add), selected nav button
+       500  #af74e5  icon + text + selected-tab / radio / step-progress highlight, focus ring
+       300  #cda8f0  complement border for icon+text  (opt-in — apply only when asked)
+     50 / 900 are unused on the teacher side and left as-is. */
+  --teacher-50: #E4E5FF;  --teacher-300: #cda8f0;  --teacher-500: #af74e5;
+  --teacher-600: #933fdb; --teacher-700: #6b1fad;  --teacher-900: #27154F;
 
   /* Typography — Inter / Inter Tight only, no mono anywhere. Digits use
      tabular-nums (see .tnum) instead of a second typeface. */
@@ -145,6 +151,7 @@
   --accent-50: var(--student-50); --accent-300: var(--student-300);
   --accent-500: var(--student-500); --accent-700: var(--student-700);
   --accent-900: var(--student-900);
+  --accent-600: var(--accent-700); /* no dedicated 600 step — track this role's 700 */
   --primary: var(--accent-700); --ring: var(--accent-500);
   --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 }
@@ -152,6 +159,7 @@
   --accent-50: var(--admin-50); --accent-300: var(--admin-300);
   --accent-500: var(--admin-500); --accent-700: var(--admin-700);
   --accent-900: var(--admin-900);
+  --accent-600: var(--accent-700);
   --primary: var(--accent-700); --ring: var(--accent-500);
   --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 }
@@ -159,6 +167,7 @@
   --accent-50: var(--teacher-50); --accent-300: var(--teacher-300);
   --accent-500: var(--teacher-500); --accent-700: var(--teacher-700);
   --accent-900: var(--teacher-900);
+  --accent-600: var(--teacher-600); /* #933fdb — secondary / add / selected-nav */
   --primary: var(--accent-700); --ring: var(--accent-500);
   --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 }
@@ -167,6 +176,7 @@
   --accent-50: var(--student-50); --accent-300: var(--student-300);
   --accent-500: var(--student-500); --accent-700: var(--student-700);
   --accent-900: var(--student-900);
+  --accent-600: var(--accent-700);
   /* accent-info retained as an alias so existing className strings
      (bg-accent-info, text-accent-info, border-accent-info) keep working
      without a repo-wide rename; it always tracks the active role's 500. */
@@ -193,6 +203,7 @@
   --color-accent-50: var(--accent-50);
   --color-accent-300: var(--accent-300);
   --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
   --color-accent-700: var(--accent-700);
   --color-accent-900: var(--accent-900);
 

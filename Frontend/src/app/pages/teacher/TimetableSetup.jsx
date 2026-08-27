@@ -3,27 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
-import {
-  Calendar,
-  Clock,
-  BookOpen,
-  School,
-  Bell,
-  Plus,
-  Trash2,
-  Edit3,
-  Loader2,
-  FileSpreadsheet,
-  Download,
-  Upload,
-  X,
-  CheckCircle2,
-  AlertTriangle,
-  Sliders,
-  FlaskConical,
-  Building,
-  CalendarOff,
-} from "lucide-react";
+import { CalendarBlank as Calendar, Clock, BookOpen, ChalkboardSimple as School, Bell, Plus, Trash as Trash2, PencilSimple as Edit3, CircleNotch as Loader2, FileCsv as FileSpreadsheet, DownloadSimple as Download, UploadSimple as Upload, X, CheckCircle as CheckCircle2, Warning as AlertTriangle, SlidersHorizontal as Sliders, Flask as FlaskConical, Buildings as Building, CalendarX as CalendarOff } from "@phosphor-icons/react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";

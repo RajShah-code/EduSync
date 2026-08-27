@@ -1,4 +1,4 @@
-import { Check, X, Circle, CircleDot, Lock, TriangleAlert, Undo2, MoreHorizontal, Minus, Hand } from "lucide-react";
+import { Check, X, Circle, RadioButton as CircleDot, Lock, Warning as TriangleAlert, ArrowUUpLeft as Undo2, DotsThree as MoreHorizontal, Minus, Hand } from "@phosphor-icons/react";
 import { cn } from "../components/ui/utils";
 
 // Colors are drawn from the locked token set (theme.css) via CSS var references,

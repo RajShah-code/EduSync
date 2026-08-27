@@ -40,7 +40,17 @@ function TooltipContent({ className, sideOffset = 0, children, ...props }) {
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="bg-primary fill-primary z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px]" />
+        {/* Speech-bubble tail — Radix/Popper's native down-pointing SVG
+            triangle (not a rotated square), filled to match the tooltip body.
+            --popover resolves to the same colour both current consumers give
+            the body (bg-bg-elevated); the -1px pull closes any seam so the box
+            and the tail read as one continuous shape. Popper still owns
+            placement + side-flipping. */}
+        <TooltipPrimitive.Arrow
+          width={12}
+          height={7}
+          className="fill-popover z-50 -translate-y-px"
+        />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   );

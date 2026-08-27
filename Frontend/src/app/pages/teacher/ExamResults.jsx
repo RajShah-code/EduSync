@@ -18,19 +18,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Skeleton } from "../../components/ui/skeleton";
 import { cn } from "../../components/ui/utils";
-import {
-  FileText,
-  Loader2,
-  ChevronDown,
-  CheckCircle,
-  XCircle,
-  X,
-  Award,
-  Clock,
-  ArrowLeft,
-  Play,
-  Terminal,
-} from "lucide-react";
+import { FileText, CircleNotch as Loader2, CaretDown as ChevronDown, CheckCircle, XCircle, X, Medal as Award, Clock, ArrowLeft, Play, TerminalWindow as Terminal } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 

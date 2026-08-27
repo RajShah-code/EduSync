@@ -2,24 +2,7 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router";
 import * as XLSX from "xlsx";
-import {
-  Search,
-  UserPlus,
-  Edit2,
-  Key,
-  Trash2,
-  X,
-  Check,
-  Copy,
-  AlertTriangle,
-  UserCheck,
-  HelpCircle,
-  Upload,
-  Download,
-  FileSpreadsheet,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { MagnifyingGlass as Search, UserPlus, PencilSimple as Edit2, Key, Trash as Trash2, X, Check, Copy, Warning as AlertTriangle, UserCheck, Question as HelpCircle, UploadSimple as Upload, DownloadSimple as Download, FileCsv as FileSpreadsheet, CaretLeft as ChevronLeft, CaretRight as ChevronRight } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { adminTourSteps } from "../../tours/adminTourSteps";

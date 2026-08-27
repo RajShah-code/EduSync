@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { Plus, Edit2, X, Check, BookMarked, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, PencilSimple as Edit2, X, Check, BookBookmark as BookMarked, Trash as Trash2, Warning as AlertTriangle } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import PageShell from "../../components/PageShell";

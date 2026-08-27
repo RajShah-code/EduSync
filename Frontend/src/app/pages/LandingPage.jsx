@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router";
-import {
-  ArrowRight,
-  Play,
-  PlayCircle,
-  Monitor,
-  BarChart3,
-  ChevronDown,
-} from "lucide-react";
+import { ArrowRight, Play, PlayCircle, Monitor, ChartBar as BarChart3, CaretDown as ChevronDown } from "@phosphor-icons/react";
 
 // ─── Scroll-reveal hook ──────────────────────────────────────────────────────
 function useScrollReveal() {

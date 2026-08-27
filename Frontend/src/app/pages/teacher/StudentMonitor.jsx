@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { StudentTile } from "../../components/StudentTile";
 import { StatusBadge } from "../../components/StatusBadge";
-import { Filter, Grid3x3, Grid2x2, Monitor } from "lucide-react";
+import { Funnel as Filter, GridNine as Grid3x3, GridFour as Grid2x2, Monitor } from "@phosphor-icons/react";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";

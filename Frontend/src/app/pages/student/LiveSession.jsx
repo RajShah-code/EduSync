@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Monitor, MonitorStop, Loader2, Play, Mic, Maximize2, AlertTriangle } from "lucide-react";
+import { Monitor, Monitor as MonitorStop, CircleNotch as Loader2, Play, Microphone as Mic, ArrowsOut as Maximize2, Warning as AlertTriangle } from "@phosphor-icons/react";
 import { useLocation, useOutletContext, useNavigate } from "react-router";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";

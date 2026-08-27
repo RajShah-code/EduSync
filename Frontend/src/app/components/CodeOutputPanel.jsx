@@ -1,11 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import {
-  PanelBottom,
-  PanelRight,
-  PanelLeft,
-  PanelTop,
-  ChevronDown,
-} from "lucide-react";
+import { AlignBottomSimple as PanelBottom, AlignRightSimple as PanelRight, AlignLeftSimple as PanelLeft, AlignTopSimple as PanelTop, CaretDown as ChevronDown } from "@phosphor-icons/react";
 
 export function CodeOutputPanel({
   outputMode = "none",
