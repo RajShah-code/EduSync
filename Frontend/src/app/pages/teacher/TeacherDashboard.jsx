@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation, useOutletContext } from "react-router";
+import { useNavigate, useLocation, useOutletContext, Link } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import {
@@ -13,30 +13,14 @@ import {
   Sparkles,
   Plus,
   Monitor,
-  ClipboardList,
-  FileText,
-  CalendarCheck,
-  BarChart3,
-  Video,
 } from "lucide-react";
 import { AppTour } from "../../components/AppTour";
 import { teacherTourSteps } from "../../tours/teacherTourSteps";
 import { getSocket } from "../../store/socket";
+import { toast } from "sonner";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 import { ElapsedTimer } from "../../components/Timer";
 import PageShell from "../../components/PageShell";
-
-// Direct-navigation shortcuts to the rest of the teacher workflow — a calmer,
-// genuinely useful replacement for the old "Recent Activity" panel, which had
-// no backend source and always rendered an empty state.
-const QUICK_ACTIONS = [
-  { name: "Assign Task", href: "/teacher/task/assign", icon: ClipboardList },
-  { name: "Create Exam", href: "/teacher/exam/create", icon: FileText },
-  { name: "Timetable", href: "/teacher/timetable", icon: Calendar },
-  { name: "Attendance", href: "/teacher/attendance", icon: CalendarCheck },
-  { name: "Analytics", href: "/teacher/analytics", icon: BarChart3 },
-  { name: "Recordings", href: "/teacher/recordings", icon: Video },
-];
 
 // Days name helper for header
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -147,13 +131,52 @@ export function TeacherDashboard() {
   } = useOutletContext();
 
   const sessionActive = broadcastState !== "idle";
+  const [ending, setEnding] = useState(false);
 
-  const handleEndSession = () => {
+  // End the live lecture for real — not just a local UI reset. Mirrors
+  // LiveBroadcast.jsx's handleStopBroadcastNow: hit POST /sessions/end first
+  // (writes ended_at + finalizes attendance in the DB), and only tear down the
+  // local shell state if that succeeds. Then emit teacher:end_session so the
+  // server broadcasts session:ended to the students and clears its in-memory
+  // session state. TeacherLayout's socket listener still surfaces any
+  // attendance-exception review modal regardless of which page ended it.
+  const handleEndSession = async () => {
+    if (ending) return;
+    setEnding(true);
+
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/sessions/end`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        toast.error("Failed to end the lecture. Please try again.");
+        setEnding(false);
+        return;
+      }
+    } catch {
+      toast.error("Failed to end the lecture. Check your connection and try again.");
+      setEnding(false);
+      return;
+    }
+
+    const socket = getSocket();
+    if (socket && sessionInfo?.id) {
+      socket.emit("teacher:end_session", { session_id: sessionInfo.id });
+    }
+    if (sessionInfo?.id) {
+      try {
+        sessionStorage.removeItem(`edusync_session_password_${sessionInfo.id}`);
+      } catch {}
+    }
+
     setBroadcastState("idle");
     setRecordingState("off");
     setSessionSeconds(0);
     setRecordingSeconds(0);
     setSessionInfo(null);
+    setEnding(false);
   };
 
   // ── Live student roster for the active session ─────────────────────────────
@@ -255,13 +278,10 @@ export function TeacherDashboard() {
   return (
     <PageShell>
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-text-primary mb-1">
-          Control Center
+      <div className="border-b border-border pb-4">
+        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
+          Dashboard
         </h1>
-        <p className="text-text-secondary">
-          Manage your lab session, daily schedule, and monitor students
-        </p>
       </div>
 
       {/* Session Control — the page's primary focus, hero-weighted */}
@@ -304,19 +324,20 @@ export function TeacherDashboard() {
             {sessionActive ? (
               <Button
                 onClick={handleEndSession}
+                disabled={ending}
                 variant="outline"
-                className="border-accent-critical text-accent-critical hover:bg-accent-critical/10 cursor-pointer"
+                className="border-accent-critical text-accent-critical hover:bg-accent-critical/10 cursor-pointer disabled:cursor-not-allowed"
               >
                 <Square className="w-4 h-4 mr-2" />
-                End Session
+                {ending ? "Ending…" : "End Lecture"}
               </Button>
             ) : (
               <Button
                 onClick={() => navigate("/teacher/broadcast")}
-                className="bg-accent-success hover:bg-accent-success/90 text-white cursor-pointer"
+                className="bg-accent-700 hover:bg-accent-700/90 text-white cursor-pointer"
               >
                 <Play className="w-4 h-4 mr-2" />
-                Start Session
+                Start Lecture
               </Button>
             )}
           </div>
@@ -361,13 +382,12 @@ export function TeacherDashboard() {
             Today's Schedule ({todayName})
           </h2>
           {hasAnyTimetable && (
-            <Button
-              variant="outline"
-              onClick={() => navigate("/teacher/timetable")}
-              className="text-xs border-border text-text-secondary hover:text-text-primary cursor-pointer"
+            <Link
+              to="/teacher/timetable"
+              className="text-xs font-medium text-text-secondary hover:text-text-primary no-underline hover:no-underline transition-colors cursor-pointer"
             >
               Manage Timetable
-            </Button>
+            </Link>
           )}
         </div>
 
@@ -509,27 +529,6 @@ export function TeacherDashboard() {
             })}
           </div>
         )}
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-lg font-semibold text-text-primary mb-3">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {QUICK_ACTIONS.map((action) => (
-            <button
-              key={action.href}
-              onClick={() => navigate(action.href)}
-              className="flex items-center gap-3 p-4 bg-bg-surface border border-border rounded-[var(--radius-md)] text-left hover:border-border-hover transition-[transform,border-color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] cursor-pointer"
-            >
-              <div className="w-9 h-9 rounded-[var(--radius-sm)] bg-bg-base border border-border flex items-center justify-center shrink-0">
-                <action.icon className="w-4 h-4 text-accent-info" />
-              </div>
-              <span className="text-sm font-medium text-text-primary">{action.name}</span>
-            </button>
-          ))}
-        </div>
       </div>
 
       <AppTour

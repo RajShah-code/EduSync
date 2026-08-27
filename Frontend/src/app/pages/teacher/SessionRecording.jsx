@@ -111,14 +111,10 @@ export function SessionRecording() {
 
   return (
     <PageShell>
-      <div>
-        <h1 className="text-2xl font-semibold text-text-primary mb-1">
+      <div className="border-b border-border pb-4">
+        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
           Session Recordings
         </h1>
-        <p className="text-text-secondary text-sm">
-          Recordings save directly to your device — this is a local index of what you've saved,
-          not a copy of the video itself.
-        </p>
       </div>
 
       {recordings.length === 0 ? (
