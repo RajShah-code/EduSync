@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Home, CalendarCheck, LogOut, Eye, EyeOff, Radio, Code, FileText, Mail, Settings, GraduationCap } from "lucide-react";
+import { House as Home, CalendarCheck, SignOut as LogOut, Eye, EyeSlash as EyeOff, Broadcast as Radio, Code, FileText, Envelope as Mail, Gear as Settings, GraduationCap } from "@phosphor-icons/react";
 import { cn } from "../components/ui/utils";
 import { sessionStore } from "../store/sessionStore"; // kept in place but no longer source of truth
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";

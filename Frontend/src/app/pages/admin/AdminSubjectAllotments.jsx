@@ -1,15 +1,6 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect, useMemo } from "react";
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  X,
-  AlertTriangle,
-  ClipboardList,
-  Search,
-  UserX,
-} from "lucide-react";
+import { Plus, PencilSimple as Edit2, Trash as Trash2, X, Warning as AlertTriangle, ClipboardText as ClipboardList, MagnifyingGlass as Search, UserMinus as UserX } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import Dropdown from "../../components/Dropdown";

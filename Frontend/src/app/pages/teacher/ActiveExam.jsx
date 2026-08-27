@@ -17,17 +17,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
-import {
-  AlertTriangle,
-  Lock,
-  FileText,
-  Loader2,
-  Users,
-  ChevronRight,
-  ArrowLeft,
-  X,
-  Clock,
-} from "lucide-react";
+import { Warning as AlertTriangle, Lock, FileText, CircleNotch as Loader2, Users, CaretRight as ChevronRight, ArrowLeft, X, Clock } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Skeleton } from "../../components/ui/skeleton";
 

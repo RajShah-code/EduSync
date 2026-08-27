@@ -2,7 +2,7 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
-import { CalendarCheck, Filter, ChevronLeft, ChevronRight, ChevronDown, ArrowUpDown, TriangleAlert } from "lucide-react";
+import { CalendarCheck, Funnel as Filter, CaretLeft as ChevronLeft, CaretRight as ChevronRight, CaretDown as ChevronDown, ArrowsDownUp as ArrowUpDown, Warning as TriangleAlert } from "@phosphor-icons/react";
 import { getSocket } from "../../store/socket";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { AppTour } from "../../components/AppTour";

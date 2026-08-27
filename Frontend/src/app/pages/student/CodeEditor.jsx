@@ -5,11 +5,7 @@ import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
 import { Timer } from "../../components/Timer";
 import { cn } from "../../components/ui/utils";
-import {
-  Play, Check, ChevronLeft, ChevronRight, Code,
-  HelpCircle, AlertCircle, Terminal, X, Loader2,
-  Lock, CheckCircle2
-} from "lucide-react";
+import { Play, Check, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Code, Question as HelpCircle, WarningCircle as AlertCircle, TerminalWindow as Terminal, X, CircleNotch as Loader2, Lock, CheckCircle as CheckCircle2 } from "@phosphor-icons/react";
 import {
   Select,
   SelectContent,

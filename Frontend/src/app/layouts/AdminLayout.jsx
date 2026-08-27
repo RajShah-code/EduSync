@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Users, Layers, LogOut, GraduationCap, BookMarked, ClipboardList, ShieldCheck } from "lucide-react";
+import { Users, Stack as Layers, SignOut as LogOut, GraduationCap, BookBookmark as BookMarked, ClipboardText as ClipboardList, ShieldCheck } from "@phosphor-icons/react";
 import { cn } from "../components/ui/utils";
 import { Toaster } from "sonner";
 

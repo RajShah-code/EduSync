@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
-import { Download, CalendarCheck, AlertTriangle, Check, X, Loader2 } from "lucide-react";
+import { DownloadSimple as Download, CalendarCheck, Warning as AlertTriangle, Check, X, CircleNotch as Loader2 } from "@phosphor-icons/react";
 import { Skeleton } from "../../components/ui/skeleton";
 import PageShell from "../../components/PageShell";
 

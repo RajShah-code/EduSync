@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cn } from "../components/ui/utils";
 import { StatusBadge } from "./StatusBadge";
-import { User } from "lucide-react";
+import { User } from "@phosphor-icons/react";
 
 export function StudentTile({ student, onClick, className, children }) {
   const [previewFailed, setPreviewFailed] = useState(false);

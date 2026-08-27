@@ -7,7 +7,7 @@ import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useNavigate } from "react-router";
-import { User, Key, HelpCircle } from "lucide-react";
+import { User, Key, Question as HelpCircle } from "@phosphor-icons/react";
 import { AppTour } from "../../components/AppTour";
 import { settingsPageTourSteps } from "../../tours/studentTourSteps";
 import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";

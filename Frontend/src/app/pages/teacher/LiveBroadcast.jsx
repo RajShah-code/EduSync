@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext, useLocation, useNavigate } from "react-router";
-import { motion, useReducedMotion, AnimatePresence } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
 import { CodeOutputPanel } from "../../components/CodeOutputPanel";
@@ -9,31 +9,7 @@ import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
-import {
-  Pause,
-  Play,
-  Monitor,
-  ScreenShare,
-  Circle,
-  MonitorStop,
-  Eye,
-  EyeOff,
-  Users,
-  Copy,
-  Check,
-  Mic,
-  MicOff,
-  Code2,
-  X,
-  Loader2,
-  TriangleAlert,
-  Download,
-  Calendar,
-  Maximize2,
-  Minimize2,
-  MonitorX,
-  Info,
-} from "lucide-react";
+import { Pause, Play, Monitor, MonitorArrowUp as ScreenShare, Circle, Monitor as MonitorStop, Eye, EyeSlash as EyeOff, Users, Copy, Check, Microphone as Mic, MicrophoneSlash as MicOff, Code as Code2, X, CircleNotch as Loader2, Warning as TriangleAlert, DownloadSimple as Download, CalendarBlank as Calendar, ArrowsOut as Maximize2, ArrowsIn as Minimize2, XCircle as MonitorX, Info, TextT as Type, BookOpen, Lock, MapPin } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +39,13 @@ import { toast } from "sonner";
 const ICE_CONFIG = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
+
+// ─── Schedule-pill motion ─────────────────────────────────────────────────────
+// ONE spring, shared by every animated property of the idle Start / schedule
+// pill (the calendar side's width + opacity, and the container's own resize on
+// a loading-text swap). Nothing in that control is allowed to run on a
+// different curve. Mirrors the value the old layoutId morph used.
+const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.45 };
 
 // ─── Language definitions ──────────────────────────────────────────────────────
 const LANGUAGES = [
@@ -223,12 +206,20 @@ export function LiveBroadcast() {
 
   // ── Modal / form state ──────────────────────────────────────────────────────
   const [showSetupModal, setShowSetupModal] = useState(false);
-  // pillTarget: which idle-bar control currently "owns" the shared oval pill
-  // background (migrated via Framer Motion's layoutId — see the Control Bar
-  // below). "start" is the resting state; clicking the schedule icon hands
-  // the pill to it for a brief settle-then-spin beat before the setup modal
-  // opens. scheduleIconLoading drives the spinner shown once the pill lands.
+  // pillTarget: "schedule" while the click flow has parked the idle bar on the
+  // calendar side (held for a settle-then-spin beat, then while the setup modal
+  // is open); "start" otherwise. scheduleIconLoading drives the spinner shown
+  // during that beat. No element moves between the two sides — the calendar
+  // button just expands in place (see the Control Bar below).
   const [pillTarget, setPillTarget] = useState("start");
+  // scheduleHover: true while the pointer is over the calendar/schedule button.
+  // Feeds calExpanded (see Derived values) so hover and the click flow drive
+  // the same in-place collapse/expand.
+  const [scheduleHover, setScheduleHover] = useState(false);
+  // startHover: true while the pointer is over the "New Lecture" pill itself —
+  // restores its own icon-only hover collapse (label retracts, Monitor centres)
+  // inside the unified motion system (no group-hover CSS fighting the spring).
+  const [startHover, setStartHover] = useState(false);
   const [scheduleIconLoading, setScheduleIconLoading] = useState(false);
   // startButtonLoading: a separate, in-place loading beat for a *direct*
   // click on Start Lecture itself (no pill migration — it stays put, its
@@ -773,6 +764,11 @@ export function LiveBroadcast() {
 
     setBroadcastState("idle");
     setRecordingState("off");
+    setStartButtonLoading(false); // clear any stale "Starting…" so the idle pill returns clean
+    setScheduleIconLoading(false); // ditto for the calendar side's "Starting…"
+    setPillTarget("start"); // exit any parked schedule-click flow
+    setScheduleHover(false); // drop any stale calendar-hover state
+    setStartHover(false); // drop any stale New-Lecture-hover state
     setSessionSeconds(0);
     setRecordingSeconds(0);
     setSessionInfo(null);
@@ -1243,21 +1239,24 @@ export function LiveBroadcast() {
     setShowSetupModal(true);
   };
 
-  // handleScheduleIconClick — drives the pill-migration sequence: hand the
-  // shared "active-pill" background to the schedule icon, wait for the
-  // layout spring to settle, show a brief spinner, then open the same setup
-  // modal Start Lecture opens directly (pre-filled if a lecture matches now).
+  // handleScheduleIconClick — parks the idle bar on the calendar side
+  // (pillTarget="schedule" → the calendar button expands in place), lets it
+  // settle, shows a brief spinner, then opens the same setup modal Start
+  // Lecture opens directly (pre-filled if a lecture matches now).
   const handleScheduleIconClick = () => {
     if (pillTarget === "schedule") return; // sequence already in flight
     setPillTarget("schedule");
-    // The pill-migration spring itself settles at ~450ms; the spinner +
-    // "Starting…" label fades in right after. The modal open is held back
-    // until ~1.6s total has elapsed so the animation always reads for a
-    // full 1-2s beat, even though prefilling from currentLecture (if any)
-    // is instant with no real loading to wait on.
+    // The expand spring settles at ~450ms; the spinner + "Starting…" fades in
+    // right after. The modal open is held back until ~1.6s total so the beat
+    // always reads for a full 1-2s, even though prefilling from currentLecture
+    // (if any) is instant with no real loading to wait on.
     const t1 = setTimeout(() => setScheduleIconLoading(true), 450);
     const t2 = setTimeout(() => {
-      setScheduleIconLoading(false);
+      // scheduleIconLoading is deliberately NOT cleared here — the calendar
+      // pill holds its "Starting…" spinner for the whole time the setup modal
+      // is open. It's reset only when the modal is dismissed without starting
+      // (Dialog onOpenChange / the Cancel button) or when a live session
+      // later ends (handleStopBroadcastNow).
       if (currentLecture) {
         handlePrefillScheduledLecture(currentLecture);
       } else {
@@ -1275,7 +1274,12 @@ export function LiveBroadcast() {
     if (startButtonLoading || pillTarget === "schedule") return;
     setStartButtonLoading(true);
     const t = setTimeout(() => {
-      setStartButtonLoading(false);
+      // startButtonLoading is deliberately NOT cleared here — it stays true
+      // (spinner + "Starting…") for the whole time the setup modal is open.
+      // It's reset only when the modal is dismissed without starting
+      // (Dialog onOpenChange / the Cancel button) or when a live session
+      // later ends (handleStopBroadcastNow). A successful start swaps the
+      // entire idle pill out for the live cluster via setBroadcastState("live").
       handleOpenSetupModal();
     }, 1200);
     morphTimersRef.current.push(t);
@@ -2174,6 +2178,22 @@ export function LiveBroadcast() {
 
   const isBroadcasting = broadcastState === "live";
   const isRecording = recordingState === "recording";
+  // ── Idle Start / Schedule pill ─────────────────────────────────────────────
+  // The CALENDAR side only exists when a lecture is scheduled (currentLecture).
+  //  • rest            → expanded violet pill with the "Scheduled" text
+  //  • hover it, OR hover the "Instant" pill → collapse to a single centred
+  //    calendar icon (text removed)
+  //  • click flow      → stays expanded to hold the spinner; once "Starting…"
+  //    is up the calendar glyph itself is dropped too (calGlyphHidden)
+  const calClickFlow = pillTarget === "schedule";
+  const calExpanded =
+    currentLecture && (calClickFlow || (!scheduleHover && !startHover));
+  const calGlyphHidden = scheduleIconLoading;
+  // "Instant" side: expanded / violet / shrunk-to-icon.
+  const nlExpanded =
+    startButtonLoading || (currentLecture ? startHover : !startHover);
+  const nlViolet = !currentLecture || startHover || startButtonLoading;
+  const nlIconOnly = currentLecture && !startHover && !startButtonLoading;
   // Required to start a session: lecture name, subject, session password, and at
   // least one selected class. Lab Room is optional (labelled as such in the
   // setup modal) — it defaults to "LAB 301" but an empty value is allowed.
@@ -2462,88 +2482,76 @@ export function LiveBroadcast() {
               loadingTimetable ? (
                 <Skeleton className="h-12 w-64 rounded-full" />
               ) : (
-                <motion.div
-                  layout
-                  transition={{ type: "spring", bounce: 0, duration: 0.45 }}
-                  className="flex items-center gap-1 bg-bg-elevated border border-border rounded-full p-1.5 shadow-[var(--shadow-modal)]"
-                >
-                  {/* Schedule / calendar icon — LEFT. Its own resting look
-                      (violet tint + live pulse when a lecture matches now,
-                      muted otherwise) is unchanged; clicking it hands the
-                      shared "active-pill" background over from Start Lecture,
-                      then opens the same setup modal Start Lecture opens. */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={handleScheduleIconClick}
-                        aria-label={
-                          currentLecture
-                            ? `Scheduled now: ${currentLecture.subject || currentLecture.subject_name} — click to start`
-                            : "No lecture scheduled — click to start a lecture"
-                        }
-                        className={cn(
-                          "relative h-9 rounded-full flex items-center justify-center shrink-0 transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95",
-                          pillTarget === "schedule"
-                            ? "px-3.5 gap-1.5 text-white"
-                            : cn(
-                                "w-9",
-                                currentLecture
-                                  ? "text-accent-500 hover:bg-accent-500/25"
-                                  : "text-text-muted/50 bg-bg-surface-3 hover:text-text-secondary"
-                              )
-                        )}
-                      >
-                        {pillTarget === "schedule" ? (
-                          <motion.div
-                            layoutId="active-pill"
-                            layout
-                            transition={{ type: "spring", bounce: 0, duration: 0.45 }}
-                            className="absolute inset-0 rounded-full bg-accent-500 shadow-[var(--shadow-modal)]"
-                          />
-                        ) : null}
-                        {pillTarget !== "schedule" && currentLecture && !prefersReducedMotion ? (
-                          // A lecture is scheduled right now — the icon itself
-                          // breathes (opacity dim→bright + a soft violet glow
-                          // that fades with it), the same slow 2.4s cadence as
-                          // the live-session LiveDot. No expanding ring; the
-                          // pulse lives on the glyph, not around it.
+                <div className="flex items-center gap-1 bg-bg-elevated border border-border rounded-full p-1.5 shadow-[var(--shadow-modal)]">
+                  {/* Calendar / schedule side — rendered ONLY while a lecture is
+                      scheduled. Rests as an expanded violet "Scheduled" pill;
+                      hovering it (or the "Instant" pill) collapses it to a
+                      single centred calendar icon; the click flow keeps it
+                      expanded for the spinner and drops the calendar glyph once
+                      "Starting…" is showing. All sizing rides PILL_TRANSITION. */}
+                  {currentLecture && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <motion.button
+                          type="button"
+                          onClick={handleScheduleIconClick}
+                          onMouseEnter={() => setScheduleHover(true)}
+                          onMouseLeave={() => setScheduleHover(false)}
+                          aria-label={`Scheduled now: ${currentLecture.subject || currentLecture.subject_name} — click to start`}
+                          className={cn(
+                            "relative h-9 rounded-full flex items-center justify-center shrink-0 font-semibold transition-[color,background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95",
+                            calExpanded
+                              ? "bg-accent-700 text-white shadow-[var(--shadow-modal)]"
+                              : "text-accent-500"
+                          )}
+                          initial={false}
+                          animate={
+                            calExpanded
+                              ? { minWidth: "8rem", paddingLeft: "1.5rem", paddingRight: "1.5rem" }
+                              : { minWidth: "2.25rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
+                          }
+                          transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                        >
+                          {!calGlyphHidden && <Calendar className="w-4 h-4 relative shrink-0" />}
+
+                          {/* "Scheduled" — width + opacity on the shared spring.
+                              Hidden on hover and during the loading beat. */}
                           <motion.span
-                            className="relative flex items-center justify-center shrink-0"
-                            style={{
-                              filter:
-                                "drop-shadow(0 0 3px color-mix(in srgb, var(--accent-500) 50%, transparent))",
-                            }}
-                            animate={{ opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                            aria-hidden="true"
+                            className="overflow-hidden whitespace-nowrap"
+                            initial={false}
+                            animate={
+                              calExpanded && !scheduleIconLoading
+                                ? { width: "auto", opacity: 1 }
+                                : { width: 0, opacity: 0 }
+                            }
+                            transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                           >
-                            <Calendar className="w-4 h-4" />
+                            <span className="pl-2">Scheduled</span>
                           </motion.span>
-                        ) : (
-                          <Calendar className="w-4 h-4 relative shrink-0" />
-                        )}
-                        <AnimatePresence initial={false}>
-                          {scheduleIconLoading ? (
-                            <motion.span
-                              key="spinner"
-                              initial={{ width: 0, opacity: 0 }}
-                              animate={{ width: "auto", opacity: 1 }}
-                              exit={{ width: 0, opacity: 0 }}
-                              className="overflow-hidden flex items-center gap-1.5 relative whitespace-nowrap"
-                            >
+
+                          {/* Loading beat — spinner + "Starting…" only (the
+                              calendar glyph above is dropped while this shows). */}
+                          <motion.span
+                            className="overflow-hidden whitespace-nowrap"
+                            initial={false}
+                            animate={
+                              scheduleIconLoading
+                                ? { width: "auto", opacity: 1 }
+                                : { width: 0, opacity: 0 }
+                            }
+                            transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                          >
+                            <span className="flex items-center gap-1.5">
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              <span className="text-xs font-semibold">Starting…</span>
-                            </motion.span>
-                          ) : null}
-                        </AnimatePresence>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="top"
-                      className="bg-bg-elevated border border-accent-500/40 text-text-primary px-3.5 py-2.5 rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] max-w-[240px]"
-                    >
-                      {currentLecture ? (
+                              <span>Starting…</span>
+                            </span>
+                          </motion.span>
+                        </motion.button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="top"
+                        className="bg-bg-elevated border border-accent-500/40 text-text-primary px-3.5 py-2.5 rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] max-w-[240px]"
+                      >
                         <div className="flex flex-col gap-1">
                           <span className="font-semibold text-text-primary">
                             {currentLecture.subject || currentLecture.subject_name}
@@ -2556,61 +2564,61 @@ export function LiveBroadcast() {
                             Click to start this lecture
                           </span>
                         </div>
-                      ) : (
-                        <span className="text-text-secondary">No lecture scheduled right now.</span>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
 
-                  {/* Start Lecture — RIGHT. Always mounted so data-tour and
-                      the click handler never disappear from the DOM; only
-                      its own classes/content morph between full pill (idle)
-                      and icon-only (mid pill-migration). */}
-                  <button
+                  {/* New Lecture. All size changes ride the ONE shared spring
+                      (PILL_TRANSITION) via motion props — no group-hover CSS, no
+                      layoutId, nothing on a second curve.
+                        • no lecture scheduled → this is the active violet pill;
+                          self-hover just retracts its label (Monitor centres,
+                          pill keeps its 10rem width — "as it was").
+                        • a lecture IS scheduled → the active pill lives on the
+                          calendar side, so this rests as a bare Monitor icon
+                          (~2.25rem, dim). Hover it and it blooms back to the
+                          full violet "New Lecture" pill while the calendar side
+                          collapses — the mirror of the other hover. */}
+                  <motion.button
                     type="button"
                     data-tour="teacher-broadcast-start"
                     onClick={handleStartButtonClick}
+                    onMouseEnter={() => setStartHover(true)}
+                    onMouseLeave={() => setStartHover(false)}
+                    disabled={startButtonLoading}
                     className={cn(
-                      "group relative h-9 rounded-full flex items-center justify-center font-semibold shrink-0 transition-[color] duration-150 ease-[var(--ease-out-strong)] active:scale-95",
-                      pillTarget === "start"
-                        ? "px-6 text-white"
-                        : "w-9 text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
+                      "relative h-9 rounded-full flex items-center justify-center font-semibold shrink-0 shadow-[var(--shadow-modal)] transition-[color,background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 disabled:cursor-wait",
+                      nlViolet
+                        ? "bg-accent-700 hover:bg-accent-700/90 text-white"
+                        : "bg-bg-surface-3 text-text-secondary"
                     )}
+                    initial={false}
+                    animate={
+                      nlIconOnly
+                        ? { minWidth: "2.25rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
+                        : { minWidth: "8rem", paddingLeft: "1.5rem", paddingRight: "1.5rem" }
+                    }
+                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
-                    {pillTarget === "start" ? (
-                      <motion.div
-                        layoutId="active-pill"
-                        layout
-                        transition={{ type: "spring", bounce: 0, duration: 0.45 }}
-                        className={cn(
-                          "absolute inset-0 rounded-full shadow-[var(--shadow-modal)] transition-colors duration-150",
-                          // Live/running → high-vis broadcast green; not-yet-started → teacher violet
-                          isBroadcasting
-                            ? "bg-accent-live group-hover:bg-accent-live/90"
-                            : "bg-accent-700 group-hover:bg-accent-700/90"
-                        )}
-                      />
-                    ) : null}
                     {startButtonLoading ? (
-                      <Loader2 className="w-4 h-4 relative shrink-0 animate-spin" />
+                      <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
                     ) : (
-                      <Monitor className="w-4 h-4 relative shrink-0" />
+                      <Monitor className="w-4 h-4 shrink-0" />
                     )}
-                    <AnimatePresence initial={false}>
-                      {pillTarget === "start" ? (
-                        <motion.span
-                          key={startButtonLoading ? "starting-label" : "label"}
-                          initial={{ width: 0, opacity: 0 }}
-                          animate={{ width: "auto", opacity: 1 }}
-                          exit={{ width: 0, opacity: 0 }}
-                          className="overflow-hidden whitespace-nowrap ml-2 relative"
-                        >
-                          {startButtonLoading ? "Starting…" : "Start Lecture"}
-                        </motion.span>
-                      ) : null}
-                    </AnimatePresence>
-                  </button>
-                </motion.div>
+                    <motion.span
+                      className="overflow-hidden whitespace-nowrap"
+                      initial={false}
+                      animate={
+                        nlExpanded ? { width: "auto", opacity: 1 } : { width: 0, opacity: 0 }
+                      }
+                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                    >
+                      <span className="pl-2">
+                        {startButtonLoading ? "Starting…" : "Instant"}
+                      </span>
+                    </motion.span>
+                  </motion.button>
+                </div>
               )
             ) : (
               <div className="w-full flex items-center justify-between gap-4 flex-wrap">
@@ -2863,10 +2871,12 @@ export function LiveBroadcast() {
         onOpenChange={(open) => {
           setShowSetupModal(open);
           if (!open) {
-            // Modal dismissed (cancel, or after a successful start) — hand
-            // the pill back to its resting position on Start Lecture.
+            // Modal dismissed via Esc / overlay / the close button (a
+            // successful start closes it directly, not through here) — hand the
+            // pill back to its resting position and drop the "Starting…" state.
             setPillTarget("start");
             setScheduleIconLoading(false);
+            setStartButtonLoading(false);
           }
         }}
       >
@@ -2879,7 +2889,8 @@ export function LiveBroadcast() {
 
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
+              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                <Type className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
                 Lecture Name
               </label>
               <Input
@@ -2894,7 +2905,8 @@ export function LiveBroadcast() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
+              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
                 Subject
               </label>
               <Input
@@ -2909,7 +2921,8 @@ export function LiveBroadcast() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
+              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
                 Session Password
               </label>
               <div className="relative">
@@ -2935,7 +2948,8 @@ export function LiveBroadcast() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
+              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
                 Lab Room (optional)
               </label>
               <Input
@@ -2950,7 +2964,8 @@ export function LiveBroadcast() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
+              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
                 Select Classes
               </label>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -2988,7 +3003,16 @@ export function LiveBroadcast() {
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
               variant="outline"
-              onClick={() => setShowSetupModal(false)}
+              onClick={() => {
+                // Backing out without starting — mirror the onOpenChange reset
+                // (this path sets showSetupModal directly, so onOpenChange never
+                // fires): drop both "Starting…" states and un-park the pill so
+                // the calendar side returns to its resting "Scheduled Lecture".
+                setShowSetupModal(false);
+                setPillTarget("start");
+                setScheduleIconLoading(false);
+                setStartButtonLoading(false);
+              }}
               className="border-border text-text-secondary hover:bg-bg-elevated"
             >
               Cancel

@@ -11,7 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { BarChart2, Users, CheckCircle2, Award, AlertTriangle, ChevronDown, Check, School } from "lucide-react";
+import { ChartBar as BarChart2, Users, CheckCircle as CheckCircle2, Medal as Award, Warning as AlertTriangle, CaretDown as ChevronDown, Check, ChalkboardSimple as School } from "@phosphor-icons/react";
 import { getSocket } from "../../store/socket";
 import { Skeleton } from "../../components/ui/skeleton";
 import PageShell from "../../components/PageShell";

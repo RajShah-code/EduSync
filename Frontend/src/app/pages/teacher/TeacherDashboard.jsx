@@ -3,17 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useOutletContext, Link } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
-import {
-  Play,
-  Square,
-  Calendar,
-  BookOpen,
-  School,
-  Bell,
-  Sparkles,
-  Plus,
-  Monitor,
-} from "lucide-react";
+import { Play, Square, CalendarBlank as Calendar, BookOpen, ChalkboardSimple as School, Bell, Sparkle as Sparkles, Plus, Monitor } from "@phosphor-icons/react";
 import { AppTour } from "../../components/AppTour";
 import { teacherTourSteps } from "../../tours/teacherTourSteps";
 import { getSocket } from "../../store/socket";
@@ -302,7 +292,7 @@ export function TeacherDashboard() {
                 {sessionActive ? (sessionInfo?.subject || "Broadcasting") : "No active session"}
                 {sessionActive && sessionInfo?.started_at && (
                   <>
-                    <span className="text-text-muted">·</span>
+                    <span aria-hidden="true" className="w-px h-3 bg-border shrink-0" />
                     <ElapsedTimer startTime={sessionInfo.started_at} size="sm" className="text-text-secondary" />
                   </>
                 )}
@@ -378,7 +368,7 @@ export function TeacherDashboard() {
       <div data-tour="teacher-todays-schedule" className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-accent-success" />
+            <Calendar className="w-5 h-5 text-accent-500" />
             Today's Schedule ({todayName})
           </h2>
           {hasAnyTimetable && (

@@ -17,26 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../components/ui/dialog";
-import {
-  Plus,
-  Trash2,
-  ChevronRight,
-  ChevronLeft,
-  BookOpen,
-  Code2,
-  CheckSquare,
-  Play,
-  Loader2,
-  Check,
-  Search,
-  AlertTriangle,
-  SlidersHorizontal,
-  Radio,
-  BarChart2,
-  Edit3,
-  Users,
-  X,
-} from "lucide-react";
+import { Plus, Trash as Trash2, CaretRight as ChevronRight, CaretLeft as ChevronLeft, BookOpen, Code as Code2, CheckSquare, Play, CircleNotch as Loader2, Check, MagnifyingGlass as Search, Warning as AlertTriangle, SlidersHorizontal, Broadcast as Radio, ChartBar as BarChart2, PencilSimple as Edit3, Users, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 
@@ -515,7 +496,7 @@ export function ExamCreation() {
             aria-pressed={activeTab === "create"}
             className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
               activeTab === "create"
-                ? "bg-accent-info text-white"
+                ? "bg-accent-600 text-white"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
@@ -528,7 +509,7 @@ export function ExamCreation() {
             aria-pressed={activeTab === "manage"}
             className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
               activeTab === "manage"
-                ? "bg-accent-info text-white"
+                ? "bg-accent-600 text-white"
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >

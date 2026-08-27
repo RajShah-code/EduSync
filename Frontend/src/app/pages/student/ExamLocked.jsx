@@ -1,4 +1,4 @@
-import { ShieldOff } from "lucide-react";
+import { ShieldSlash as ShieldOff } from "@phosphor-icons/react";
 import { StatusBadge } from "../../components/StatusBadge";
 
 const REASON_LABELS = {

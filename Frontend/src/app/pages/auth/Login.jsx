@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
-import { ArrowLeft, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, WarningCircle as AlertCircle, Eye, EyeSlash as EyeOff } from "@phosphor-icons/react";
 import { initSocket } from "../../store/socket";
 
 export function Login() {

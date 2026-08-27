@@ -1,24 +1,7 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import {
-  LayoutDashboard,
-  Radio,
-  Monitor,
-  ClipboardList,
-  FileText,
-  CalendarCheck,
-  BarChart3,
-  Video,
-  Calendar,
-  Settings,
-  LogOut,
-  Check,
-  X,
-  AlertTriangle,
-  GraduationCap,
-  ChevronDown,
-} from "lucide-react";
+import { SquaresFour as LayoutDashboard, Broadcast as Radio, Monitor, ClipboardText as ClipboardList, FileText, CalendarCheck, ChartBar as BarChart3, VideoCamera as Video, CalendarBlank as Calendar, Gear as Settings, SignOut as LogOut, Check, X, Warning as AlertTriangle, GraduationCap, CaretDown as ChevronDown } from "@phosphor-icons/react";
 import { cn } from "../components/ui/utils";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
 import { Toaster } from "../components/ui/sonner";
