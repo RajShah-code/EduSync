@@ -2174,11 +2174,13 @@ export function LiveBroadcast() {
 
   const isBroadcasting = broadcastState === "live";
   const isRecording = recordingState === "recording";
+  // Required to start a session: lecture name, subject, session password, and at
+  // least one selected class. Lab Room is optional (labelled as such in the
+  // setup modal) — it defaults to "LAB 301" but an empty value is allowed.
   const isFormValid =
     (formData?.lectureName || "").trim() !== "" &&
     (formData?.subject || "").trim() !== "" &&
     (formData?.password || "").trim() !== "" &&
-    (formData?.labRoom || "").trim() !== "" &&
     (selectedClassIds || []).length > 0;
   const viewerCount = connectedStudents.length;
   const hasMic = !!micStreamRef.current;
@@ -2488,7 +2490,7 @@ export function LiveBroadcast() {
                                 "w-9",
                                 currentLecture
                                   ? "text-accent-500 hover:bg-accent-500/25"
-                                  : "text-text-muted/50 bg-bg-surface-3"
+                                  : "text-text-muted/50 bg-bg-surface-3 hover:text-text-secondary"
                               )
                         )}
                       >
@@ -2569,7 +2571,7 @@ export function LiveBroadcast() {
                     data-tour="teacher-broadcast-start"
                     onClick={handleStartButtonClick}
                     className={cn(
-                      "relative h-9 rounded-full flex items-center justify-center font-semibold shrink-0 transition-[color] duration-150 ease-[var(--ease-out-strong)] active:scale-95",
+                      "group relative h-9 rounded-full flex items-center justify-center font-semibold shrink-0 transition-[color] duration-150 ease-[var(--ease-out-strong)] active:scale-95",
                       pillTarget === "start"
                         ? "px-6 text-white"
                         : "w-9 text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
@@ -2580,7 +2582,13 @@ export function LiveBroadcast() {
                         layoutId="active-pill"
                         layout
                         transition={{ type: "spring", bounce: 0, duration: 0.45 }}
-                        className="absolute inset-0 rounded-full bg-accent-700 shadow-[var(--shadow-modal)]"
+                        className={cn(
+                          "absolute inset-0 rounded-full shadow-[var(--shadow-modal)] transition-colors duration-150",
+                          // Live/running → high-vis broadcast green; not-yet-started → teacher violet
+                          isBroadcasting
+                            ? "bg-accent-live group-hover:bg-accent-live/90"
+                            : "bg-accent-700 group-hover:bg-accent-700/90"
+                        )}
                       />
                     ) : null}
                     {startButtonLoading ? (
@@ -2928,7 +2936,7 @@ export function LiveBroadcast() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
-                Lab Room
+                Lab Room (optional)
               </label>
               <Input
                 type="text"
@@ -2943,7 +2951,7 @@ export function LiveBroadcast() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
-                Target Classes
+                Select Classes
               </label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {classes.map((cls) => {
@@ -2987,8 +2995,21 @@ export function LiveBroadcast() {
             </Button>
             <Button
               onClick={handleStartBroadcast}
-              disabled={!isFormValid || startLoading}
-              className="bg-accent-info hover:bg-accent-info/90 text-white disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={startLoading}
+              aria-disabled={!isFormValid || startLoading}
+              className={cn(
+                "text-white disabled:opacity-40 disabled:cursor-not-allowed",
+                // Live/running → high-vis broadcast green; not-yet-started → teacher violet
+                isBroadcasting
+                  ? "bg-accent-live hover:bg-accent-live/90"
+                  : "bg-accent-info hover:bg-accent-info/90",
+                // Required fields incomplete → dimmed + not-allowed cursor on hover
+                // (aria-disabled, not disabled, so the cursor still shows; the
+                //  handler already no-ops via `if (!isFormValid) return`).
+                isFormValid
+                  ? "cursor-pointer"
+                  : "opacity-40 cursor-not-allowed hover:bg-accent-info"
+              )}
             >
               {startLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

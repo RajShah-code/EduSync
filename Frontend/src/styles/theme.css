@@ -27,7 +27,7 @@
      (stat numbers) — the prior critical red (#9A0000) only hit ~2.3:1
      against #000 as text and read as dull/murky; this red and green were
      picked to stay vivid and legible in both roles. */
-  --accent-live: #15803D;
+  --accent-live: #00ff5f; /* high-vis live-broadcast green — large fill / indicator use only, not a white-text-on-fill */
   --accent-success: #15803D;
   --accent-warning: #DDA53D;
   --accent-critical: #DC2626;
@@ -288,6 +288,15 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
     line-height: 1.5;
+    cursor: pointer;
+  }
+
+  /* A native <button> defaults to the arrow cursor, which reads as
+     non-interactive next to real links. Interactive controls get the
+     pointer; genuinely disabled ones get not-allowed. */
+  button:disabled,
+  button[aria-disabled="true"] {
+    cursor: not-allowed;
   }
 
   input, textarea {
