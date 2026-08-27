@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/ca
 import { Badge } from "../../components/ui/badge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Button } from "../../components/ui/button";
-import { FileText, Clock, CalendarBlank as Calendar, WifiSlash as WifiOff, BookOpen, User, ChalkboardSimple as School } from "@phosphor-icons/react";
+import { IconFileText as FileText, IconClock as Clock, IconCalendar as Calendar, IconWifiOff as WifiOff, IconBook as BookOpen, IconUser as User, IconChalkboard as School } from "@tabler/icons-react";
 import { cn } from "../../components/ui/utils";
 import { getSocket } from "../../store/socket";
 import { toast } from "sonner";

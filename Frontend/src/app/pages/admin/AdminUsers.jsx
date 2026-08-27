@@ -2,7 +2,7 @@ import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router";
 import * as XLSX from "xlsx";
-import { MagnifyingGlass as Search, UserPlus, PencilSimple as Edit2, Key, Trash as Trash2, X, Check, Copy, Warning as AlertTriangle, UserCheck, Question as HelpCircle, UploadSimple as Upload, DownloadSimple as Download, FileCsv as FileSpreadsheet, CaretLeft as ChevronLeft, CaretRight as ChevronRight } from "@phosphor-icons/react";
+import { IconSearch as Search, IconUserPlus as UserPlus, IconPencil as Edit2, IconKey as Key, IconTrash as Trash2, IconX as X, IconCheck as Check, IconCopy as Copy, IconAlertTriangle as AlertTriangle, IconUserCheck as UserCheck, IconHelpCircle as HelpCircle, IconUpload as Upload, IconDownload as Download, IconFileSpreadsheet as FileSpreadsheet, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { adminTourSteps } from "../../tours/adminTourSteps";

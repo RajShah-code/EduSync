@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
-import { DownloadSimple as Download, CalendarCheck, Warning as AlertTriangle, Check, X, CircleNotch as Loader2 } from "@phosphor-icons/react";
+import { IconDownload as Download, IconCalendarCheck as CalendarCheck, IconAlertTriangle as AlertTriangle, IconCheck as Check, IconX as X, IconLoader2 as Loader2 } from "@tabler/icons-react";
 import { Skeleton } from "../../components/ui/skeleton";
 import PageShell from "../../components/PageShell";
 

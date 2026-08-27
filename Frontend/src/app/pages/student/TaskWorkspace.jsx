@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useOutletContext, useParams, useNavigate } from "react-router";
 import { CodeEditor } from "./CodeEditor";
 import { getSocket } from "../../store/socket";
-import { FileCode, WarningCircle as AlertCircle } from "@phosphor-icons/react";
+import { IconFileCode as FileCode, IconAlertCircle as AlertCircle } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Skeleton } from "../../components/ui/skeleton";
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
-import { CalendarBlank as Calendar, Clock, BookOpen, ChalkboardSimple as School, Bell, Plus, Trash as Trash2, PencilSimple as Edit3, CircleNotch as Loader2, FileCsv as FileSpreadsheet, DownloadSimple as Download, UploadSimple as Upload, X, CheckCircle as CheckCircle2, Warning as AlertTriangle, SlidersHorizontal as Sliders, Flask as FlaskConical, Buildings as Building, CalendarX as CalendarOff } from "@phosphor-icons/react";
+import { IconCalendar as Calendar, IconClock as Clock, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconPlus as Plus, IconTrash as Trash2, IconPencil as Edit3, IconLoader2 as Loader2, IconFileSpreadsheet as FileSpreadsheet, IconDownload as Download, IconUpload as Upload, IconX as X, IconCircleCheck as CheckCircle2, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as Sliders, IconFlask as FlaskConical, IconBuilding as Building, IconCalendarOff as CalendarOff } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";

@@ -96,7 +96,7 @@ Root-level: `LandingPage.jsx` (marketing), `auth/Login.jsx`.
 - `package.json` branding: `com.edusync.app` / "EduSync" — not aware of Connect as a separate product (correct, Connect has no Electron target)
 
 ### Frontend dependencies worth knowing
-React 18.3.1, React Router 7.13.0, Vite 6.3.5, Tailwind 4.1.12 (`@tailwindcss/vite`), `@monaco-editor/react`, `pyodide` (in-browser Python), `socket.io-client`, full Radix set + MUI (`@mui/material`/`@mui/icons-material`) + `lucide-react` + `sonner` + `vaul` + `cmdk`, `motion` (imported as `"motion/react"` — package name is `motion`, not `framer-motion`), `jszip` (Feature 10B), `xlsx` (**CDN tarball URL, not npm registry** — `cdn.sheetjs.com`, flag for firewalled installs), `react-joyride`, `electron`/`electron-builder`, `puppeteer-core` (devDependency, used for headless CSS verification per `context.md`).
+React 18.3.1, React Router 7.13.0, Vite 6.3.5, Tailwind 4.1.12 (`@tailwindcss/vite`), `@monaco-editor/react`, `pyodide` (in-browser Python), `socket.io-client`, full Radix set + `@tabler/icons-react` (the single icon library — `lucide-react`, `@phosphor-icons/react`, and MUI were all removed in the Tabler migration) + `sonner` + `vaul` + `cmdk`, `motion` (imported as `"motion/react"` — package name is `motion`, not `framer-motion`), `jszip` (Feature 10B), `xlsx` (**CDN tarball URL, not npm registry** — `cdn.sheetjs.com`, flag for firewalled installs), `react-joyride`, `electron`/`electron-builder`, `puppeteer-core` (devDependency, used for headless CSS verification per `context.md`).
 
 ---
 

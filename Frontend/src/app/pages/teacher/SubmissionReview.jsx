@@ -6,7 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
-import { CaretLeft as ChevronLeft, Code, FileCode, CheckCircle, Medal as Award, Clock, ArrowsClockwise as RefreshCw } from "@phosphor-icons/react";
+import { IconChevronLeft as ChevronLeft, IconCode as Code, IconFileCode as FileCode, IconCircleCheck as CheckCircle, IconAward as Award, IconClock as Clock, IconRefresh as RefreshCw } from "@tabler/icons-react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
 

@@ -5,7 +5,7 @@ import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
 import { Timer } from "../../components/Timer";
 import { cn } from "../../components/ui/utils";
-import { Play, Check, CaretLeft as ChevronLeft, CaretRight as ChevronRight, Code, Question as HelpCircle, WarningCircle as AlertCircle, TerminalWindow as Terminal, X, CircleNotch as Loader2, Lock, CheckCircle as CheckCircle2 } from "@phosphor-icons/react";
+import { IconPlayerPlay as Play, IconCheck as Check, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconCode as Code, IconHelpCircle as HelpCircle, IconAlertCircle as AlertCircle, IconTerminal2 as Terminal, IconX as X, IconLoader2 as Loader2, IconLock as Lock, IconCircleCheck as CheckCircle2 } from "@tabler/icons-react";
 import {
   Select,
   SelectContent,

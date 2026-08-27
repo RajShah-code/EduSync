@@ -18,7 +18,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Skeleton } from "../../components/ui/skeleton";
 import { cn } from "../../components/ui/utils";
-import { FileText, CircleNotch as Loader2, CaretDown as ChevronDown, CheckCircle, XCircle, X, Medal as Award, Clock, ArrowLeft, Play, TerminalWindow as Terminal } from "@phosphor-icons/react";
+import { IconFileText as FileText, IconLoader2 as Loader2, IconChevronDown as ChevronDown, IconCircleCheck as CheckCircle, IconCircleX as XCircle, IconX as X, IconAward as Award, IconClock as Clock, IconArrowLeft as ArrowLeft, IconPlayerPlay as Play, IconTerminal2 as Terminal } from "@tabler/icons-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 

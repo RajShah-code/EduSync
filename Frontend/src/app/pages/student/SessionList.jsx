@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
-import { Broadcast as Radio, MagnifyingGlass as Search, WifiHigh as Wifi } from "@phosphor-icons/react";
+import { IconBroadcast as Radio, IconSearch as Search, IconWifi as Wifi } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { AppTour } from "../../components/AppTour";

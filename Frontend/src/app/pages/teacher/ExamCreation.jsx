@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../components/ui/dialog";
-import { Plus, Trash as Trash2, CaretRight as ChevronRight, CaretLeft as ChevronLeft, BookOpen, Code as Code2, CheckSquare, Play, CircleNotch as Loader2, Check, MagnifyingGlass as Search, Warning as AlertTriangle, SlidersHorizontal, Broadcast as Radio, ChartBar as BarChart2, PencilSimple as Edit3, Users, X } from "@phosphor-icons/react";
+import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconBook as BookOpen, IconCode as Code2, IconSquareCheck as CheckSquare, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X } from "@tabler/icons-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 

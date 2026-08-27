@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Users, Stack as Layers, SignOut as LogOut, GraduationCap, BookBookmark as BookMarked, ClipboardText as ClipboardList, ShieldCheck } from "@phosphor-icons/react";
+import { IconUsers as Users, IconStack2 as Layers, IconLogout as LogOut, IconSchool as GraduationCap, IconBookmark as BookMarked, IconClipboardText as ClipboardList, IconShieldCheck as ShieldCheck } from "@tabler/icons-react";
 import { cn } from "../components/ui/utils";
 import { Toaster } from "sonner";
 

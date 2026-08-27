@@ -10,7 +10,7 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { StatusBadge } from "../../components/StatusBadge";
 import { TaskStatusModal } from "../../components/TaskStatusModal";
 import { cn } from "../../components/ui/utils";
-import { Code, Clock, PaperPlaneTilt as Send, List, WarningCircle as AlertCircle, Warning as AlertTriangle, ClipboardText as ClipboardList, RadioButton as CircleDot, Hand, CheckCircle as CheckCircle2 } from "@phosphor-icons/react";
+import { IconCode as Code, IconClock as Clock, IconSend as Send, IconList as List, IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardText as ClipboardList, IconCircleDot as CircleDot, IconHandStop as Hand, IconCircleCheck as CheckCircle2 } from "@tabler/icons-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";

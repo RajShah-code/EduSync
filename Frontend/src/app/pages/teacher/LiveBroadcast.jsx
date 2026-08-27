@@ -9,7 +9,7 @@ import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
-import { Pause, Play, Monitor, MonitorArrowUp as ScreenShare, Circle, Monitor as MonitorStop, Eye, EyeSlash as EyeOff, Users, Copy, Check, Microphone as Mic, MicrophoneSlash as MicOff, Code as Code2, X, CircleNotch as Loader2, Warning as TriangleAlert, DownloadSimple as Download, CalendarBlank as Calendar, ArrowsOut as Maximize2, ArrowsIn as Minimize2, XCircle as MonitorX, Info, TextT as Type, BookOpen, Lock, MapPin } from "@phosphor-icons/react";
+import { IconPlayerPause as Pause, IconPlayerPlay as Play, IconDeviceDesktop as Monitor, IconDeviceDesktopShare as ScreenShare, IconCircle as Circle, IconDeviceDesktopOff as MonitorStop, IconEye as Eye, IconEyeOff as EyeOff, IconUsers as Users, IconCopy as Copy, IconCheck as Check, IconMicrophone as Mic, IconMicrophoneOff as MicOff, IconCode as Code2, IconX as X, IconLoader2 as Loader2, IconAlertTriangle as TriangleAlert, IconDownload as Download, IconCalendar as Calendar, IconArrowsMaximize as Maximize2, IconArrowsMinimize as Minimize2, IconCircleX as MonitorX, IconInfoCircle as Info, IconLetterT as Type, IconBook as BookOpen, IconLock as Lock, IconMapPin as MapPin } from "@tabler/icons-react";
 import {
   Dialog,
   DialogContent,

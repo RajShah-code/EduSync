@@ -17,7 +17,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
-import { Warning as AlertTriangle, Lock, FileText, CircleNotch as Loader2, Users, CaretRight as ChevronRight, ArrowLeft, X, Clock } from "@phosphor-icons/react";
+import { IconAlertTriangle as AlertTriangle, IconLock as Lock, IconFileText as FileText, IconLoader2 as Loader2, IconUsers as Users, IconChevronRight as ChevronRight, IconArrowLeft as ArrowLeft, IconX as X, IconClock as Clock } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Skeleton } from "../../components/ui/skeleton";
 

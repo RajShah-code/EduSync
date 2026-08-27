@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CaretDown as ChevronDown, Check } from "@phosphor-icons/react";
+import { IconChevronDown as ChevronDown, IconCheck as Check } from "@tabler/icons-react";
 import { cn } from "./ui/utils";
 
 // Dropdown — the app's own styled picker, replacing native <select>/Radix

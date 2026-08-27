@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useOutletContext, Link } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
-import { Play, Square, CalendarBlank as Calendar, BookOpen, ChalkboardSimple as School, Bell, Sparkle as Sparkles, Plus, Monitor } from "@phosphor-icons/react";
+import { IconPlayerPlay as Play, IconSquare as Square, IconCalendar as Calendar, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconSparkles as Sparkles, IconPlus as Plus, IconDeviceDesktop as Monitor } from "@tabler/icons-react";
 import { AppTour } from "../../components/AppTour";
 import { teacherTourSteps } from "../../tours/teacherTourSteps";
 import { getSocket } from "../../store/socket";
