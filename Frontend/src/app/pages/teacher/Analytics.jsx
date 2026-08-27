@@ -190,9 +190,8 @@ export function Analytics() {
     return (
       <PageShell>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4">
-          <div className="space-y-2">
+          <div>
             <Skeleton className="h-7 w-56" />
-            <Skeleton className="h-4 w-80" />
           </div>
           <Skeleton className="h-8 w-48" />
         </div>
@@ -204,7 +203,7 @@ export function Analytics() {
   if (error) {
     return (
       <PageShell>
-        <h1 className="text-2xl font-semibold text-text-primary mb-4">Analytics Dashboard</h1>
+        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight border-b border-border pb-4">Analytics Dashboard</h1>
         <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
           <p className="text-sm text-text-secondary text-center max-w-sm">{error}</p>
           <button
@@ -224,12 +223,9 @@ export function Analytics() {
       {/* Header & Class Picker */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-text-primary mb-1">
+          <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
             Analytics Dashboard
           </h1>
-          <p className="text-sm text-text-secondary">
-            Class performance metrics, attendance trends, and at-risk student tracking
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

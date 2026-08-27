@@ -130,9 +130,8 @@ export function TeacherSettings() {
   if (loading) {
     return (
       <PageShell>
-        <div className="space-y-2">
+        <div className="border-b border-border pb-4">
           <Skeleton className="h-7 w-40" />
-          <Skeleton className="h-4 w-80" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[0, 1].map((i) => (
@@ -156,7 +155,7 @@ export function TeacherSettings() {
   if (loadError) {
     return (
       <PageShell>
-        <h1 className="text-2xl font-semibold text-text-primary mb-4">Settings</h1>
+        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight border-b border-border pb-4">Settings</h1>
         <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
           <p className="text-sm text-text-secondary">Couldn't load your profile settings.</p>
           <button
@@ -173,11 +172,8 @@ export function TeacherSettings() {
 
   return (
     <PageShell>
-      <div>
-        <h1 className="text-2xl font-semibold text-text-primary">Settings</h1>
-        <p className="text-sm text-text-secondary mt-1">
-          Manage your account profile and password settings.
-        </p>
+      <div className="border-b border-border pb-4">
+        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">Settings</h1>
       </div>
 
       {/* Profile & Change Password — two genuinely equivalent, independent

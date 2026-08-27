@@ -500,12 +500,9 @@ export function ExamCreation() {
           Task Progress strip, the Exam question-navigator tabs). "Create" and
           "Manage" are two fixed, parallel views of this page, so the pattern
           fits directly rather than needing adaptation. */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Exam Manager</h1>
-          <p className="text-sm text-text-secondary mt-0.5">
-            Configure exams, manage sets, and track student results
-          </p>
+          <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">Exam Manager</h1>
         </div>
 
         {/* Segmented tab control — same pattern as Task Manager's Assign/Active

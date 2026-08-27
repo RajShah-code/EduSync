@@ -154,10 +154,9 @@ export function Attendance() {
   if (loading) {
     return (
       <PageShell>
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
+        <div className="flex items-center justify-between border-b border-border pb-4">
+          <div>
             <Skeleton className="h-7 w-56" />
-            <Skeleton className="h-4 w-96" />
           </div>
         </div>
         <div className="p-4 bg-bg-surface border border-border rounded-lg">
@@ -197,14 +196,11 @@ export function Attendance() {
   return (
     <PageShell>
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between border-b border-border pb-4">
         <div>
-          <h1 className="text-2xl font-semibold text-text-primary mb-1">
+          <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
             Attendance Manager
           </h1>
-          <p className="text-text-secondary">
-            View automatically tracked class attendance and review exceptions.
-          </p>
         </div>
         {attendance.length > 0 && (
           <Button onClick={handleExportCSV} variant="outline">
