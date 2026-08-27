@@ -17,6 +17,7 @@ import {
   X,
   AlertTriangle,
   GraduationCap,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "../components/ui/utils";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
@@ -24,8 +25,8 @@ import { Toaster } from "../components/ui/sonner";
 
 const navigation = [
   { name: "Dashboard", href: "/teacher", icon: LayoutDashboard, dataTour: "teacher-dashboard-link" },
-  { name: "Broadcast", href: "/teacher/broadcast", icon: Radio, dataTour: "teacher-broadcast-link" },
-  { name: "Monitor", href: "/teacher/monitor", icon: Monitor, dataTour: "teacher-monitor-link" },
+  { name: "Live Lecture", href: "/teacher/broadcast", icon: Monitor, dataTour: "teacher-broadcast-link" },
+  { name: "Monitor", href: "/teacher/monitor", icon: Radio, dataTour: "teacher-monitor-link" },
   { name: "Tasks", href: "/teacher/task/assign", icon: ClipboardList, dataTour: "teacher-task-link" },
   { name: "Exams", href: "/teacher/exam/create", icon: FileText, dataTour: "teacher-exam-link" },
   { name: "Timetable", href: "/teacher/timetable", icon: Calendar, dataTour: "teacher-timetable-link" },
@@ -84,6 +85,14 @@ export function TeacherLayout() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [attendanceExceptions, setAttendanceExceptions] = useState(null);
   const [expandedAttendanceId, setExpandedAttendanceId] = useState(null);
+
+  // Sidebar sub-nav (Monitor + Tasks) — only surfaced while a lecture is
+  // live. Auto-expands each time a session goes live; the chevron on the
+  // "Live Lecture" row lets the teacher collapse/expand it mid-session.
+  const [subNavExpanded, setSubNavExpanded] = useState(true);
+  useEffect(() => {
+    if (broadcastState === "live") setSubNavExpanded(true);
+  }, [broadcastState]);
 
   // Client-side authentication guard & Socket initialization
   useEffect(() => {
@@ -328,28 +337,86 @@ export function TeacherLayout() {
 
         {/* Navigation */}
         <nav className="flex-1 min-h-0 rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 space-y-0.5 overflow-y-auto">
-          {navigation.map((item) => {
-            const isActive =
-              location.pathname === item.href ||
-              (item.href !== "/teacher" &&
-                location.pathname.startsWith(item.href));
+          {(() => {
+            const isSub = (name) => name === "Monitor" || name === "Tasks";
+            const subNavShown = broadcastState === "live" && subNavExpanded;
 
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                data-tour={item.dataTour}
-                title={item.name}
-                className={cn(
-                  "flex items-center gap-2.5 pr-3 py-2 text-[13px] rounded-[var(--radius-md)] justify-center md:justify-start",
-                  isActive ? "nav-active" : "nav-inactive"
-                )}
-              >
-                <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
-                <span className="hidden md:inline">{item.name}</span>
-              </Link>
-            );
-          })}
+            const renderLink = (item) => {
+              const isActive =
+                location.pathname === item.href ||
+                (item.href !== "/teacher" &&
+                  location.pathname.startsWith(item.href));
+
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  data-tour={item.dataTour}
+                  title={item.name}
+                  className={cn(
+                    "flex items-center gap-2.5 pr-3 py-2 text-[13px] rounded-[var(--radius-md)] justify-center md:justify-start",
+                    isActive ? "nav-active" : "nav-inactive"
+                  )}
+                >
+                  <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
+                  <span className="hidden md:inline">{item.name}</span>
+                </Link>
+              );
+            };
+
+            return navigation.map((item) => {
+              // Monitor + Tasks render inside the collapsible group that follows
+              // the "Live Lecture" row — skip them in the flat pass. They stay
+              // mounted (kept in the DOM so the Phase 27 tour's data-tour targets
+              // survive) but collapse to zero height when no session is live or
+              // the teacher collapses them via the chevron.
+              if (isSub(item.name)) return null;
+
+              if (item.name === "Live Lecture") {
+                return (
+                  <div key={item.name}>
+                    <div className="relative">
+                      {renderLink(item)}
+                      {broadcastState === "live" && (
+                        <button
+                          type="button"
+                          onClick={() => setSubNavExpanded((v) => !v)}
+                          aria-expanded={subNavExpanded}
+                          aria-label={
+                            subNavExpanded
+                              ? "Collapse live session links"
+                              : "Expand live session links"
+                          }
+                          className="btn-press hidden md:flex absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 items-center justify-center rounded-[var(--radius-sm)] text-text-muted hover:text-text-primary hover:bg-bg-surface-3 transition-std"
+                        >
+                          <ChevronDown
+                            className={cn(
+                              "w-3.5 h-3.5 transition-transform duration-200",
+                              !subNavExpanded && "-rotate-90"
+                            )}
+                          />
+                        </button>
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        "overflow-hidden transition-all duration-200",
+                        subNavShown
+                          ? "max-h-24 opacity-100"
+                          : "max-h-0 opacity-0 pointer-events-none"
+                      )}
+                    >
+                      <div className="space-y-0.5 pt-0.5 md:pl-3">
+                        {navigation.filter((n) => isSub(n.name)).map(renderLink)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return renderLink(item);
+            });
+          })()}
         </nav>
 
         {/* User info & Actions */}
