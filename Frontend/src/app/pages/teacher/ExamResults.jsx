@@ -254,7 +254,7 @@ function CodeAnswerGradeModal({ answer, studentName, onClose, onSave, saving }) 
                 className="text-text-muted hover:text-text-primary transition-colors rounded-[var(--radius-sm)] flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                 aria-label="Close"
               >
-                <X className="w-4 h-4" strokeWidth={1.75} />
+                <X className="w-[18px] h-[18px]" strokeWidth={1.75} />
               </button>
             </div>
 
@@ -273,9 +273,9 @@ function CodeAnswerGradeModal({ answer, studentName, onClose, onSave, saving }) 
                     className="h-7 px-2.5 text-xs"
                   >
                     {isRunning || pyodideLoading ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
+                      <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
                     ) : (
-                      <Play className="w-3.5 h-3.5" strokeWidth={1.75} />
+                      <Play className="w-4 h-4" strokeWidth={1.75} />
                     )}
                     Run
                   </Button>
@@ -304,7 +304,7 @@ function CodeAnswerGradeModal({ answer, studentName, onClose, onSave, saving }) 
 
                 <div className="h-80 flex flex-col border border-border rounded-[var(--radius-md)] overflow-hidden bg-bg-base">
                   <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-text-muted flex-shrink-0">
-                    <Terminal className="w-3.5 h-3.5" strokeWidth={1.75} />
+                    <Terminal className="w-4 h-4" strokeWidth={1.75} />
                     Output
                   </div>
 
@@ -353,7 +353,7 @@ function CodeAnswerGradeModal({ answer, studentName, onClose, onSave, saving }) 
               className="flex items-center gap-3 px-5 py-4 border-t border-border flex-shrink-0"
             >
               <Label htmlFor="modalScore" className="text-xs font-bold text-text-secondary uppercase whitespace-nowrap flex items-center gap-1.5">
-                <Award className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <Award className="w-4 h-4" strokeWidth={1.75} />
                 Score / {maxScore}
               </Label>
               <Input
@@ -373,7 +373,7 @@ function CodeAnswerGradeModal({ answer, studentName, onClose, onSave, saving }) 
                 size="sm"
                 className="font-bold h-9"
               >
-                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} /> : null}
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} /> : null}
                 Save Score
               </Button>
             </form>
@@ -515,7 +515,7 @@ export function ExamResults() {
   if (!exam) {
     return (
       <div className="p-6 flex flex-col items-center justify-center py-20 gap-3">
-        <FileText className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
+        <FileText className="w-14 h-14 text-text-muted" strokeWidth={1.75} />
         <p className="text-base font-medium text-text-primary">Exam not found</p>
       </div>
     );
@@ -532,7 +532,7 @@ export function ExamResults() {
             aria-label={exam.status === "active" ? "Back to live exam monitor" : "Back to Exam Manager"}
             className="flex-shrink-0"
           >
-            <ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
+            <ArrowLeft className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </Button>
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold text-text-primary mb-1">Exam Results</h1>
@@ -615,7 +615,7 @@ export function ExamResults() {
         {/* Results list */}
         {results.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <FileText className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
+            <FileText className="w-14 h-14 text-text-muted" strokeWidth={1.75} />
             <p className="text-base font-medium text-text-primary">No attempts yet</p>
           </div>
         ) : (
@@ -673,7 +673,7 @@ export function ExamResults() {
                       </div>
                       <ChevronDown
                         className={cn(
-                          "w-4 h-4 text-text-muted transition-transform duration-200 ease-[var(--ease-out-strong)]",
+                          "w-[18px] h-[18px] text-text-muted transition-transform duration-200 ease-[var(--ease-out-strong)]",
                           isExpanded && "rotate-180"
                         )}
                         strokeWidth={1.75}
@@ -722,9 +722,9 @@ export function ExamResults() {
                                         )}
                                       >
                                         {isCorrect ? (
-                                          <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                          <CheckCircle className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
                                         ) : isSelected ? (
-                                          <XCircle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.75} />
+                                          <XCircle className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
                                         ) : (
                                           <span className="w-3.5" />
                                         )}
@@ -760,7 +760,7 @@ export function ExamResults() {
                                   className="w-full flex items-center justify-between gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)] hover:border-border-hover transition-colors duration-150 text-left"
                                 >
                                   <span className="flex items-center gap-2 text-xs text-text-secondary min-w-0">
-                                    <Clock className="w-3.5 h-3.5 text-text-muted flex-shrink-0" strokeWidth={1.75} />
+                                    <Clock className="w-4 h-4 text-text-muted flex-shrink-0" strokeWidth={1.75} />
                                     <span className="truncate">
                                       {ans.code_answer ? "View code & grade" : "No code submitted"}
                                     </span>

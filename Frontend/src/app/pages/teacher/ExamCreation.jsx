@@ -58,7 +58,7 @@ function StepHeader({ index, total, title, subtitle }) {
     <div>
       <div className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-[0.12em]">
         <span>Exam Creation Wizard</span>
-        <ChevronRight className="w-3 h-3" strokeWidth={2} aria-hidden="true" />
+        <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
         <span className="text-accent-500">Step {index} of {total}</span>
       </div>
       <h2 className="text-xl font-bold text-text-primary tracking-[-0.01em] mt-1.5">{title}</h2>
@@ -130,7 +130,7 @@ function ExamManageCard({ exam, onOpen }) {
             : "bg-transparent border border-border text-text-primary hover:bg-bg-surface-3"
         )}
       >
-        <ActionIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+        <ActionIcon className="w-4 h-4" strokeWidth={1.75} />
         {actionLabel}
       </Button>
     </div>
@@ -500,7 +500,7 @@ export function ExamCreation() {
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            <Plus className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <Plus className="w-4 h-4" strokeWidth={1.75} />
             Create Exam
           </button>
           <button
@@ -513,7 +513,7 @@ export function ExamCreation() {
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            <BookOpen className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <BookOpen className="w-4 h-4" strokeWidth={1.75} />
             Manage Exams ({myExams.length})
           </button>
         </div>
@@ -546,7 +546,7 @@ export function ExamCreation() {
 
                 <div>
                   <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-2">
-                    <CheckSquare className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
+                    <CheckSquare className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
                     Question Format
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -595,7 +595,7 @@ export function ExamCreation() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                      <Users className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
+                      <Users className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
                       Target Classes
                     </h3>
                     <span className="text-[10px] text-text-muted uppercase tracking-[0.08em]">
@@ -625,7 +625,7 @@ export function ExamCreation() {
                             aria-label={`Remove ${cls.name}`}
                             className="hover:text-accent-critical transition-colors"
                           >
-                            <X className="w-3 h-3" strokeWidth={2.25} />
+                            <X className="w-3.5 h-3.5" strokeWidth={2.25} />
                           </button>
                         </span>
                       ))}
@@ -633,7 +633,7 @@ export function ExamCreation() {
 
                   <div className="relative mt-2">
                     <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-muted pointer-events-none"
                       strokeWidth={1.75}
                     />
                     <Input
@@ -655,7 +655,7 @@ export function ExamCreation() {
                             onClick={() => setSelectedClassIds([...selectedClassIds, cls.id])}
                             className="inline-flex items-center gap-1 pl-2.5 pr-3 py-1 rounded-[var(--radius-pill)] border border-border text-text-secondary text-xs hover:border-accent-500/50 hover:text-accent-500 transition-colors duration-150"
                           >
-                            <Plus className="w-3 h-3" strokeWidth={2.25} />
+                            <Plus className="w-3.5 h-3.5" strokeWidth={2.25} />
                             {cls.name}
                           </button>
                         ))}
@@ -679,9 +679,9 @@ export function ExamCreation() {
                   className="w-full sm:w-auto"
                 >
                   {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+                    <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
                   ) : (
-                    <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
+                    <ChevronRight className="w-[18px] h-[18px]" strokeWidth={1.75} />
                   )}
                   Create &amp; Continue to Questions
                 </Button>
@@ -763,7 +763,7 @@ export function ExamCreation() {
                         title="Remove from list"
                         aria-label={`Remove question ${idx + 1} from list: ${q.question_text}`}
                       >
-                        <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                        <Trash2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
                       </button>
                     </div>
                   ))}
@@ -780,13 +780,13 @@ export function ExamCreation() {
                 <div className="flex gap-2">
                   {(settings.question_type === "mcq" || settings.question_type === "both") && (
                     <Button variant="outline" size="sm" onClick={() => openNewDraft("mcq")}>
-                      <Plus className="w-4 h-4" strokeWidth={1.75} />
+                      <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
                       Add MCQ
                     </Button>
                   )}
                   {(settings.question_type === "code" || settings.question_type === "both") && (
                     <Button variant="outline" size="sm" onClick={() => openNewDraft("code")}>
-                      <Plus className="w-4 h-4" strokeWidth={1.75} />
+                      <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
                       Add Code
                     </Button>
                   )}
@@ -795,7 +795,7 @@ export function ExamCreation() {
                 {/* Navigation */}
                 <div className="flex gap-2 pt-2 border-t border-border">
                   <Button variant="outline" onClick={() => setStep(1)}>
-                    <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
+                    <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={1.75} />
                     Back
                   </Button>
                   <Button
@@ -803,7 +803,7 @@ export function ExamCreation() {
                     disabled={totalQuestions === 0}
                   >
                     Review &amp; Start
-                    <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
+                    <ChevronRight className="w-[18px] h-[18px]" strokeWidth={1.75} />
                   </Button>
                 </div>
               </div>
@@ -866,7 +866,7 @@ export function ExamCreation() {
 
                 <div className="flex flex-wrap gap-2 items-center">
                   <Button variant="outline" onClick={() => setStep(2)}>
-                    <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
+                    <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={1.75} />
                     Back to Questions
                   </Button>
                   {!examOpened ? (
@@ -875,14 +875,14 @@ export function ExamCreation() {
                       onClick={handleOpenExam}
                       disabled={saving}
                     >
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} /> : null}
+                      {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : null}
                       Open Exam
                     </Button>
                   ) : (
                     <div className="flex items-center gap-2">
                       <StatusBadge status="waiting_room" />
                       <span className="flex items-center gap-1 text-xs text-text-secondary tnum">
-                        <Users className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                        <Users className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                         {waitingCount} connected
                       </span>
                     </div>
@@ -894,9 +894,9 @@ export function ExamCreation() {
                     className="bg-accent-success hover:bg-accent-success/90 text-white"
                   >
                     {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+                      <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
                     ) : (
-                      <Play className="w-4 h-4" strokeWidth={1.75} />
+                      <Play className="w-[18px] h-[18px]" strokeWidth={1.75} />
                     )}
                     Start Exam Now
                   </Button>
@@ -913,7 +913,7 @@ export function ExamCreation() {
             {step === 1 ? (
               <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-4">
                 <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-accent-500" strokeWidth={1.75} />
+                  <SlidersHorizontal className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
                   Parameters
                 </h3>
                 <div>
@@ -949,7 +949,7 @@ export function ExamCreation() {
                     <Label htmlFor="violation-limit" className="text-xs">Violation Limit</Label>
                     {settings.violation_limit <= 2 ? (
                       <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-warning uppercase tracking-wide">
-                        <AlertTriangle className="w-3 h-3" strokeWidth={2.25} />
+                        <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2.25} />
                         High Sensitivity
                       </span>
                     ) : settings.violation_limit >= 6 ? (
@@ -1024,7 +1024,7 @@ export function ExamCreation() {
                           : "bg-bg-base border border-border text-text-muted"
                       }`}
                     >
-                      {step > s.id ? <Check className="w-3 h-3" strokeWidth={2.5} /> : s.id}
+                      {step > s.id ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : s.id}
                     </span>
                     <div className="min-w-0">
                       <div
@@ -1127,7 +1127,7 @@ export function ExamCreation() {
         <DialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-text-primary flex items-center gap-2">
-              {isDraftCode ? <Code2 className="w-4 h-4 text-accent-500" /> : <CheckSquare className="w-4 h-4 text-accent-500" />}
+              {isDraftCode ? <Code2 className="w-[18px] h-[18px] text-accent-500" /> : <CheckSquare className="w-[18px] h-[18px] text-accent-500" />}
               New {isDraftCode ? "Code" : "MCQ"} Question — Set {activeSet}
             </DialogTitle>
           </DialogHeader>
@@ -1242,7 +1242,7 @@ export function ExamCreation() {
               Cancel
             </Button>
             <Button onClick={handleSaveQuestion} disabled={saving}>
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} /> : <Plus className="w-4 h-4" strokeWidth={1.75} />}
+              {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}
               Add to Set {activeSet}
             </Button>
           </DialogFooter>

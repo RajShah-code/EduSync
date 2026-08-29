@@ -2278,7 +2278,7 @@ export function LiveBroadcast() {
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                         aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                       >
-                        {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                        {isFullScreen ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
                       </button>
                     </div>
                   </>
@@ -2292,11 +2292,11 @@ export function LiveBroadcast() {
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                         aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                       >
-                        {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                        {isFullScreen ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
                       </button>
                     </div>
                     <div className="text-center">
-                      <MonitorStop className="w-16 h-16 text-text-muted mx-auto mb-3" />
+                      <MonitorStop className="w-[72px] h-[72px] text-text-muted mx-auto mb-3" />
                       <p className="text-text-secondary">Not Broadcasting</p>
                     </div>
                   </div>
@@ -2362,7 +2362,7 @@ export function LiveBroadcast() {
                       onClick={handleSaveWhiteboard}
                       className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded-[var(--radius-sm)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] flex items-center gap-1.5"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <Download className="w-4 h-4" />
                       Save
                     </button>
                   ) : (
@@ -2374,12 +2374,12 @@ export function LiveBroadcast() {
                       >
                         {pyodideLoading ? (
                           <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             Loading…
                           </>
                         ) : (
                           <>
-                            <Play className="w-3 h-3" />
+                            <Play className="w-3.5 h-3.5" />
                             Run
                           </>
                         )}
@@ -2395,7 +2395,7 @@ export function LiveBroadcast() {
                     title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                     aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                   >
-                    {isFullScreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                    {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                   </button>
                 </div>
 
@@ -2557,7 +2557,7 @@ export function LiveBroadcast() {
                         }
                         transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                       >
-                        {!calGlyphHidden && <Calendar className="w-4 h-4 relative shrink-0" />}
+                        {!calGlyphHidden && <Calendar className="w-[18px] h-[18px] relative shrink-0" />}
 
                         {/* "Scheduled" / "Idle" — width + opacity on the shared
                             spring. Retracts on a self-hover of the real pill and
@@ -2588,7 +2588,7 @@ export function LiveBroadcast() {
                           transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                         >
                           <span className="flex items-center gap-1.5">
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" />
                             <span>Starting…</span>
                           </span>
                         </motion.span>
@@ -2648,9 +2648,9 @@ export function LiveBroadcast() {
                     transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
                     {startButtonLoading ? (
-                      <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                      <Loader2 className="w-[18px] h-[18px] shrink-0 animate-spin" />
                     ) : (
-                      <Monitor className="w-4 h-4 shrink-0" />
+                      <Monitor className="w-[18px] h-[18px] shrink-0" />
                     )}
                     <motion.span
                       className="overflow-hidden whitespace-nowrap"
@@ -2682,7 +2682,7 @@ export function LiveBroadcast() {
                     aria-label="Session info"
                     className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-3 transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
                   >
-                    <Info className="w-3.5 h-3.5" />
+                    <Info className="w-4 h-4" />
                   </button>
                 </div>
 
@@ -2720,7 +2720,7 @@ export function LiveBroadcast() {
                     {micWarning && (
                       <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-warning ring-2 ring-bg-elevated" aria-hidden="true" />
                     )}
-                    {micMuted || !hasMic ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px]" /> : <Mic className="w-[18px] h-[18px]" />}
                     {!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}
                   </button>
 
@@ -2738,7 +2738,7 @@ export function LiveBroadcast() {
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
                   >
-                    {isScreenSharing ? <MonitorStop className="w-4 h-4" /> : <ScreenShare className="w-4 h-4" />}
+                    {isScreenSharing ? <MonitorStop className="w-[18px] h-[18px]" /> : <ScreenShare className="w-[18px] h-[18px]" />}
                     {isScreenSharing ? "Stop Sharing" : "Start Screen Share"}
                   </button>
 
@@ -2759,7 +2759,7 @@ export function LiveBroadcast() {
                     {isRecording && (
                       <span className="absolute inset-0 rounded-full ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
                     )}
-                    <Circle className={cn("w-4 h-4", isRecording && "fill-white")} />
+                    <Circle className={cn("w-[18px] h-[18px]", isRecording && "fill-white")} />
                     {isRecording ? "Stop Recording" : "Record"}
                   </button>
 
@@ -2772,7 +2772,7 @@ export function LiveBroadcast() {
                       aria-label="Download Recording"
                       className="h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-[18px] h-[18px]" />
                       Download
                     </a>
                   )}
@@ -2787,7 +2787,7 @@ export function LiveBroadcast() {
                     aria-label="Open Student Monitor"
                     className="flex items-center gap-1.5 px-3 py-2 bg-bg-elevated/90 backdrop-blur border border-border rounded-full text-xs text-text-secondary font-medium hover:text-text-primary hover:border-border-hover transition-[color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
                   >
-                    <Users className="w-3.5 h-3.5" />
+                    <Users className="w-4 h-4" />
                     <span className="tnum">{connectedStudents.length}</span>
                   </button>
                   <button
@@ -2807,20 +2807,20 @@ export function LiveBroadcast() {
           {/* Screen share error — shown below control bar */}
           {screenShareError && (
             <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-accent-critical/10 border border-accent-critical/20 rounded-[var(--radius-md)] text-xs text-accent-critical">
-              <TriangleAlert className="w-3.5 h-3.5 flex-shrink-0" />
+              <TriangleAlert className="w-4 h-4 flex-shrink-0" />
               <span>{screenShareError}</span>
               <button onClick={() => setScreenShareError("")} className="ml-auto text-accent-critical/60 hover:text-accent-critical" aria-label="Dismiss screen share error">
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
           {/* Recording error — shown below control bar */}
           {recordingError && (
             <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-accent-critical/10 border border-accent-critical/20 rounded-[var(--radius-md)] text-xs text-accent-critical">
-              <TriangleAlert className="w-3.5 h-3.5 flex-shrink-0" />
+              <TriangleAlert className="w-4 h-4 flex-shrink-0" />
               <span>{recordingError}</span>
               <button onClick={() => setRecordingError("")} className="ml-auto text-accent-critical/60 hover:text-accent-critical" aria-label="Dismiss recording error">
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -2875,7 +2875,7 @@ export function LiveBroadcast() {
                     title={showPassword ? "Hide password" : "Show password"}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -2897,12 +2897,12 @@ export function LiveBroadcast() {
               >
                 {copiedField === "sessionInfoPassword" ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-accent-success" />
+                    <Check className="w-4 h-4 text-accent-success" />
                     Copied
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-4 h-4" />
                     Copy Invite Message
                   </>
                 )}
@@ -2937,7 +2937,7 @@ export function LiveBroadcast() {
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Type className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                <Type className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Lecture Name
               </label>
               <Input
@@ -2953,7 +2953,7 @@ export function LiveBroadcast() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                <BookOpen className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Subject
               </label>
               <Input
@@ -2969,7 +2969,7 @@ export function LiveBroadcast() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                <Lock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Session Password
               </label>
               <div className="relative">
@@ -2989,14 +2989,14 @@ export function LiveBroadcast() {
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
                 </button>
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                <MapPin className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Lab Room (optional)
               </label>
               <Input
@@ -3012,7 +3012,7 @@ export function LiveBroadcast() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                <Users className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Select Classes
               </label>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -3083,9 +3083,9 @@ export function LiveBroadcast() {
               )}
             >
               {startLoading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-[18px] h-[18px] mr-2 animate-spin" />
               ) : (
-                <Monitor className="w-4 h-4 mr-2" />
+                <Monitor className="w-[18px] h-[18px] mr-2" />
               )}
               {startLoading ? "Starting…" : "Start Lecture"}
             </Button>

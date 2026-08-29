@@ -846,7 +846,7 @@ export function LiveSession() {
         <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-bg-base">
           <div className="relative">
             <div className="w-20 h-20 rounded-full bg-accent-info/10 border border-accent-info/20 flex items-center justify-center">
-              <Loader2 className="w-10 h-10 text-accent-info animate-spin" strokeWidth={1.75} />
+              <Loader2 className="w-11 h-11 text-accent-info animate-spin" strokeWidth={1.75} />
             </div>
           </div>
           <div className="text-center max-w-sm">
@@ -873,7 +873,7 @@ export function LiveSession() {
       {rejoinStatus === "denied" && (
         <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center gap-6 bg-bg-base">
           <div className="w-20 h-20 rounded-full bg-accent-critical/10 border border-accent-critical/20 flex items-center justify-center">
-            <AlertTriangle className="w-10 h-10 text-accent-critical" strokeWidth={1.75} />
+            <AlertTriangle className="w-11 h-11 text-accent-critical" strokeWidth={1.75} />
           </div>
           <div className="text-center max-w-sm">
             <h2 className="text-xl font-semibold text-text-primary mb-2">
@@ -905,7 +905,7 @@ export function LiveSession() {
           onClick={requestFullscreen}
         >
           <div className="w-20 h-20 rounded-full bg-accent-info/10 border border-accent-info/20 flex items-center justify-center animate-pulse">
-            <Maximize2 className="w-10 h-10 text-accent-info" strokeWidth={1.75} />
+            <Maximize2 className="w-11 h-11 text-accent-info" strokeWidth={1.75} />
           </div>
           <div className="text-center max-w-sm">
             <h2 className="text-xl font-semibold text-text-primary mb-2">
@@ -919,7 +919,7 @@ export function LiveSession() {
             onClick={(e) => { e.stopPropagation(); requestFullscreen(); }}
             className="flex items-center gap-2 px-6 py-2.5 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
           >
-            <Maximize2 className="w-4 h-4" strokeWidth={1.75} />
+            <Maximize2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
             Enter Fullscreen
           </button>
         </div>
@@ -933,7 +933,7 @@ export function LiveSession() {
         && rejoinStatus !== "waiting" && rejoinStatus !== "denied" && (
         <div className="absolute inset-0 z-[95] flex flex-col items-center justify-center gap-6 bg-bg-base/95 backdrop-blur">
           <div className="w-20 h-20 rounded-full bg-accent-warning/10 border border-accent-warning/30 flex items-center justify-center">
-            <AlertTriangle className="w-10 h-10 text-accent-warning" strokeWidth={1.75} />
+            <AlertTriangle className="w-11 h-11 text-accent-warning" strokeWidth={1.75} />
           </div>
           <div className="text-center max-w-sm">
             <h2 className="text-xl font-semibold text-text-primary mb-2">
@@ -948,7 +948,7 @@ export function LiveSession() {
             onClick={requestFullscreen}
             className="flex items-center gap-2 px-6 py-2.5 bg-accent-warning hover:bg-accent-warning/90 text-white text-sm font-medium rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
           >
-            <Maximize2 className="w-4 h-4" strokeWidth={1.75} />
+            <Maximize2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
             Return to Session
           </button>
         </div>
@@ -1007,7 +1007,7 @@ export function LiveSession() {
                   {/* Waiting — teacher hasn't sent offer yet */}
                   {broadcastStatus === "waiting" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-surface/80 p-12 text-center border border-border border-dashed rounded-lg">
-                      <Monitor className="w-16 h-16 text-text-muted mb-4 animate-pulse" strokeWidth={1.75} />
+                      <Monitor className="w-[72px] h-[72px] text-text-muted mb-4 animate-pulse" strokeWidth={1.75} />
                       <h2 className="text-xl font-semibold text-text-primary mb-2">
                         Broadcast is live
                       </h2>
@@ -1020,7 +1020,7 @@ export function LiveSession() {
                   {/* Connecting — ICE negotiation in progress */}
                   {broadcastStatus === "connecting" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-surface/80 p-12 text-center">
-                      <Loader2 className="w-16 h-16 text-accent-info mb-4 animate-spin" strokeWidth={1.75} />
+                      <Loader2 className="w-[72px] h-[72px] text-accent-info mb-4 animate-spin" strokeWidth={1.75} />
                       <h2 className="text-xl font-semibold text-text-primary mb-2">
                         Connecting to broadcast…
                       </h2>
@@ -1033,7 +1033,7 @@ export function LiveSession() {
                   {/* Ended — teacher stopped screen sharing */}
                   {broadcastStatus === "ended" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg-surface/80 p-12 text-center">
-                      <MonitorStop className="w-16 h-16 text-text-muted mb-4" strokeWidth={1.75} />
+                      <MonitorStop className="w-[72px] h-[72px] text-text-muted mb-4" strokeWidth={1.75} />
                       <h2 className="text-xl font-semibold text-text-primary mb-2">
                         Broadcast ended
                       </h2>
@@ -1050,7 +1050,7 @@ export function LiveSession() {
                       onClick={handleUnmute}
                       className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-bg-surface/90 backdrop-blur border border-border rounded-full text-sm text-text-secondary hover:text-text-primary hover:border-accent-info/40 transition-all shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                     >
-                      <Mic className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+                      <Mic className="w-[18px] h-[18px] text-accent-info" strokeWidth={1.75} />
                       Click to enable sound
                     </button>
                   )}
@@ -1140,12 +1140,12 @@ export function LiveSession() {
                       >
                         {studentPyodideLoading ? (
                           <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
+                            <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
                             Loading…
                           </>
                         ) : (
                           <>
-                            <Play className="w-3.5 h-3.5" strokeWidth={1.75} />
+                            <Play className="w-4 h-4" strokeWidth={1.75} />
                             Run
                           </>
                         )}
@@ -1262,7 +1262,7 @@ export function LiveSession() {
         ) : (
           /* No active session */
           <div className="h-full text-center flex flex-col items-center justify-center gap-3">
-            <Monitor className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
+            <Monitor className="w-14 h-14 text-text-muted" strokeWidth={1.75} />
             <h3 className="text-base font-medium text-text-primary">No active broadcast</h3>
             <p className="text-sm text-text-secondary">
               Waiting for the instructor to start screen sharing.

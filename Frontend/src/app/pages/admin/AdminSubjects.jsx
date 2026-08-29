@@ -166,7 +166,7 @@ export function AdminSubjects() {
       {/* Add Subject Card */}
       <div className="p-6 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
-          <BookMarked className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+          <BookMarked className="w-[18px] h-[18px] text-accent-info" strokeWidth={1.75} />
           <span>Add New Subject</span>
         </h3>
         <form onSubmit={handleAddSubject} className="flex flex-col sm:flex-row gap-3">
@@ -186,7 +186,7 @@ export function AdminSubjects() {
             className="sm:w-48 bg-bg-base border border-border rounded-[var(--radius-md)] px-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info transition-colors"
           />
           <Button type="submit" disabled={isCreating} className="bg-accent-info hover:bg-accent-info/90 text-white shrink-0">
-            <Plus className="w-4 h-4" strokeWidth={1.75} />
+            <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
             {isCreating ? "Adding..." : "Add Subject"}
           </Button>
         </form>
@@ -260,14 +260,14 @@ export function AdminSubjects() {
                               className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success rounded border border-accent-success/20 transition-all disabled:opacity-50"
                               title="Save"
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              <Check className="w-4 h-4" />
                             </button>
                             <button
                               onClick={handleCancelEdit}
                               className="p-1.5 bg-white/5 hover:bg-white/10 rounded border border-border transition-all"
                               title="Cancel"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-4 h-4" />
                             </button>
                           </div>
                         ) : (
@@ -277,14 +277,14 @@ export function AdminSubjects() {
                               className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-text-primary transition-colors"
                               title="Edit Subject"
                             >
-                              <Edit2 className="w-3.5 h-3.5" />
+                              <Edit2 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setDeletingSubject(subject)}
                               className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-critical transition-colors"
                               title="Delete Subject"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         )}
@@ -304,7 +304,7 @@ export function AdminSubjects() {
           <div className="bg-bg-surface border border-border rounded-xl shadow-2xl max-w-sm w-full flex flex-col p-6 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
               <h3 className="text-lg font-semibold text-accent-critical flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-[22px] h-[22px]" />
                 <span>Delete Subject?</span>
               </h3>
               <button
@@ -312,7 +312,7 @@ export function AdminSubjects() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 

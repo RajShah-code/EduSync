@@ -307,7 +307,7 @@ export function TeacherDashboard() {
                 variant="outline"
                 className="cursor-pointer"
               >
-                <Monitor className="w-4 h-4 mr-2" />
+                <Monitor className="w-[18px] h-[18px] mr-2" />
                 Monitor Students
               </Button>
             )}
@@ -318,7 +318,7 @@ export function TeacherDashboard() {
                 variant="outline"
                 className="border-accent-critical text-accent-critical hover:bg-accent-critical/10 cursor-pointer disabled:cursor-not-allowed"
               >
-                <Square className="w-4 h-4 mr-2" />
+                <Square className="w-[18px] h-[18px] mr-2" />
                 {ending ? "Ending…" : "End Lecture"}
               </Button>
             ) : (
@@ -326,7 +326,7 @@ export function TeacherDashboard() {
                 onClick={() => navigate("/teacher/broadcast")}
                 className="bg-accent-700 hover:bg-accent-700/90 text-white cursor-pointer"
               >
-                <Play className="w-4 h-4 mr-2" />
+                <Play className="w-[18px] h-[18px] mr-2" />
                 Start Lecture
               </Button>
             )}
@@ -368,7 +368,7 @@ export function TeacherDashboard() {
       <div data-tour="teacher-todays-schedule" className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-accent-500" />
+            <Calendar className="w-[22px] h-[22px] text-accent-500" />
             Today's Schedule ({todayName})
           </h2>
           {hasAnyTimetable && (
@@ -408,7 +408,7 @@ export function TeacherDashboard() {
           /* EMPTY STATE 1: No Timetable Configured At All */
           <div className="p-8 bg-bg-surface border border-border rounded-[var(--radius-lg)] text-center space-y-3">
             <div className="w-12 h-12 rounded-[var(--radius-md)] bg-accent-success/10 border border-accent-success/20 text-accent-success flex items-center justify-center mx-auto">
-              <Sparkles className="w-6 h-6" />
+              <Sparkles className="w-7 h-7" />
             </div>
             <div>
               <h3 className="text-base font-semibold text-text-primary">No Timetable Configured</h3>
@@ -420,7 +420,7 @@ export function TeacherDashboard() {
               onClick={() => navigate("/teacher/timetable")}
               className="bg-accent-success hover:bg-accent-success/90 text-white text-xs font-medium cursor-pointer"
             >
-              <Plus className="w-4 h-4 mr-1.5" /> Set Up Timetable
+              <Plus className="w-[18px] h-[18px] mr-1.5" /> Set Up Timetable
             </Button>
           </div>
         ) : todayLectures.length === 0 ? (
@@ -469,7 +469,7 @@ export function TeacherDashboard() {
                           </span>
                         )}
                         <span className="text-sm font-semibold text-text-primary flex items-center gap-1.5 truncate">
-                          <BookOpen className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                          <BookOpen className="w-4 h-4 text-text-muted shrink-0" />
                           <span className="truncate">{entry.subject}</span>
                         </span>
                         {status === "UPCOMING" && (
@@ -481,12 +481,12 @@ export function TeacherDashboard() {
 
                       <div className="flex items-center gap-3 text-xs text-text-secondary">
                         <span className="flex items-center gap-1 truncate">
-                          <School className="w-3.5 h-3.5 text-text-muted shrink-0" />
+                          <School className="w-4 h-4 text-text-muted shrink-0" />
                           <span className="truncate">{entry.class_name || "Class #" + entry.class_id}</span>
                         </span>
                         {entry.reminder_enabled && (
                           <span className="flex items-center gap-1 text-accent-warning text-[11px] shrink-0">
-                            <Bell className="w-3 h-3" /> {defaultDelayMinutes} min alert
+                            <Bell className="w-3.5 h-3.5" /> {defaultDelayMinutes} min alert
                           </span>
                         )}
                       </div>
@@ -500,7 +500,7 @@ export function TeacherDashboard() {
                         onClick={() => handleStartActiveLecture(entry)}
                         className="bg-accent-success hover:bg-accent-success/90 text-white font-medium text-xs cursor-pointer flex items-center gap-1.5"
                       >
-                        <Play className="w-3.5 h-3.5 fill-current" /> Start Now
+                        <Play className="w-4 h-4 fill-current" /> Start Now
                       </Button>
                     ) : status === "UPCOMING" ? (
                       <Button

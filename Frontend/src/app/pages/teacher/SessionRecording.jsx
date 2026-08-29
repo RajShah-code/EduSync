@@ -155,7 +155,7 @@ export function SessionRecording() {
       {recordings.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
           <div className="w-14 h-14 rounded-full bg-bg-elevated border border-border flex items-center justify-center">
-            <Video className="w-6 h-6 text-text-muted" strokeWidth={1.75} />
+            <Video className="w-7 h-7 text-text-muted" strokeWidth={1.75} />
           </div>
           <div className="space-y-1.5">
             <p className="text-base font-medium text-text-primary">No recordings yet</p>
@@ -239,7 +239,7 @@ export function SessionRecording() {
                             }
                             className="text-xs"
                           >
-                            <FolderOpen className="w-3.5 h-3.5" strokeWidth={1.75} />
+                            <FolderOpen className="w-4 h-4" strokeWidth={1.75} />
                             Show in Folder
                           </Button>
                         ) : rec.kind === "fsa" ? (
@@ -252,7 +252,7 @@ export function SessionRecording() {
                             title="Re-open the saved file"
                             className="text-xs"
                           >
-                            <PlayCircle className="w-3.5 h-3.5" strokeWidth={1.75} />
+                            <PlayCircle className="w-4 h-4" strokeWidth={1.75} />
                             {openingId === rec.id ? "Opening..." : "Open Recording"}
                           </Button>
                         ) : (
@@ -264,7 +264,7 @@ export function SessionRecording() {
                             title="Saved through your browser's downloads — EduSync keeps no file reference for these"
                             className="text-xs text-text-muted"
                           >
-                            <Download className="w-3.5 h-3.5" strokeWidth={1.75} />
+                            <Download className="w-4 h-4" strokeWidth={1.75} />
                             In Downloads
                           </Button>
                         )}
@@ -275,7 +275,7 @@ export function SessionRecording() {
                           title="Remove from this list (does not delete the saved file)"
                           aria-label={`Remove ${rec.filename} from list`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          <Trash2 className="w-4 h-4" strokeWidth={1.75} />
                         </button>
                       </div>
                     </td>
@@ -299,7 +299,7 @@ export function SessionRecording() {
                 className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                 aria-label="Previous page"
               >
-                <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
               </button>
               <span className="text-xs tnum text-text-primary px-2 min-w-[4.5rem] text-center">
                 Page {safePage} / {totalPages}
@@ -311,7 +311,7 @@ export function SessionRecording() {
                 className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                 aria-label="Next page"
               >
-                <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
               </button>
             </div>
           </div>

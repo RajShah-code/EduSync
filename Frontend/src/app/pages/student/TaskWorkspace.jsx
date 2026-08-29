@@ -356,7 +356,7 @@ export function TaskWorkspace() {
   if (taskFetchError) {
     return (
       <div className="h-screen bg-bg-base flex flex-col items-center justify-center gap-3">
-        <AlertCircle className="w-12 h-12 text-accent-critical" />
+        <AlertCircle className="w-14 h-14 text-accent-critical" />
         <h3 className="text-base font-medium text-text-primary">
           Couldn't load your tasks
         </h3>
@@ -377,7 +377,7 @@ export function TaskWorkspace() {
   if (tasks.length === 0) {
     return (
       <div className="h-screen bg-bg-base flex flex-col items-center justify-center gap-3">
-        <FileCode className="w-12 h-12 text-text-muted" />
+        <FileCode className="w-14 h-14 text-text-muted" />
         <h3 className="text-base font-medium text-text-primary">
           No active task right now
         </h3>

@@ -135,25 +135,25 @@ export function CodeOutputPanel({
             >
               {dockPosition === "bottom" && (
                 <>
-                  <PanelBottom className="w-3 h-3 text-accent-info" /> Dock Bottom
+                  <PanelBottom className="w-3.5 h-3.5 text-accent-info" /> Dock Bottom
                 </>
               )}
               {dockPosition === "top" && (
                 <>
-                  <PanelTop className="w-3 h-3 text-accent-info" /> Dock Top
+                  <PanelTop className="w-3.5 h-3.5 text-accent-info" /> Dock Top
                 </>
               )}
               {dockPosition === "right" && (
                 <>
-                  <PanelRight className="w-3 h-3 text-accent-info" /> Dock Right
+                  <PanelRight className="w-3.5 h-3.5 text-accent-info" /> Dock Right
                 </>
               )}
               {dockPosition === "left" && (
                 <>
-                  <PanelLeft className="w-3 h-3 text-accent-info" /> Dock Left
+                  <PanelLeft className="w-3.5 h-3.5 text-accent-info" /> Dock Left
                 </>
               )}
-              <ChevronDown className="w-3 h-3 text-text-muted" />
+              <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
             </button>
 
             {isDockMenuOpen && (
@@ -168,7 +168,7 @@ export function CodeOutputPanel({
                     dockPosition === "bottom" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelBottom className="w-3.5 h-3.5" /> Dock Bottom
+                  <PanelBottom className="w-4 h-4" /> Dock Bottom
                 </button>
                 <button
                   type="button"
@@ -180,7 +180,7 @@ export function CodeOutputPanel({
                     dockPosition === "top" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelTop className="w-3.5 h-3.5" /> Dock Top
+                  <PanelTop className="w-4 h-4" /> Dock Top
                 </button>
                 <button
                   type="button"
@@ -192,7 +192,7 @@ export function CodeOutputPanel({
                     dockPosition === "right" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelRight className="w-3.5 h-3.5" /> Dock Right
+                  <PanelRight className="w-4 h-4" /> Dock Right
                 </button>
                 <button
                   type="button"
@@ -204,7 +204,7 @@ export function CodeOutputPanel({
                     dockPosition === "left" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelLeft className="w-3.5 h-3.5" /> Dock Left
+                  <PanelLeft className="w-4 h-4" /> Dock Left
                 </button>
               </div>
             )}

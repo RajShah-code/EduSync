@@ -591,7 +591,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               }`}
               title="Pen"
             >
-              <Pencil className="w-3.5 h-3.5" />
+              <Pencil className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -603,7 +603,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               }`}
               title="Eraser (E) — Ctrl+/Ctrl- to resize"
             >
-              <Eraser className="w-3.5 h-3.5" />
+              <Eraser className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -615,7 +615,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               }`}
               title="Straight Line"
             >
-              <Minus className="w-3.5 h-3.5" />
+              <Minus className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -627,7 +627,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               }`}
               title="Rectangle"
             >
-              <Square className="w-3.5 h-3.5" />
+              <Square className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -639,7 +639,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               }`}
               title="Circle / Ellipse"
             >
-              <Circle className="w-3.5 h-3.5" />
+              <Circle className="w-4 h-4" />
             </button>
           </div>
 
@@ -704,7 +704,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               className="btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               title="Undo (Ctrl+Z / Cmd+Z)"
             >
-              <Undo2 className="w-3.5 h-3.5" />
+              <Undo2 className="w-4 h-4" />
             </button>
             <button
               type="button"
@@ -713,7 +713,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               className="btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 disabled:opacity-30 disabled:cursor-not-allowed text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
               title="Redo (Ctrl+Y / Cmd+Shift+Z)"
             >
-              <Redo2 className="w-3.5 h-3.5" />
+              <Redo2 className="w-4 h-4" />
             </button>
           </div>
 
@@ -727,11 +727,11 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             >
               {bgColor === "#17171A" ? (
                 <>
-                  <Sun className="w-3.5 h-3.5 text-accent-warning" /> Light Board
+                  <Sun className="w-4 h-4 text-accent-warning" /> Light Board
                 </>
               ) : (
                 <>
-                  <Moon className="w-3.5 h-3.5 text-accent-info" /> Dark Board
+                  <Moon className="w-4 h-4 text-accent-info" /> Dark Board
                 </>
               )}
             </button>
@@ -742,7 +742,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
               className="btn-press px-2.5 py-1 text-xs font-medium border border-accent-critical/30 bg-accent-critical/10 text-accent-critical hover:bg-accent-critical/20 rounded-[var(--radius-md)] transition-colors duration-150 flex items-center gap-1.5"
               title="Wipe Canvas"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Clear All
+              <Trash2 className="w-4 h-4" /> Clear All
             </button>
           </div>
         </div>

@@ -241,12 +241,12 @@ export function Analytics() {
               aria-labelledby="class-select-label"
               className="flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-[var(--radius-md)] bg-bg-surface border border-border text-sm font-medium text-text-primary hover:border-border-hover transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
             >
-              <School className="w-3.5 h-3.5 text-accent-500 shrink-0" strokeWidth={1.75} />
+              <School className="w-4 h-4 text-accent-500 shrink-0" strokeWidth={1.75} />
               <span className="truncate max-w-[180px]">
                 {classes.find((c) => String(c.id) === String(selectedClassId))?.name || "Select a class"}
               </span>
               <ChevronDown
-                className={`w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-150 ${
+                className={`w-4 h-4 text-text-muted shrink-0 transition-transform duration-150 ${
                   isClassMenuOpen ? "rotate-180" : ""
                 }`}
                 strokeWidth={1.75}
@@ -278,7 +278,7 @@ export function Analytics() {
                       }`}
                     >
                       <span className="truncate">{cls.name}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.25} />}
+                      {isSelected && <Check className="w-4 h-4 shrink-0" strokeWidth={2.25} />}
                     </button>
                   );
                 })}
@@ -293,7 +293,7 @@ export function Analytics() {
       ) : !hasData ? (
         /* Preserved Empty State */
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <BarChart2 className="w-12 h-12 text-text-muted" />
+          <BarChart2 className="w-14 h-14 text-text-muted" />
           <p className="text-base font-medium text-text-primary">
             No analytics data available
           </p>
@@ -311,7 +311,7 @@ export function Analytics() {
                 <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                   Avg Attendance
                 </span>
-                <Users className="w-4 h-4 text-accent-info" />
+                <Users className="w-[18px] h-[18px] text-accent-info" />
               </div>
               <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.avgAttendance}%
@@ -325,7 +325,7 @@ export function Analytics() {
                 <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                   Task Completion
                 </span>
-                <CheckCircle2 className="w-4 h-4 text-accent-info" />
+                <CheckCircle2 className="w-[18px] h-[18px] text-accent-info" />
               </div>
               <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.avgTaskCompletion}%
@@ -339,7 +339,7 @@ export function Analytics() {
                 <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                   Avg Exam Score
                 </span>
-                <Award className="w-4 h-4 text-accent-success" />
+                <Award className="w-[18px] h-[18px] text-accent-success" />
               </div>
               <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.avgExamScore}%
@@ -359,7 +359,7 @@ export function Analytics() {
                 <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                   At-Risk Students
                 </span>
-                <AlertTriangle className="w-4 h-4 text-accent-warning" />
+                <AlertTriangle className="w-[18px] h-[18px] text-accent-warning" />
               </div>
               <div className="text-2xl font-bold tnum text-text-primary">
                 {summary.atRiskCount}

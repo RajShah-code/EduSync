@@ -99,7 +99,7 @@ export function AdminLayout() {
             className="w-[26px] h-[26px] rounded-lg shrink-0 flex items-center justify-center"
             style={{ background: "linear-gradient(155deg, var(--accent-700), color-mix(in srgb, var(--accent-700) 55%, var(--bg-base)))" }}
           >
-            <GraduationCap className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+            <GraduationCap className="w-4 h-4 text-white" strokeWidth={2} />
           </div>
           <span className="font-display font-semibold text-text-primary text-[14.5px] tracking-tight hidden md:inline">
             EduSync
@@ -124,7 +124,7 @@ export function AdminLayout() {
                   isActive ? "nav-active" : "nav-inactive"
                 )}
               >
-                <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
+                <item.icon className="nav-icon w-[18px] h-[18px] shrink-0" strokeWidth={1.75} />
                 <span className="hidden md:inline">{item.name}</span>
               </Link>
             );
@@ -150,7 +150,7 @@ export function AdminLayout() {
               title="Logout"
               className="btn-press w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 transition-std shrink-0"
             >
-              <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <LogOut className="w-4 h-4" strokeWidth={1.75} />
             </button>
           </div>
 
@@ -160,7 +160,7 @@ export function AdminLayout() {
             title="Logout"
             className="btn-press md:hidden w-full flex items-center justify-center py-2 text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
           >
-            <LogOut className="w-4 h-4" strokeWidth={1.75} />
+            <LogOut className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </button>
         </div>
       </aside>

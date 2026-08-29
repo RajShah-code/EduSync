@@ -197,7 +197,7 @@ export function AdminSubjectAllotments() {
             className="bg-accent-info hover:bg-accent-info/90 text-white"
             title={subjects.length === 0 ? "Add a subject to the catalog first" : undefined}
           >
-            <Plus className="w-4 h-4" strokeWidth={1.75} />
+            <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
             New Allotment
           </Button>
         </div>
@@ -205,7 +205,7 @@ export function AdminSubjectAllotments() {
         {/* Filter and Search Bar */}
         <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] flex flex-col md:flex-row gap-4 items-center flex-shrink-0">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" strokeWidth={1.75} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-muted" strokeWidth={1.75} />
             <input
               type="text"
               placeholder="Search by subject, class, or teacher..."
@@ -271,7 +271,7 @@ export function AdminSubjectAllotments() {
             </div>
           ) : filteredAllotments.length === 0 ? (
             <div className="py-20 text-center flex flex-col items-center justify-center text-text-muted">
-              <ClipboardList className="w-8 h-8 mb-2" />
+              <ClipboardList className="w-9 h-9 mb-2" />
               <p className="text-sm font-semibold text-text-primary">No allotments found</p>
               <p className="text-xs text-text-secondary mt-1">
                 {allotments.length === 0
@@ -314,7 +314,7 @@ export function AdminSubjectAllotments() {
                           </div>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-text-muted">
-                            <UserX className="w-3.5 h-3.5" />
+                            <UserX className="w-4 h-4" />
                             Unassigned
                           </span>
                         )}
@@ -326,14 +326,14 @@ export function AdminSubjectAllotments() {
                             className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-text-primary transition-colors"
                             title="Edit allotment"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setDeletingItem(row)}
                             className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-critical transition-colors"
                             title="Delete allotment"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -359,7 +359,7 @@ export function AdminSubjectAllotments() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -455,7 +455,7 @@ export function AdminSubjectAllotments() {
           <div className="bg-bg-surface border border-border rounded-xl shadow-2xl max-w-sm w-full flex flex-col p-6 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
               <h3 className="text-lg font-semibold text-accent-critical flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-[22px] h-[22px]" />
                 <span>Delete Allotment?</span>
               </h3>
               <button
@@ -463,7 +463,7 @@ export function AdminSubjectAllotments() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 

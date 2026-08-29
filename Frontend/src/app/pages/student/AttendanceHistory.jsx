@@ -191,7 +191,7 @@ export function AttendanceHistory() {
           <p className="text-text-secondary">Your session attendance record</p>
         </div>
         <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-[var(--radius-lg)] flex flex-col items-center justify-center gap-3 py-16">
-          <TriangleAlert className="w-12 h-12 text-accent-critical" strokeWidth={1.75} />
+          <TriangleAlert className="w-14 h-14 text-accent-critical" strokeWidth={1.75} />
           <h3 className="text-base font-medium text-text-primary">
             Couldn't load your attendance
           </h3>
@@ -272,7 +272,7 @@ export function AttendanceHistory() {
                 aria-expanded={filtersOpen}
                 className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary uppercase tracking-wider transition-colors rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
               >
-                <Filter className="w-3.5 h-3.5 text-text-muted shrink-0" strokeWidth={1.75} />
+                <Filter className="w-4 h-4 text-text-muted shrink-0" strokeWidth={1.75} />
                 Filters
                 {activeFilterCount > 0 && (
                   <span className="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] px-1 rounded-[var(--radius-pill)] bg-accent-500/15 text-accent-500 text-[10px] tnum normal-case tracking-normal">
@@ -280,7 +280,7 @@ export function AttendanceHistory() {
                   </span>
                 )}
                 <ChevronDown
-                  className={`w-3.5 h-3.5 text-text-muted transition-transform duration-150 ${filtersOpen ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-text-muted transition-transform duration-150 ${filtersOpen ? "rotate-180" : ""}`}
                   strokeWidth={1.75}
                 />
               </button>
@@ -288,7 +288,7 @@ export function AttendanceHistory() {
               {/* Sort Order — a view control, not a filter, so it stays visible */}
               <div className="flex items-center gap-2">
                 <label htmlFor="sort-order" className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                  <ArrowUpDown className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
+                  <ArrowUpDown className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                   Sort
                 </label>
                 <Select value={sortOrder} onValueChange={setSortOrder}>
@@ -488,7 +488,7 @@ export function AttendanceHistory() {
                       className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                       aria-label="Previous page"
                     >
-                      <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+                      <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
                     </button>
                     <span className="text-xs tnum text-text-primary px-2 min-w-[4.5rem] text-center">
                       Page {safePage} / {totalPages}
@@ -500,7 +500,7 @@ export function AttendanceHistory() {
                       className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                       aria-label="Next page"
                     >
-                      <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+                      <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
                     </button>
                   </div>
                 </div>
@@ -510,7 +510,7 @@ export function AttendanceHistory() {
         </>
       ) : (
         <div className="p-8 bg-bg-surface border border-border rounded-[var(--radius-lg)] flex flex-col items-center justify-center gap-3 py-16">
-          <CalendarCheck className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
+          <CalendarCheck className="w-14 h-14 text-text-muted" strokeWidth={1.75} />
           <h3 className="text-base font-medium text-text-primary">
             No attendance history
           </h3>

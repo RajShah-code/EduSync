@@ -311,7 +311,7 @@ export function TeacherLayout() {
             className="w-[26px] h-[26px] rounded-lg shrink-0 flex items-center justify-center"
             style={{ background: "linear-gradient(155deg, var(--accent-700), color-mix(in srgb, var(--accent-700) 55%, var(--bg-base)))" }}
           >
-            <GraduationCap className="w-3.5 h-3.5 text-white" strokeWidth={2} />
+            <GraduationCap className="w-4 h-4 text-white" strokeWidth={2} />
           </div>
           <span className="font-display font-semibold text-text-primary text-[14.5px] tracking-tight hidden md:inline">
             EduSync
@@ -341,7 +341,7 @@ export function TeacherLayout() {
                     isActive ? "nav-active" : "nav-inactive"
                   )}
                 >
-                  <item.icon className="nav-icon w-4 h-4 shrink-0" strokeWidth={1.75} />
+                  <item.icon className="nav-icon w-[18px] h-[18px] shrink-0" strokeWidth={1.75} />
                   <span className="hidden md:inline">{item.name}</span>
                 </Link>
               );
@@ -374,7 +374,7 @@ export function TeacherLayout() {
                         >
                           <ChevronDown
                             className={cn(
-                              "w-3.5 h-3.5 transition-transform duration-200",
+                              "w-4 h-4 transition-transform duration-200",
                               !subNavExpanded && "-rotate-90"
                             )}
                           />
@@ -421,7 +421,7 @@ export function TeacherLayout() {
               title="Logout"
               className="btn-press w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 transition-std shrink-0"
             >
-              <LogOut className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <LogOut className="w-4 h-4" strokeWidth={1.75} />
             </button>
           </div>
 
@@ -431,7 +431,7 @@ export function TeacherLayout() {
             title="Logout"
             className="btn-press md:hidden w-full flex items-center justify-center py-2 text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
           >
-            <LogOut className="w-4 h-4" strokeWidth={1.75} />
+            <LogOut className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </button>
         </div>
       </aside>
@@ -468,7 +468,7 @@ export function TeacherLayout() {
             <div className="flex items-start justify-between border-b border-border pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-[var(--radius-md)] bg-accent-warning/10 text-accent-warning">
-                  <AlertTriangle className="w-6 h-6" />
+                  <AlertTriangle className="w-7 h-7" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-text-primary">
@@ -486,7 +486,7 @@ export function TeacherLayout() {
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-[var(--radius-md)] text-xs font-semibold transition-colors"
                   title="Approve all exceptions"
                 >
-                  <Check className="w-3.5 h-3.5" />
+                  <Check className="w-4 h-4" />
                   Approve All
                 </button>
                 <button
@@ -494,14 +494,14 @@ export function TeacherLayout() {
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-md)] text-xs font-semibold transition-colors"
                   title="Reject all exceptions"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                   Reject All
                 </button>
                 <button
                   onClick={() => { setAttendanceExceptions(null); setExpandedAttendanceId(null); }}
                   className="p-1 hover:bg-bg-base rounded-[var(--radius-md)] text-text-secondary hover:text-text-primary transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-[22px] h-[22px]" />
                 </button>
               </div>
             </div>
@@ -537,14 +537,14 @@ export function TeacherLayout() {
                             className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-[var(--radius-md)] text-xs font-semibold flex items-center justify-center transition-colors"
                             title="Approve Attendance"
                           >
-                            <Check className="w-4 h-4" />
+                            <Check className="w-[18px] h-[18px]" />
                           </button>
                           <button
                             onClick={() => handleDecideException(exc.attendance_id, 'rejected')}
                             className="p-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-md)] text-xs font-semibold flex items-center justify-center transition-colors"
                             title="Reject Attendance"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-[18px] h-[18px]" />
                           </button>
                         </div>
                       </div>

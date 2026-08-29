@@ -95,7 +95,7 @@ function ExamStudentCard({ attempt, violationLimit, onClick }) {
         <span className="text-[11px] text-text-secondary tnum">{answeredCount} answered</span>
         {hasViolations && (
           <span className="flex items-center gap-1 text-[11px] text-accent-critical flex-shrink-0">
-            <AlertTriangle className="w-3 h-3" strokeWidth={1.75} />
+            <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.75} />
             <span className="tnum">{attempt.violation_count}/{violationLimit}</span>
           </span>
         )}
@@ -165,7 +165,7 @@ function AttemptDetailModal({ attempt, violationLimit, onClose }) {
                 className="text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
                 aria-label="Close"
               >
-                <X className="w-4 h-4" strokeWidth={1.75} />
+                <X className="w-[18px] h-[18px]" strokeWidth={1.75} />
               </button>
             </div>
 
@@ -207,7 +207,7 @@ function AttemptDetailModal({ attempt, violationLimit, onClose }) {
               >
                 <span className="flex items-center gap-1.5 text-xs text-text-secondary">
                   <AlertTriangle
-                    className={cn("w-3.5 h-3.5", attempt.violation_count > 0 ? "text-accent-critical" : "text-text-muted")}
+                    className={cn("w-4 h-4", attempt.violation_count > 0 ? "text-accent-critical" : "text-text-muted")}
                     strokeWidth={1.75}
                   />
                   Violations
@@ -420,7 +420,7 @@ export function ActiveExam() {
   if (!exam) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3">
-        <FileText className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
+        <FileText className="w-14 h-14 text-text-muted" strokeWidth={1.75} />
         <p className="text-base font-medium text-text-primary">Exam not found</p>
       </div>
     );
@@ -439,7 +439,7 @@ export function ActiveExam() {
               aria-label="Back to Exam Manager"
               className="flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
+              <ArrowLeft className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </Button>
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -464,7 +464,7 @@ export function ActiveExam() {
                 )}
               >
                 <Clock
-                  className={cn("w-4 h-4 transition-colors duration-300", isTimeCritical ? "text-accent-critical" : "text-text-muted")}
+                  className={cn("w-[18px] h-[18px] transition-colors duration-300", isTimeCritical ? "text-accent-critical" : "text-text-muted")}
                   strokeWidth={1.75}
                 />
                 <Timer seconds={secondsRemaining} size="lg" className="font-sans" />
@@ -496,9 +496,9 @@ export function ActiveExam() {
                 disabled={ending}
               >
                 {ending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+                  <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
                 ) : (
-                  <Lock className="w-4 h-4" strokeWidth={1.75} />
+                  <Lock className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 )}
                 End Exam
               </Button>
@@ -508,7 +508,7 @@ export function ActiveExam() {
                 onClick={() => navigate(`/teacher/exam/results/${examId}`)}
               >
                 Results
-                <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
+                <ChevronRight className="w-[18px] h-[18px]" strokeWidth={1.75} />
               </Button>
             </div>
           </div>
@@ -520,7 +520,7 @@ export function ActiveExam() {
         {violations.length > 0 && (
           <div className="p-4 bg-accent-critical/5 border border-accent-critical/20 rounded-[var(--radius-lg)]">
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle className="w-4 h-4 text-accent-critical" strokeWidth={1.75} />
+              <AlertTriangle className="w-[18px] h-[18px] text-accent-critical" strokeWidth={1.75} />
               <h3 className="text-sm font-semibold text-accent-critical">
                 {violations.length} student{violations.length === 1 ? "" : "s"} with violations
               </h3>
@@ -541,7 +541,7 @@ export function ActiveExam() {
         {/* Student roster */}
         {total === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Users className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
+            <Users className="w-14 h-14 text-text-muted" strokeWidth={1.75} />
             <p className="text-base font-medium text-text-primary">
               No students have started yet
             </p>
