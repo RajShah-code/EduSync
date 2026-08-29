@@ -47,7 +47,7 @@ No shared root `package.json`/workspace — three independent Node projects (`Ba
 | File | Purpose |
 |---|---|
 | `TeacherDashboard.jsx` | Landing/overview, today's schedule widget (`/timetable/me`) |
-| `LiveBroadcast.jsx` | **Largest file in the app (~2940L).** WebRTC screen/audio broadcast, live code editor mirror, whiteboard, mic control, recording start/stop, session setup modal, roster panel. Owns most session-lifecycle socket events. |
+| `LiveBroadcast.jsx` | **Largest file in the app (~3120L).** WebRTC screen/audio broadcast, live code editor mirror, whiteboard, mic control, recording start/stop, session setup modal, roster panel. Owns most session-lifecycle socket events. The pre-broadcast control bar is a two-anchor Schedule/Instant pill pair (`activeSide = hovered ?? (lecture scheduled now ? "schedule" : "instant")`): the active side is a violet labelled pill, the other a dim icon-only circle, and the fill/label cross over between the two on one shared spring (`PILL_TRANSITION`); with no lecture the Schedule side reads as a muted grey "Idle" pill and its click only flashes a recoloured tooltip. |
 | `StudentMonitor.jsx` | Grid of student screens/status |
 | `TaskAssignment.jsx` | Create/push coding tasks, live submission-status roster, **also owns the teacher-side doubt queue** (no dedicated doubt page — see §3) |
 | `SubmissionReview.jsx` | Grade one task's submissions |
@@ -57,7 +57,7 @@ No shared root `package.json`/workspace — three independent Node projects (`Ba
 | `Attendance.jsx` | Per-session attendance report |
 | `Analytics.jsx` | Attendance trends, task completion, exam scores, at-risk students |
 | `SessionRecording.jsx` | **Not dead** (a past session's handoff note flagging it as an empty-state scaffold is stale — confirmed fully functional: local recordings index, Electron "Show in Folder" IPC, browser File-System-Access re-open, pagination, delete) |
-| `TeacherSettings.jsx` | `/users/me` |
+| `TeacherSettings.jsx` | Profile name + password change (`/users/me`, `/users/me/password`); "App tour" replay row. Near-twin of `student/StudentSettings.jsx`. |
 | `TimetableSetup.jsx` | Recurring weekly schedule builder |
 
 ### Student pages (`pages/student/`, 10 files)

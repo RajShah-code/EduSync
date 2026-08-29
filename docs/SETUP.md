@@ -27,11 +27,10 @@ npm install
 ```
 
 ## 4. Database Initialization
-Run the schema initialization script once in the `Backend` directory to create all required tables:
-```bash
-# In the Backend directory
-npm run db:init
-```
+No manual step is required. `Backend/config/dbSetup.js` runs automatically on every backend boot and idempotently creates/migrates every table (`CREATE TABLE IF NOT EXISTS` + `ADD COLUMN IF NOT EXISTS`).
+
+> [!WARNING]
+> The `npm run db:init` script is **deprecated** — it runs `scripts/initDB.js`, an outdated partial schema kept for reference only. Don't run it; the schema is built on server start (Step 5).
 
 ## 5. Running the Application
 ### Backend
