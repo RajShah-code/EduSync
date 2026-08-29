@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { StudentTile } from "../../components/StudentTile";
 import { StatusBadge } from "../../components/StatusBadge";
-import { IconFilter as Filter, IconGrid3x3 as Grid3x3, IconLayoutGrid as Grid2x2, IconDeviceDesktop as Monitor } from "@tabler/icons-react";
+import { IconFilter as Filter, IconGrid3x3 as Grid3x3, IconLayoutGrid as Grid2x2, IconDeviceDesktop as Monitor, IconEyeCheck as EyeCheck, IconEyeX as EyeX } from "@tabler/icons-react";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -155,7 +155,10 @@ export function StudentMonitor() {
                   : "border-transparent text-text-secondary hover:text-text-primary"
               }`}
             >
-              Active ({stats.active})
+              <span className="inline-flex items-center gap-1.5">
+                <EyeCheck className="w-3.5 h-3.5" />
+                Active ({stats.active})
+              </span>
             </button>
             <button
               onClick={() => setFilter("idle")}
@@ -166,7 +169,10 @@ export function StudentMonitor() {
                   : "border-transparent text-text-secondary hover:text-text-primary"
               }`}
             >
-              Not Viewing ({stats.idle})
+              <span className="inline-flex items-center gap-1.5">
+                <EyeX className="w-3.5 h-3.5" />
+                Not Viewing ({stats.idle})
+              </span>
             </button>
           </div>
 

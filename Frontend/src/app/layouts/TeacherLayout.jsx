@@ -1,18 +1,18 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { IconLayoutDashboard as LayoutDashboard, IconBroadcast as Radio, IconDeviceDesktop as Monitor, IconClipboardText as ClipboardList, IconFileText as FileText, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendar as Calendar, IconSettings as Settings, IconLogout as LogOut, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown } from "@tabler/icons-react";
+import { IconLayoutDashboard as LayoutDashboard, IconChalkboardTeacher as ChalkboardTeacher, IconBinoculars as Binoculars, IconClipboard as Clipboard, IconFileCertificate as FileCertificate, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendarWeek as CalendarWeek, IconSettings as Settings, IconLogout as LogOut, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown } from "@tabler/icons-react";
 import { cn } from "../components/ui/utils";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
 import { Toaster } from "../components/ui/sonner";
 
 const navigation = [
   { name: "Dashboard", href: "/teacher", icon: LayoutDashboard, dataTour: "teacher-dashboard-link" },
-  { name: "Live Lecture", href: "/teacher/broadcast", icon: Monitor, dataTour: "teacher-broadcast-link" },
-  { name: "Monitor", href: "/teacher/monitor", icon: Radio, dataTour: "teacher-monitor-link" },
-  { name: "Tasks", href: "/teacher/task/assign", icon: ClipboardList, dataTour: "teacher-task-link" },
-  { name: "Exams", href: "/teacher/exam/create", icon: FileText, dataTour: "teacher-exam-link" },
-  { name: "Timetable", href: "/teacher/timetable", icon: Calendar, dataTour: "teacher-timetable-link" },
+  { name: "Live Lecture", href: "/teacher/broadcast", icon: ChalkboardTeacher, dataTour: "teacher-broadcast-link" },
+  { name: "Monitor", href: "/teacher/monitor", icon: Binoculars, dataTour: "teacher-monitor-link" },
+  { name: "Tasks", href: "/teacher/task/assign", icon: Clipboard, dataTour: "teacher-task-link" },
+  { name: "Exams", href: "/teacher/exam/create", icon: FileCertificate, dataTour: "teacher-exam-link" },
+  { name: "Timetable", href: "/teacher/timetable", icon: CalendarWeek, dataTour: "teacher-timetable-link" },
   { name: "Attendance", href: "/teacher/attendance", icon: CalendarCheck, dataTour: "teacher-attendance-link" },
   { name: "Analytics", href: "/teacher/analytics", icon: BarChart3, dataTour: "teacher-analytics-link" },
   { name: "Recordings", href: "/teacher/recordings", icon: Video, dataTour: "teacher-recordings-link" },

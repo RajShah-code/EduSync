@@ -17,29 +17,29 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../components/ui/dialog";
-import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconBook as BookOpen, IconCode as Code2, IconSquareCheck as CheckSquare, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X } from "@tabler/icons-react";
+import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconMenu2 as Menu2, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 
 const QUESTION_TYPES = [
-  { value: "mcq", label: "MCQ Only", icon: CheckSquare, desc: "Multiple choice questions only" },
+  { value: "mcq", label: "MCQ Only", icon: Checkbox, desc: "Multiple choice questions only" },
   { value: "code", label: "Code Only", icon: Code2, desc: "Code submission questions only" },
-  { value: "both", label: "Both", icon: BookOpen, desc: "Mix of MCQ and code questions" },
+  { value: "both", label: "Both", icon: ArrowBarBoth, desc: "Mix of MCQ and code questions" },
 ];
 
 const LANGUAGES = ["javascript", "python", "java", "cpp", "c"];
 
 const SETUP_STEPS = [
-  { id: 1, label: "Exam Settings", desc: "Core configuration" },
-  { id: 2, label: "Questions", desc: "Add exam content" },
-  { id: 3, label: "Review & Start", desc: "Confirm and launch" },
+  { id: 1, label: "Exam Settings", desc: "Core configuration", dashedIcon: CircleDashedNumber1, activeIcon: CircleNumber1 },
+  { id: 2, label: "Questions", desc: "Add exam content", dashedIcon: CircleDashedNumber2, activeIcon: CircleNumber2 },
+  { id: 3, label: "Review & Start", desc: "Confirm and launch", dashedIcon: CircleDashedNumber3, activeIcon: CircleNumber3 },
 ];
 
 const MANAGE_FILTERS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "active", label: "Active" },
-  { key: "ended", label: "Ended" },
+  { key: "all", label: "All", icon: LayoutGrid },
+  { key: "draft", label: "Draft", icon: Notes },
+  { key: "active", label: "Active", icon: FileCode },
+  { key: "ended", label: "Ended", icon: FileCheck },
 ];
 
 // Groups the two pre-launch exam statuses (draft, waiting_room) under one
@@ -500,7 +500,7 @@ export function ExamCreation() {
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            <Plus className="w-4 h-4" strokeWidth={1.75} />
+            <SquarePlus className="w-4 h-4" strokeWidth={1.75} />
             Create Exam
           </button>
           <button
@@ -513,7 +513,7 @@ export function ExamCreation() {
                 : "text-text-secondary hover:text-text-primary"
             }`}
           >
-            <BookOpen className="w-4 h-4" strokeWidth={1.75} />
+            <Menu2 className="w-4 h-4" strokeWidth={1.75} />
             Manage Exams ({myExams.length})
           </button>
         </div>
@@ -595,7 +595,7 @@ export function ExamCreation() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                      <Users className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+                      <Chalkboard className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
                       Target Classes
                     </h3>
                     <span className="text-[10px] text-text-muted uppercase tracking-[0.08em]">
@@ -875,7 +875,7 @@ export function ExamCreation() {
                       onClick={handleOpenExam}
                       disabled={saving}
                     >
-                      {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : null}
+                      {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : <CircleCheck className="w-[18px] h-[18px]" strokeWidth={1.75} />}
                       Open Exam
                     </Button>
                   ) : (
@@ -917,7 +917,10 @@ export function ExamCreation() {
                   Parameters
                 </h3>
                 <div>
-                  <Label htmlFor="time-limit" className="text-xs">Duration (min)</Label>
+                  <Label htmlFor="time-limit" className="text-xs flex items-center gap-1.5">
+                    <Alarm className="w-3.5 h-3.5 shrink-0" />
+                    Duration (min)
+                  </Label>
                   <Input
                     id="time-limit"
                     type="number"
@@ -930,7 +933,10 @@ export function ExamCreation() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="num-sets" className="text-xs">Question Sets</Label>
+                  <Label htmlFor="num-sets" className="text-xs flex items-center gap-1.5">
+                    <FileStack className="w-3.5 h-3.5 shrink-0" />
+                    Question Sets
+                  </Label>
                   <Input
                     id="num-sets"
                     type="number"
@@ -946,7 +952,10 @@ export function ExamCreation() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="violation-limit" className="text-xs">Violation Limit</Label>
+                    <Label htmlFor="violation-limit" className="text-xs flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      Violation Limit
+                    </Label>
                     {settings.violation_limit <= 2 ? (
                       <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-warning uppercase tracking-wide">
                         <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2.25} />
@@ -1016,15 +1025,21 @@ export function ExamCreation() {
                       />
                     )}
                     <span
-                      className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center text-[11px] tnum flex-shrink-0 mt-0.5 ${
+                      className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                         step > s.id
                           ? "bg-accent-success text-white"
                           : step === s.id
-                          ? "border-2 border-accent-500 text-accent-500 bg-bg-surface"
-                          : "bg-bg-base border border-border text-text-muted"
+                          ? "text-accent-500"
+                          : "text-text-muted"
                       }`}
                     >
-                      {step > s.id ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : s.id}
+                      {step > s.id ? (
+                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                      ) : step === s.id ? (
+                        <s.activeIcon className="w-5 h-5" />
+                      ) : (
+                        <s.dashedIcon className="w-5 h-5" />
+                      )}
                     </span>
                     <div className="min-w-0">
                       <div
@@ -1070,6 +1085,7 @@ export function ExamCreation() {
                         : "bg-transparent border-border text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary"
                     )}
                   >
+                    <f.icon className="w-3.5 h-3.5 shrink-0" />
                     {f.label}
                     <span
                       className={cn(
