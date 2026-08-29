@@ -1,1 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&display=swap');
+/**
+ * Manrope — the app's single typeface, used everywhere (Admin, Student,
+ * Teacher alike; there is no per-role override). Self-hosted rather than
+ * pulled from the Google Fonts CDN so it keeps working offline in the
+ * packaged Electron desktop app.
+ *
+ * It's the variable-font cut (weight axis 200–800) under one 'Manrope'
+ * family name, so ordinary `font-weight: 400/600/700` picks the matching
+ * instance directly — no separate family per weight to juggle. Two
+ * unicode-range subsets (latin + latin-ext) cover standard English text
+ * plus accented Western-European characters; the cyrillic/greek/vietnamese
+ * subsets Google Fonts also ships aren't needed for this app's UI and were
+ * left out to keep the payload small (~40KB total for both files).
+ */
+@font-face {
+  font-family: 'Manrope';
+  src: url('../assets/fonts/manrope/Manrope-Variable.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('../assets/fonts/manrope/Manrope-Variable-ext.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}

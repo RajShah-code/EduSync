@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
-import { IconCalendar as Calendar, IconClock as Clock, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconPlus as Plus, IconTrash as Trash2, IconPencil as Edit3, IconLoader2 as Loader2, IconFileSpreadsheet as FileSpreadsheet, IconDownload as Download, IconUpload as Upload, IconX as X, IconCircleCheck as CheckCircle2, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as Sliders, IconFlask as FlaskConical, IconBuilding as Building, IconCalendarOff as CalendarOff } from "@tabler/icons-react";
+import { IconCalendar as Calendar, IconClock as Clock, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconBellRinging as BellRinging, IconPlus as Plus, IconTrash as Trash2, IconPencil as Edit3, IconLoader2 as Loader2, IconFileSpreadsheet as FileSpreadsheet, IconDownload as Download, IconFileTypeXls as FileTypeXls, IconX as X, IconCircleCheck as CheckCircle2, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as Sliders, IconFlask as FlaskConical, IconDeviceDesktop as DeviceDesktop, IconCalendarSmile as CalendarSmile } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
@@ -593,7 +593,7 @@ export function TimetableSetup() {
               {importing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Upload className="w-4 h-4" />
+                <FileTypeXls className="w-4 h-4" />
               )}
               Import Excel
             </Button>
@@ -633,7 +633,7 @@ export function TimetableSetup() {
               {importing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Upload className="w-4 h-4" />
+                <FileTypeXls className="w-4 h-4" />
               )}
               Import Excel
             </Button>
@@ -838,7 +838,7 @@ export function TimetableSetup() {
                                 className="flex items-center gap-1 text-accent-warning shrink-0"
                                 title="Reminder enabled"
                               >
-                                <Bell className="w-4 h-4" />
+                                <BellRinging className="w-4 h-4" />
                               </span>
                             ) : (
                               <span
@@ -901,7 +901,7 @@ export function TimetableSetup() {
         <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4">
           <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-              <CalendarOff className="w-[18px] h-[18px] text-accent-warning" />
+              <CalendarSmile className="w-[18px] h-[18px] text-accent-warning" />
               Reminder Suppression Dates
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
@@ -1050,7 +1050,7 @@ export function TimetableSetup() {
 
                 <div>
                   <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <Building className="w-4 h-4 text-accent-info" /> Room / Lab
+                    <DeviceDesktop className="w-4 h-4 text-accent-info" /> Room / Lab
                   </label>
                   <Input
                     type="text"
@@ -1168,7 +1168,7 @@ export function TimetableSetup() {
               <div className="bg-bg-base border border-border rounded-lg p-3">
                 <label className="flex items-center justify-between cursor-pointer">
                   <span className="font-medium text-text-primary flex items-center gap-1.5">
-                    <Bell className="w-4 h-4 text-accent-warning" /> Enable Late Warning Email Alert
+                    <BellRinging className="w-4 h-4 text-accent-warning" /> Enable Late Warning Email Alert
                   </span>
                   <input
                     type="checkbox"

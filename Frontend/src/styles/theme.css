@@ -52,10 +52,14 @@
   --teacher-50: #E4E5FF;  --teacher-300: #cda8f0;  --teacher-500: #af74e5;
   --teacher-600: #933fdb; --teacher-700: #6b1fad;  --teacher-900: #27154F;
 
-  /* Typography — Inter / Inter Tight only, no mono anywhere. Digits use
-     tabular-nums (see .tnum) instead of a second typeface. */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Inter Tight', 'Inter', system-ui, -apple-system, sans-serif;
+  /* Typography — Manrope only, one family for both body and display text,
+     no mono anywhere. Digits use tabular-nums (see .tnum) instead of a
+     second typeface. Manrope's own 200–800 weight range already gives
+     enough contrast for hierarchy (400 body, 600 medium, 700 bold below),
+     so a second display face would be a pairing that isn't earning its
+     place rather than one that is. */
+  --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-display: 'Manrope', system-ui, -apple-system, sans-serif;
 
   /* Font Sizes */
   --text-xs: 11px;
@@ -171,38 +175,13 @@
   --primary: var(--accent-700); --ring: var(--accent-500);
   --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 
-  /* Teacher-only typeface — General Sans (see fonts-teacher.css), in place
-     of the app-wide Inter / Inter Tight. Same weight tokens (400 body, 600
-     "medium" for headings/labels/buttons) carry over unchanged since
-     General Sans's variable axis covers 200–700 natively at those exact
-     instances. --font-family-sans/-display are Tailwind's `@theme inline`
-     aliases (font-sans/font-display utilities) — redeclared here too, for
-     the same reason --primary/--ring are redeclared above: an alias
-     resolved only at :root would freeze to Inter and never re-resolve in
-     this nested scope. The explicit font-family below is what actually
-     carries the swap onto plain text (p/span/div/td, anything with no
-     font-family rule of its own) via ordinary inheritance — redeclaring
-     the variable alone would only reach h1–h4/label/button/input, which
-     set font-family explicitly, not the rest of a page's copy. */
-  --font-sans: 'General Sans', 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'General Sans', 'Inter Tight', 'Inter', system-ui, -apple-system, sans-serif;
-  --font-family-sans: var(--font-sans);
-  --font-family-display: var(--font-display);
-  font-family: var(--font-sans);
-}
-/* Teacher side drops true bold (700) — it read heavier than General Sans's
-   own hierarchy needs, and 700 next to this face's open counters tips into
-   shouting. Everywhere `font-bold` is used (this app's, and any shared
-   component's — CodeOutputPanel/WhiteboardCanvas render on both Student's
-   LiveSession and Teacher's LiveBroadcast from the same source, so this
-   has to be a render-time override, not a source edit, to stay teacher-
-   only) is retargeted to 650: a deliberate exact value the variable font
-   makes possible — roughly halfway from Semibold (600, already used for
-   headings/labels/buttons) to Bold, enough to keep emphasized text (stat
-   numbers, names, scores) reading a clear step heavier than a heading,
-   without Bold's shout. Student and Admin keep true 700 untouched. */
-[data-role="teacher"] .font-bold {
-  font-weight: 650;
+  /* Typeface is Manrope app-wide now (see :root) — Teacher no longer needs
+     its own font-family override; it had one (General Sans) before Manrope
+     became the site-wide typeface. Teacher's weight hierarchy is likewise
+     back to the shared default (600 medium / 700 bold, same as
+     Admin/Student) — it was temporarily flattened to a flat 400 cap while
+     on General Sans, whose letterforms clogged at Semibold/Bold; that was
+     specific to that face and didn't carry over once Manrope replaced it. */
 }
 /* Fallback so nothing renders unstyled outside a role scope */
 :root {

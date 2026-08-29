@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cn } from "../components/ui/utils";
 import { StatusBadge } from "./StatusBadge";
-import { IconUser as User } from "@tabler/icons-react";
+import { IconUser as User, IconEyeX as EyeX } from "@tabler/icons-react";
 
 export function StudentTile({ student, onClick, className, children }) {
   const [previewFailed, setPreviewFailed] = useState(false);
@@ -85,7 +85,8 @@ export function StudentTile({ student, onClick, className, children }) {
           </div>
         )}
         {student.status === "idle" && student.idleTime !== undefined && (
-          <div className="text-xs text-accent-warning tnum">
+          <div className="text-xs text-accent-warning tnum flex items-center gap-1">
+            <EyeX className="w-3 h-3 shrink-0" />
             Not Viewing: {Math.floor(student.idleTime / 60)}m {student.idleTime % 60}s
           </div>
         )}

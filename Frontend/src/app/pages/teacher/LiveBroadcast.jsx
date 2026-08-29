@@ -9,7 +9,7 @@ import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
-import { IconPlayerPause as Pause, IconPlayerPlay as Play, IconDeviceDesktop as Monitor, IconDeviceDesktopShare as ScreenShare, IconCircle as Circle, IconDeviceDesktopOff as MonitorStop, IconEye as Eye, IconEyeOff as EyeOff, IconUsers as Users, IconCopy as Copy, IconCheck as Check, IconMicrophone as Mic, IconMicrophoneOff as MicOff, IconCode as Code2, IconX as X, IconLoader2 as Loader2, IconAlertTriangle as TriangleAlert, IconDownload as Download, IconCalendar as Calendar, IconArrowsMaximize as Maximize2, IconArrowsMinimize as Minimize2, IconCircleX as MonitorX, IconInfoCircle as Info, IconLetterT as Type, IconBook as BookOpen, IconLock as Lock, IconMapPin as MapPin } from "@tabler/icons-react";
+import { IconPlayerPause as Pause, IconPlayerPlay as Play, IconDeviceDesktop as Monitor, IconDeviceDesktopOff as MonitorStop, IconScreenShare as ScreenShareOn, IconScreenShareOff as ScreenShareOff, IconLivePhoto as LivePhoto, IconLivePhotoOff as LivePhotoOff, IconEye as Eye, IconEyeOff as EyeOff, IconUsers as Users, IconChalkboard as Chalkboard, IconCopy as Copy, IconCheck as Check, IconMicrophone as Mic, IconMicrophoneOff as MicOff, IconCode as Code2, IconX as X, IconLoader2 as Loader2, IconAlertTriangle as TriangleAlert, IconDownload as Download, IconCalendarStats as CalendarStats, IconMaximize as Maximize, IconMinimize as Minimize, IconInfoCircle as Info, IconBooks as Books, IconBook2 as Book2, IconLock as Lock, IconMapPin as MapPin, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconTypography as Typography, IconSketching as Sketching } from "@tabler/icons-react";
 import {
   Dialog,
   DialogContent,
@@ -49,11 +49,11 @@ const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.45 };
 
 // ─── Language definitions ──────────────────────────────────────────────────────
 const LANGUAGES = [
-  { id: "javascript", label: "JavaScript" },
-  { id: "python", label: "Python" },
-  { id: "html", label: "HTML" },
-  { id: "plaintext", label: "Plain Text" },
-  { id: "whiteboard", label: "Whiteboard" },
+  { id: "javascript", label: "JavaScript", icon: BrandJavascript },
+  { id: "python", label: "Python", icon: BrandPython },
+  { id: "html", label: "HTML", icon: BrandHtml5 },
+  { id: "plaintext", label: "Plain Text", icon: Typography },
+  { id: "whiteboard", label: "Whiteboard", icon: Sketching },
 ];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -2278,7 +2278,7 @@ export function LiveBroadcast() {
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                         aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                       >
-                        {isFullScreen ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
+                        {isFullScreen ? <Minimize className="w-[18px] h-[18px]" /> : <Maximize className="w-[18px] h-[18px]" />}
                       </button>
                     </div>
                   </>
@@ -2292,7 +2292,7 @@ export function LiveBroadcast() {
                         title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                         aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                       >
-                        {isFullScreen ? <Minimize2 className="w-[18px] h-[18px]" /> : <Maximize2 className="w-[18px] h-[18px]" />}
+                        {isFullScreen ? <Minimize className="w-[18px] h-[18px]" /> : <Maximize className="w-[18px] h-[18px]" />}
                       </button>
                     </div>
                     <div className="text-center">
@@ -2326,14 +2326,45 @@ export function LiveBroadcast() {
                       onMouseEnter={openLangMenu}
                       className="rounded-[var(--radius-md)] bg-bg-elevated hover:bg-bg-elevated"
                     >
-                      <SelectValue />
+                      {/* Explicit children, not the default value-mirroring —
+                          the closed trigger always shows the plain language
+                          icon + name, decoupled from the open list's
+                          hover/selected checkmark swap below. */}
+                      <SelectValue>
+                        {(() => {
+                          const current = LANGUAGES.find((l) => l.id === editorLanguage);
+                          return current ? (
+                            <span className="flex items-center gap-1.5">
+                              <current.icon className="w-3.5 h-3.5 shrink-0" />
+                              {current.label}
+                            </span>
+                          ) : null;
+                        })()}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="shadow-[var(--shadow-dropdown)]">
-                      {LANGUAGES.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
-                          {l.label}
-                        </SelectItem>
-                      ))}
+                      {LANGUAGES.map((l) => {
+                        const isSelected = editorLanguage === l.id;
+                        return (
+                          <SelectItem
+                            key={l.id}
+                            value={l.id}
+                            className="group pr-2 [&>span:first-child]:hidden"
+                          >
+                            <span className="flex items-center gap-1.5">
+                              {isSelected ? (
+                                <Check className="w-3.5 h-3.5 shrink-0" />
+                              ) : (
+                                <span className="relative w-3.5 h-3.5 shrink-0">
+                                  <l.icon className="w-3.5 h-3.5 absolute inset-0 group-hover:opacity-0 transition-opacity duration-150" />
+                                  <Check className="w-3.5 h-3.5 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+                                </span>
+                              )}
+                              {l.label}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
 
@@ -2395,7 +2426,7 @@ export function LiveBroadcast() {
                     title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                     aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                   >
-                    {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    {isFullScreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                   </button>
                 </div>
 
@@ -2557,7 +2588,7 @@ export function LiveBroadcast() {
                         }
                         transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                       >
-                        {!calGlyphHidden && <Calendar className="w-[18px] h-[18px] relative shrink-0" />}
+                        {!calGlyphHidden && <CalendarStats className="w-[18px] h-[18px] relative shrink-0" />}
 
                         {/* "Scheduled" / "Idle" — width + opacity on the shared
                             spring. Retracts on a self-hover of the real pill and
@@ -2738,7 +2769,7 @@ export function LiveBroadcast() {
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
                   >
-                    {isScreenSharing ? <MonitorStop className="w-[18px] h-[18px]" /> : <ScreenShare className="w-[18px] h-[18px]" />}
+                    {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px]" /> : <ScreenShareOn className="w-[18px] h-[18px]" />}
                     {isScreenSharing ? "Stop Sharing" : "Start Screen Share"}
                   </button>
 
@@ -2759,7 +2790,11 @@ export function LiveBroadcast() {
                     {isRecording && (
                       <span className="absolute inset-0 rounded-full ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
                     )}
-                    <Circle className={cn("w-[18px] h-[18px]", isRecording && "fill-white")} />
+                    {isRecording ? (
+                      <LivePhotoOff className="w-[18px] h-[18px]" />
+                    ) : (
+                      <LivePhoto className="w-[18px] h-[18px]" />
+                    )}
                     {isRecording ? "Stop Recording" : "Record"}
                   </button>
 
@@ -2797,7 +2832,7 @@ export function LiveBroadcast() {
                     aria-label="End lecture"
                     className="h-11 px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center gap-2 font-medium text-sm shadow-[var(--shadow-modal)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
                   >
-                    <MonitorX className="w-[18px] h-[18px]" />
+                    <MonitorStop className="w-[18px] h-[18px]" />
                     End
                   </button>
                 </div>
@@ -2937,7 +2972,7 @@ export function LiveBroadcast() {
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Type className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                <Books className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Lecture Name
               </label>
               <Input
@@ -2953,7 +2988,7 @@ export function LiveBroadcast() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                <Book2 className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Subject
               </label>
               <Input
@@ -3012,7 +3047,7 @@ export function LiveBroadcast() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                <Chalkboard className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
                 Select Classes
               </label>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -3110,8 +3145,9 @@ export function LiveBroadcast() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmStop}
-              className="bg-accent-critical hover:bg-accent-critical/90 text-white border-0"
+              className="bg-accent-critical hover:bg-accent-critical/90 text-white border-0 flex items-center gap-1.5"
             >
+              <MonitorStop className="w-4 h-4" />
               End
             </AlertDialogAction>
           </AlertDialogFooter>

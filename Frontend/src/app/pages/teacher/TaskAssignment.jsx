@@ -10,7 +10,7 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { StatusBadge } from "../../components/StatusBadge";
 import { TaskStatusModal } from "../../components/TaskStatusModal";
 import { cn } from "../../components/ui/utils";
-import { IconCode as Code, IconClock as Clock, IconSend as Send, IconList as List, IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardText as ClipboardList, IconCircleDot as CircleDot, IconHandStop as Hand, IconCircleCheck as CheckCircle2 } from "@tabler/icons-react";
+import { IconCode as Code, IconClock as Clock, IconSend as Send, IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCopy as ClipboardCopy, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography } from "@tabler/icons-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
@@ -18,11 +18,11 @@ import { getSocket } from "../../store/socket";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 
 const LANGUAGES = [
-  { name: "JavaScript", dot: "#E8C547" },
-  { name: "Python", dot: "#4B8BBE" },
-  { name: "HTML", dot: "#E0723C" },
-  { name: "CSS", dot: "#4D7CE0" },
-  { name: "Plaintext", dot: "#9A9AA2" },
+  { name: "JavaScript", dot: "#E8C547", icon: BrandJavascript },
+  { name: "Python", dot: "#4B8BBE", icon: BrandPython },
+  { name: "HTML", dot: "#E0723C", icon: BrandHtml5 },
+  { name: "CSS", dot: "#4D7CE0", icon: BrandCss3 },
+  { name: "Plaintext", dot: "#9A9AA2", icon: Typography },
 ];
 
 // ── Progress-view pieces — merged in from the old standalone Task Progress
@@ -110,11 +110,11 @@ const PRESENCE_LABEL = {
 };
 
 const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "submitted", label: "Submitted" },
-  { key: "in_progress", label: "In Progress" },
-  { key: "not_started", label: "Not Started" },
-  { key: "doubt", label: "Doubt" },
+  { key: "all", label: "All", icon: LayoutGrid },
+  { key: "submitted", label: "Submitted", icon: ClipboardCheck },
+  { key: "in_progress", label: "In Progress", icon: ClipboardTextIcon },
+  { key: "not_started", label: "Not Started", icon: ClipboardX },
+  { key: "doubt", label: "Doubt", icon: MessageReport },
 ];
 
 function initialsOf(name) {
@@ -194,6 +194,7 @@ function TaskStudentCard({ row, onClick, reduceMotion }) {
       <div className="flex items-center justify-between gap-2 mt-auto pt-3 border-t border-border/60">
         <span className="text-[11px] text-text-secondary truncate">{caption}</span>
         <span className="flex-shrink-0">
+          {row.status === "not_started" && <CircleIcon className="w-4 h-4 text-text-muted" strokeWidth={1.75} />}
           {row.status === "in_progress" && <TypingIndicator reduceMotion={reduceMotion} />}
           {row.status === "doubt" && <DoubtHandIcon reduceMotion={reduceMotion} />}
           {row.status === "submitted" && <SubmittedCheck reduceMotion={reduceMotion} />}
@@ -720,7 +721,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <Send className="w-4 h-4" />
+              <ClipboardListIcon className="w-4 h-4" />
               Assign Task
             </button>
             <button
@@ -732,7 +733,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <List className="w-4 h-4" />
+              <ClipboardCopy className="w-4 h-4" />
               Active Tasks ({tasks.length})
             </button>
           </div>
@@ -802,7 +803,8 @@ export function TaskAssignment() {
             <form onSubmit={handlePushTask} className="space-y-6">
               <div className="p-6 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-5">
                 <div>
-                  <Label htmlFor="title" className="text-text-secondary text-xs font-bold uppercase tracking-wider">
+                  <Label htmlFor="title" className="text-text-secondary text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <FilePencil className="w-3.5 h-3.5 shrink-0" />
                     Task Title
                   </Label>
                   <Input
@@ -818,7 +820,8 @@ export function TaskAssignment() {
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="text-text-secondary text-xs font-bold uppercase tracking-wider">
+                  <Label htmlFor="description" className="text-text-secondary text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <FileDescription className="w-3.5 h-3.5 shrink-0" />
                     Description / Instructions
                   </Label>
                   <Textarea
@@ -834,7 +837,8 @@ export function TaskAssignment() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-text-secondary text-xs font-bold uppercase tracking-wider">
+                  <Label className="text-text-secondary text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <BracketsAngle className="w-3.5 h-3.5 shrink-0" />
                     Allowed Programming Languages
                   </Label>
                   <div className="flex flex-wrap gap-2">
@@ -851,10 +855,7 @@ export function TaskAssignment() {
                               : "border-border text-text-secondary hover:border-border-hover"
                           }`}
                         >
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: lang.dot }}
-                          />
+                          <lang.icon className="w-3.5 h-3.5 shrink-0" style={{ color: lang.dot }} />
                           {lang.name.toUpperCase()}
                         </button>
                       );
@@ -1042,7 +1043,7 @@ export function TaskAssignment() {
             </div>
           ) : tasks.length === 0 ? (
             <div className="py-16 text-center text-text-muted flex flex-col items-center justify-center gap-2">
-              <ClipboardList className="w-14 h-14 text-text-muted" />
+              <ClipboardListIcon className="w-14 h-14 text-text-muted" />
               <h2 className="text-base font-semibold text-text-primary">No Session Tasks</h2>
               <p className="text-xs text-text-secondary">Assign a coding task to monitor student progress.</p>
             </div>
@@ -1119,6 +1120,7 @@ export function TaskAssignment() {
                                   : "bg-transparent border-border text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary"
                               )}
                             >
+                              <f.icon className="w-3.5 h-3.5 shrink-0" />
                               {f.label}
                               <span
                                 className={cn(
@@ -1134,14 +1136,14 @@ export function TaskAssignment() {
                       </div>
 
                       <div className="flex items-center gap-3 flex-shrink-0">
-                        <StatusBadge status={activeTask.status === "active" ? "live" : "locked"} />
                         {activeTask.status === "active" && (
                           <Button
                             onClick={() => handleMoveOnTask(activeTask.id)}
                             size="sm"
                             variant="outline"
-                            className="border-accent-critical text-accent-critical hover:bg-accent-critical/10 text-xs h-8 px-3 font-semibold"
+                            className="border-accent-critical text-accent-critical hover:bg-accent-critical/10 text-xs h-8 px-3 font-semibold flex items-center gap-1.5"
                           >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
                             End Task
                           </Button>
                         )}
