@@ -190,6 +190,20 @@
   --font-family-display: var(--font-display);
   font-family: var(--font-sans);
 }
+/* Teacher side drops true bold (700) — it read heavier than General Sans's
+   own hierarchy needs, and 700 next to this face's open counters tips into
+   shouting. Everywhere `font-bold` is used (this app's, and any shared
+   component's — CodeOutputPanel/WhiteboardCanvas render on both Student's
+   LiveSession and Teacher's LiveBroadcast from the same source, so this
+   has to be a render-time override, not a source edit, to stay teacher-
+   only) is retargeted to 650: a deliberate exact value the variable font
+   makes possible — roughly halfway from Semibold (600, already used for
+   headings/labels/buttons) to Bold, enough to keep emphasized text (stat
+   numbers, names, scores) reading a clear step heavier than a heading,
+   without Bold's shout. Student and Admin keep true 700 untouched. */
+[data-role="teacher"] .font-bold {
+  font-weight: 650;
+}
 /* Fallback so nothing renders unstyled outside a role scope */
 :root {
   --accent-50: var(--student-50); --accent-300: var(--student-300);
