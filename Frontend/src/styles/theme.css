@@ -170,6 +170,25 @@
   --accent-600: var(--teacher-600); /* #933fdb — secondary / add / selected-nav */
   --primary: var(--accent-700); --ring: var(--accent-500);
   --chart-1: var(--accent-500); --accent-info: var(--accent-500);
+
+  /* Teacher-only typeface — General Sans (see fonts-teacher.css), in place
+     of the app-wide Inter / Inter Tight. Same weight tokens (400 body, 600
+     "medium" for headings/labels/buttons) carry over unchanged since
+     General Sans's variable axis covers 200–700 natively at those exact
+     instances. --font-family-sans/-display are Tailwind's `@theme inline`
+     aliases (font-sans/font-display utilities) — redeclared here too, for
+     the same reason --primary/--ring are redeclared above: an alias
+     resolved only at :root would freeze to Inter and never re-resolve in
+     this nested scope. The explicit font-family below is what actually
+     carries the swap onto plain text (p/span/div/td, anything with no
+     font-family rule of its own) via ordinary inheritance — redeclaring
+     the variable alone would only reach h1–h4/label/button/input, which
+     set font-family explicitly, not the rest of a page's copy. */
+  --font-sans: 'General Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'General Sans', 'Inter Tight', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-sans: var(--font-sans);
+  --font-family-display: var(--font-display);
+  font-family: var(--font-sans);
 }
 /* Fallback so nothing renders unstyled outside a role scope */
 :root {
