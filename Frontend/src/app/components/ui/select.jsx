@@ -30,7 +30,7 @@ function SelectTrigger({ className, size = "default", children, ...props }) {
         "data-[placeholder]:text-text-muted",
         "data-[size=default]:h-8 data-[size=sm]:h-7",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5 [&_svg:not([class*='text-'])]:text-text-muted",
+        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-text-muted",
         className,
       )}
       {...props}
@@ -93,14 +93,14 @@ function SelectItem({ className, children, ...props }) {
         "data-[highlighted]:bg-bg-surface-3",
         "data-[state=checked]:text-accent-info",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
     >
-      <span className="absolute right-2 flex size-3.5 items-center justify-center">
+      <span className="absolute right-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="size-3.5 text-accent-info" />
+          <CheckIcon className="size-4 text-accent-info" />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -125,7 +125,7 @@ function SelectScrollUpButton({ className, ...props }) {
       className={cn("flex cursor-default items-center justify-center py-1 text-text-muted", className)}
       {...props}
     >
-      <ChevronUpIcon className="size-3.5" />
+      <ChevronUpIcon className="size-4" />
     </SelectPrimitive.ScrollUpButton>
   );
 }
@@ -137,7 +137,7 @@ function SelectScrollDownButton({ className, ...props }) {
       className={cn("flex cursor-default items-center justify-center py-1 text-text-muted", className)}
       {...props}
     >
-      <ChevronDownIcon className="size-3.5" />
+      <ChevronDownIcon className="size-4" />
     </SelectPrimitive.ScrollDownButton>
   );
 }
