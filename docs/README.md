@@ -23,7 +23,7 @@ Welcome to the documentation repository for **EduSync** and **EduSync Connect**.
 EduSync consists of two distinct products sharing a unified backend and database:
 
 1. **EduSync (Core Platform)**:
-   - **Frontend**: `Frontend/` (Vite + React + Tailwind + Monaco Editor + WebRTC + Electron desktop wrapper).
+   - **Frontend**: `Frontend/` (Vite + React + Tailwind + Tabler Icons + Monaco Editor + WebRTC + Electron desktop wrapper).
    - **Purpose**: Live in-lab coding sessions, real-time screen/audio broadcasting, anti-cheat monitoring, dynamic tasks, and automated attendance.
 2. **EduSync Connect (Companion Platform)**:
    - **Frontend**: `Connect-Frontend/` (Vite + React + Tailwind + Lucide Icons + Socket.io).

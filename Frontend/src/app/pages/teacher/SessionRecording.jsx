@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { IconVideo as Video, IconFolderOpen as FolderOpen, IconPlayerPlay as PlayCircle, IconTrash as Trash2, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconClock as Clock, IconDatabase as HardDrive, IconDownload as Download } from "@tabler/icons-react";
+import { IconVideo as Video, IconFolderOpen as FolderOpen, IconPlayerPlay as PlayCircle, IconTrash as Trash2, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconDownload as Download } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
 import PageShell from "../../components/PageShell";
 import { getRecordings, deleteRecording } from "../../utils/recordingsStore";
@@ -15,6 +15,15 @@ function formatDuration(seconds) {
   return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 }
 
+// Coarser "1h 20m" form for the running total in the page header — the per-row
+// column stays MM:SS.
+function formatClock(seconds) {
+  const s = Math.max(0, Math.round(seconds || 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 function formatSize(bytes) {
   if (!bytes) return "—";
   const units = ["B", "KB", "MB", "GB"];
@@ -26,6 +35,12 @@ function formatSize(bytes) {
   }
   return `${val.toFixed(unitIdx === 0 ? 0 : 1)} ${units[unitIdx]}`;
 }
+
+// How the file was saved, as a short chip. "electron" kept a real path,
+// "fsa" kept a File System Access handle, everything else went through a
+// plain browser download with no reference retained.
+const KIND_LABEL = { electron: "Desktop", fsa: "Saved file" };
+const kindLabel = (kind) => KIND_LABEL[kind] || "Download";
 
 export function SessionRecording() {
   const [recordings, setRecordings] = useState([]);
@@ -40,6 +55,15 @@ export function SessionRecording() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  const totalBytes = useMemo(
+    () => recordings.reduce((sum, r) => sum + (r.sizeBytes || 0), 0),
+    [recordings],
+  );
+  const totalSeconds = useMemo(
+    () => recordings.reduce((sum, r) => sum + (r.durationSeconds || 0), 0),
+    [recordings],
+  );
 
   const totalPages = Math.max(1, Math.ceil(recordings.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -102,21 +126,44 @@ export function SessionRecording() {
   return (
     <PageShell>
       <div className="border-b border-border pb-4">
-        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
-          Session Recordings
-        </h1>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
+            Session Recordings
+          </h1>
+          {recordings.length > 0 && (
+            <div className="flex items-center gap-x-2.5 text-xs text-text-muted ml-auto">
+              <span aria-hidden>|</span>
+              <span>
+                <span className="tnum font-semibold text-text-secondary">{recordings.length}</span>{" "}
+                recording{recordings.length === 1 ? "" : "s"}
+              </span>
+              <span aria-hidden>|</span>
+              <span>
+                <span className="tnum font-semibold text-text-secondary">{formatSize(totalBytes)}</span>{" "}
+                total
+              </span>
+              <span aria-hidden>|</span>
+              <span>
+                <span className="tnum font-semibold text-text-secondary">{formatClock(totalSeconds)}</span>{" "}
+                recorded
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       {recordings.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Video className="w-12 h-12 text-text-muted" strokeWidth={1.75} />
-          <p className="text-base font-medium text-text-primary">
-            No recordings yet
-          </p>
-          <p className="text-sm text-text-muted text-center max-w-sm">
-            Start a recording from Live Broadcast — once you stop it, it'll show up here with a
-            way to find it again.
-          </p>
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+          <div className="w-14 h-14 rounded-full bg-bg-elevated border border-border flex items-center justify-center">
+            <Video className="w-6 h-6 text-text-muted" strokeWidth={1.75} />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-base font-medium text-text-primary">No recordings yet</p>
+            <p className="text-sm text-text-muted max-w-sm mx-auto">
+              Start a recording from Live Broadcast. When you stop it, it shows up here with a way to
+              reopen it.
+            </p>
+          </div>
         </div>
       ) : (
         <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
@@ -130,10 +177,10 @@ export function SessionRecording() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Saved
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Duration
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Size
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
@@ -145,34 +192,36 @@ export function SessionRecording() {
                 {paginated.map((rec) => (
                   <tr key={rec.id} className="table-row-hover transition-colors">
                     <td className="px-4 py-3">
-                      <div className="text-sm text-text-primary font-medium truncate max-w-xs" title={rec.filename}>
+                      <div
+                        className="text-sm text-text-primary font-medium truncate max-w-xs"
+                        title={rec.filename}
+                      >
                         {rec.filename}
                       </div>
-                      {(rec.lectureName || rec.subject) && (
-                        <div className="text-xs text-text-muted mt-0.5 truncate max-w-xs">
-                          {rec.lectureName}
-                          {rec.lectureName && rec.subject ? " · " : ""}
-                          {rec.subject}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="inline-flex items-center rounded-[var(--radius-sm)] border border-border bg-bg-elevated px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-text-secondary shrink-0">
+                          {kindLabel(rec.kind)}
+                        </span>
+                        {(rec.lectureName || rec.subject) && (
+                          <span className="text-xs text-text-muted truncate max-w-[16rem]">
+                            {rec.lectureName}
+                            {rec.lectureName && rec.subject ? " · " : ""}
+                            {rec.subject}
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-text-secondary tnum">
+                    <td className="px-4 py-3 text-sm text-text-secondary tnum whitespace-nowrap">
                       {new Date(rec.startedAt).toLocaleString(undefined, {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })}
                     </td>
-                    <td className="px-4 py-3 text-sm text-text-secondary tnum">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
-                        {formatDuration(rec.durationSeconds)}
-                      </span>
+                    <td className="px-4 py-3 text-sm text-text-secondary tnum text-right">
+                      {formatDuration(rec.durationSeconds)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-text-secondary tnum">
-                      <span className="inline-flex items-center gap-1.5">
-                        <HardDrive className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.75} />
-                        {formatSize(rec.sizeBytes)}
-                      </span>
+                    <td className="px-4 py-3 text-sm text-text-secondary tnum text-right">
+                      {formatSize(rec.sizeBytes)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
@@ -207,13 +256,17 @@ export function SessionRecording() {
                             {openingId === rec.id ? "Opening..." : "Open Recording"}
                           </Button>
                         ) : (
-                          <span
-                            className="inline-flex items-center gap-1.5 text-xs text-text-muted italic"
-                            title="Saved via your browser's downloads — no file reference is kept for these"
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            disabled
+                            title="Saved through your browser's downloads — EduSync keeps no file reference for these"
+                            className="text-xs text-text-muted"
                           >
                             <Download className="w-3.5 h-3.5" strokeWidth={1.75} />
-                            Check Downloads
-                          </span>
+                            In Downloads
+                          </Button>
                         )}
                         <button
                           type="button"

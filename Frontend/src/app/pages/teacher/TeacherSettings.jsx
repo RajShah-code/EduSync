@@ -21,6 +21,7 @@ export function TeacherSettings() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
   const fetchUser = async () => {
@@ -117,6 +118,7 @@ export function TeacherSettings() {
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
+        setShowPasswords(false);
       } else {
         toast.error(data.message || "Failed to update password");
       }
@@ -130,24 +132,30 @@ export function TeacherSettings() {
   if (loading) {
     return (
       <PageShell>
-        <div className="border-b border-border pb-4">
+        <div className="border-b border-border pb-4 space-y-2">
           <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-72" />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[0, 1].map((i) => (
-            <div key={i} className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
-              <div className="space-y-1.5">
-                <Skeleton className="h-4 w-28" />
-                <Skeleton className="h-3 w-48" />
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-20" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {[0, 1].map((i) => (
+              <div key={i} className="bg-bg-surface border border-border rounded-lg p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <div className="space-y-3 pt-2">
+                  <Skeleton className="h-9 w-full" />
+                  <Skeleton className="h-9 w-full" />
+                  {i === 1 && <Skeleton className="h-9 w-full" />}
+                </div>
+                <Skeleton className="h-9 w-32" />
               </div>
-              <div className="space-y-3 pt-2">
-                <Skeleton className="h-9 w-full" />
-                <Skeleton className="h-9 w-full" />
-              </div>
-              <Skeleton className="h-9 w-28" />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+        <Skeleton className="h-16 w-full rounded-lg" />
       </PageShell>
     );
   }
@@ -155,7 +163,9 @@ export function TeacherSettings() {
   if (loadError) {
     return (
       <PageShell>
-        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight border-b border-border pb-4">Settings</h1>
+        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight border-b border-border pb-4">
+          Settings
+        </h1>
         <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
           <p className="text-sm text-text-secondary">Couldn't load your profile settings.</p>
           <button
@@ -173,27 +183,38 @@ export function TeacherSettings() {
   return (
     <PageShell>
       <div className="border-b border-border pb-4">
-        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">Settings</h1>
+        <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
+          Settings
+        </h1>
+        <p className="text-sm text-text-secondary mt-1">
+          Manage your account profile and password.
+        </p>
       </div>
 
-      {/* Profile & Change Password — two genuinely equivalent, independent
-          forms, paired side-by-side on wide viewports (matches
-          StudentSettings.jsx's identical structural decision). */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        <Card className="bg-bg-surface border-border h-full flex flex-col justify-between">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-              <User className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Profile
-            </CardTitle>
-            <CardDescription className="text-xs text-text-secondary">
-              View and update your profile information.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col justify-between">
-            <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
-              <div className="space-y-4">
+      {/* Account — Profile & Change Password are two genuinely equivalent,
+          independent forms, paired side-by-side on wide viewports. They size to
+          their own content (no forced equal-height stretch, which left the
+          two-field Profile card with an empty gap above its button). */}
+      <section className="space-y-3">
+        <h2 className="text-[length:var(--text-xs)] font-semibold uppercase tracking-[0.08em] text-text-secondary">
+          Account
+        </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <Card className="bg-bg-surface border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+                <User className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Profile
+              </CardTitle>
+              <CardDescription className="text-xs text-text-secondary">
+                Your display name and sign-in email.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
                 <div className="space-y-1.5">
-                  <Label htmlFor="name" className="text-xs font-semibold text-text-primary">Name</Label>
+                  <Label htmlFor="name" className="text-xs font-semibold text-text-primary">
+                    Name
+                  </Label>
                   <Input
                     id="name"
                     type="text"
@@ -204,7 +225,9 @@ export function TeacherSettings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs font-semibold text-text-primary">Email</Label>
+                  <Label htmlFor="email" className="text-xs font-semibold text-text-primary">
+                    Email
+                  </Label>
                   <Input
                     id="email"
                     type="email"
@@ -212,38 +235,41 @@ export function TeacherSettings() {
                     disabled
                     className="opacity-70 cursor-not-allowed text-text-muted"
                   />
+                  <p className="text-xs text-text-muted">
+                    Your email is managed by your administrator.
+                  </p>
                 </div>
-              </div>
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  disabled={savingProfile}
-                  className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium text-xs"
-                >
-                  {savingProfile ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium"
+                  >
+                    {savingProfile ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-bg-surface border-border h-full flex flex-col justify-between">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-              <Key className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Change Password
-            </CardTitle>
-            <CardDescription className="text-xs text-text-secondary">
-              Update your account password.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 flex flex-col justify-between">
-            <form onSubmit={handleChangePassword} className="space-y-4 max-w-md flex-1 flex flex-col justify-between">
-              <div className="space-y-4">
+          <Card className="bg-bg-surface border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
+                <Key className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Change Password
+              </CardTitle>
+              <CardDescription className="text-xs text-text-secondary">
+                Use at least 8 characters. You'll stay signed in on this device.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
                 <div className="space-y-1.5">
-                  <Label htmlFor="currentPassword" className="text-xs font-semibold text-text-primary">Current Password</Label>
+                  <Label htmlFor="currentPassword" className="text-xs font-semibold text-text-primary">
+                    Current Password
+                  </Label>
                   <Input
                     id="currentPassword"
-                    type="password"
+                    type={showPasswords ? "text" : "password"}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Enter current password"
@@ -251,10 +277,12 @@ export function TeacherSettings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="newPassword" className="text-xs font-semibold text-text-primary">New Password</Label>
+                  <Label htmlFor="newPassword" className="text-xs font-semibold text-text-primary">
+                    New Password
+                  </Label>
                   <Input
                     id="newPassword"
-                    type="password"
+                    type={showPasswords ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter new password (min 8 characters)"
@@ -262,59 +290,66 @@ export function TeacherSettings() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword" className="text-xs font-semibold text-text-primary">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-xs font-semibold text-text-primary">
+                    Confirm New Password
+                  </Label>
                   <Input
                     id="confirmPassword"
-                    type="password"
+                    type={showPasswords ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm new password"
                     required
                   />
                 </div>
-              </div>
-              <div className="pt-2">
-                <Button
-                  type="submit"
-                  disabled={savingPassword}
-                  className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium text-xs"
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords((v) => !v)}
+                  className="text-xs font-medium text-accent-500 hover:text-accent-300 transition-colors rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                 >
-                  {savingPassword ? "Updating..." : "Update Password"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+                  {showPasswords ? "Hide passwords" : "Show passwords"}
+                </button>
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    disabled={savingPassword}
+                    className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium"
+                  >
+                    {savingPassword ? "Updating..." : "Update Password"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
-      {/* App Tour — the Weekly Timetable shortcut card that used to live
-          here was removed as redundant: Timetable already has its own
-          sidebar nav entry ("Timetable" → /teacher/timetable), so Settings
-          doesn't need a second entry point to the same destination. */}
-      <Card className="bg-bg-surface border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-            <HelpCircle className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> App Tour
-          </CardTitle>
-          <CardDescription className="text-xs text-text-secondary">
-            Replay the guided feature tour for your role.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-text-secondary">
-            Need a refresher on how to navigate EduSync? Launch the interactive spotlight tour anytime.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/teacher", { state: { startTour: true } })}
-            className="flex items-center gap-1.5 text-xs"
-          >
-            <HelpCircle className="h-3.5 w-3.5 text-accent-500" strokeWidth={1.75} />
-            Restart Tour
-          </Button>
-        </CardContent>
-      </Card>
+      {/* App Tour — deliberately a lighter, compact row rather than a third
+          full Card, so it reads as a secondary utility below the account
+          settings instead of competing with them. The Weekly Timetable
+          shortcut that used to live here was removed as redundant (Timetable
+          has its own sidebar nav entry). */}
+      <div className="flex items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] px-5 py-4">
+        <div className="flex items-start gap-3">
+          <HelpCircle className="h-4 w-4 text-text-muted mt-0.5 shrink-0" strokeWidth={1.75} />
+          <div>
+            <p className="text-sm font-medium text-text-primary">App tour</p>
+            <p className="text-xs text-text-secondary mt-0.5">
+              Replay the guided walkthrough of EduSync for your role.
+            </p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/teacher", { state: { startTour: true } })}
+          className="text-xs shrink-0"
+        >
+          <HelpCircle className="h-3.5 w-3.5 text-accent-500" strokeWidth={1.75} />
+          Restart tour
+        </Button>
+      </div>
     </PageShell>
   );
 }

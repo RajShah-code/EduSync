@@ -46,7 +46,8 @@ EduSync is a real-time collaborative learning platform designed to streamline hy
 
 ### Frontend
 * **Framework**: React.js (built on Vite)
-* **Styles**: Modern TailwindCSS & Material UI (MUI) icons
+* **Styles**: Modern TailwindCSS
+* **Icons**: Tabler Icons (`@tabler/icons-react`) — the single icon library across the app
 * **Code Editor**: Monaco Editor (React wrapper)
 * **Signaling**: WebRTC API
 * **State Management**: React Router
@@ -98,13 +99,10 @@ cd ../Frontend
 npm install
 ```
 
-### Step 5: Initialize Database Schema
-Run the initialization script once in the `Backend` directory to automatically construct the database tables in correct dependency order:
-```bash
-# In the Backend directory
-npm run db:init
-```
-*(This creates `classes`, `users`, `sessions`, `session_classes`, `attendance`, `tasks`, `submissions`, and `doubt_requests` tables).*
+### Step 5: Database Schema
+No manual step is required. The full schema is created and migrated automatically on every backend boot by `Backend/config/dbSetup.js` (idempotent `CREATE TABLE IF NOT EXISTS` + `ADD COLUMN IF NOT EXISTS` for every table — `classes`, `users`, `sessions`, `session_classes`, `attendance`, `timetable_entries`, `timetable_exceptions`, `tasks`, `submissions`, `doubt_requests`, `exams` + related, `subjects`, `subject_allotments`, `app_allowlist_entries`, and the `connect_*` tables).
+
+> The `npm run db:init` script is **deprecated** — it points at `scripts/initDB.js`, an outdated partial schema kept for reference only. Don't run it; just start the backend.
 
 ### Step 6: Start Servers
 Start the dev servers for both components:
