@@ -66,7 +66,7 @@ export function Login() {
           onClick={() => navigate("/")}
           className="mb-6 flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-[18px] h-[18px]" />
           Back to home
         </button>
 
@@ -85,7 +85,7 @@ export function Login() {
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-accent-critical/10 border border-accent-critical/20 rounded-[var(--radius-md)] flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-accent-critical mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-[18px] h-[18px] text-accent-critical mt-0.5 flex-shrink-0" />
               <p className="text-sm text-accent-critical">{error}</p>
             </div>
           )}
@@ -129,9 +129,9 @@ export function Login() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary focus:outline-none"
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <EyeOff className="w-[18px] h-[18px]" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-[18px] h-[18px]" />
                   )}
                 </button>
               </div>

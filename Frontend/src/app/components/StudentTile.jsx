@@ -56,7 +56,7 @@ export function StudentTile({ student, onClick, className, children }) {
             onError={() => setPreviewFailed(true)}
           />
         ) : (
-          <User className="w-8 h-8 text-text-muted" aria-hidden="true" />
+          <User className="w-9 h-9 text-text-muted" aria-hidden="true" />
         )}
         {getOverlay() && (
           <div className={cn("absolute inset-0", getOverlay())} />

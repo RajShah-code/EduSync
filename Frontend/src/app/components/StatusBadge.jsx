@@ -65,7 +65,7 @@ export function StatusBadge({ status, className }) {
         }}
       >
         {cfg.livePulse ? null : (
-          <Icon className="w-3 h-3" strokeWidth={2.25} />
+          <Icon className="w-3.5 h-3.5" strokeWidth={2.25} />
         )}
       </span>
       <span>{cfg.label}</span>

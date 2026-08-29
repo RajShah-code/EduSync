@@ -72,9 +72,9 @@ function EmptyState({ hasQuery }) {
     <div className="col-span-full flex flex-col items-center justify-center py-24 gap-4">
       <div className="w-16 h-16 rounded-full bg-bg-surface border border-border flex items-center justify-center">
         {hasQuery ? (
-          <Search className="w-7 h-7 text-text-muted" strokeWidth={1.75} />
+          <Search className="w-8 h-8 text-text-muted" strokeWidth={1.75} />
         ) : (
-          <Wifi className="w-7 h-7 text-text-muted" strokeWidth={1.75} />
+          <Wifi className="w-8 h-8 text-text-muted" strokeWidth={1.75} />
         )}
       </div>
       <div className="text-center">
@@ -129,7 +129,7 @@ export function SessionList() {
       {/* Page header */}
       <div className="space-y-1" data-tour="sessions-header">
         <div className="flex items-center gap-3">
-          <Radio className="w-5 h-5 text-accent-info" strokeWidth={1.75} />
+          <Radio className="w-[22px] h-[22px] text-accent-info" strokeWidth={1.75} />
           <h1 className="text-xl font-semibold text-text-primary">
             Live Sessions
           </h1>
@@ -146,7 +146,7 @@ export function SessionList() {
 
       {/* Search input */}
       <div className="relative" data-tour="sessions-search">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" strokeWidth={1.75} />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-muted pointer-events-none" strokeWidth={1.75} />
         <Input
           id="session-search"
           type="text"

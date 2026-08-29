@@ -197,7 +197,7 @@ export function StudentSettings() {
         <Card className="bg-bg-surface border-border h-full flex flex-col justify-between" data-tour="settings-profile">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-              <User className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Profile
+              <User className="h-[18px] w-[18px] text-accent-500" strokeWidth={1.75} /> Profile
             </CardTitle>
             <CardDescription className="text-xs text-text-secondary">
               View and update your profile information.
@@ -245,7 +245,7 @@ export function StudentSettings() {
         <Card className="bg-bg-surface border-border h-full flex flex-col justify-between" data-tour="settings-password">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-              <Key className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Change Password
+              <Key className="h-[18px] w-[18px] text-accent-500" strokeWidth={1.75} /> Change Password
             </CardTitle>
             <CardDescription className="text-xs text-text-secondary">
               Update your account password.
@@ -306,7 +306,7 @@ export function StudentSettings() {
       <Card className="bg-bg-surface border-border" data-tour="settings-tour-replay">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-            <HelpCircle className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> App Tour
+            <HelpCircle className="h-[18px] w-[18px] text-accent-500" strokeWidth={1.75} /> App Tour
           </CardTitle>
           <CardDescription className="text-xs text-text-secondary">
             Replay the guided feature tour for your role.
@@ -322,7 +322,7 @@ export function StudentSettings() {
             onClick={() => navigate("/student", { state: { startTour: true } })}
             className="flex items-center gap-1.5 text-xs"
           >
-            <HelpCircle className="h-3.5 w-3.5 text-accent-500" strokeWidth={1.75} />
+            <HelpCircle className="h-4 w-4 text-accent-500" strokeWidth={1.75} />
             Restart Tour
           </Button>
         </CardContent>

@@ -52,7 +52,7 @@ function TypingIndicator({ reduceMotion }) {
 
 function DoubtHandIcon({ reduceMotion }) {
   if (reduceMotion) {
-    return <Hand className="w-3.5 h-3.5 text-accent-warning" strokeWidth={2.25} />;
+    return <Hand className="w-4 h-4 text-accent-warning" strokeWidth={2.25} />;
   }
   return (
     <motion.div
@@ -60,14 +60,14 @@ function DoubtHandIcon({ reduceMotion }) {
       animate={{ rotate: [0, -14, 0, -14, 0] }}
       transition={{ duration: 1.4, repeat: Infinity, repeatDelay: 2.2, ease: "easeInOut" }}
     >
-      <Hand className="w-3.5 h-3.5 text-accent-warning" strokeWidth={2.25} />
+      <Hand className="w-4 h-4 text-accent-warning" strokeWidth={2.25} />
     </motion.div>
   );
 }
 
 function SubmittedCheck({ reduceMotion }) {
   if (reduceMotion) {
-    return <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" strokeWidth={2.25} />;
+    return <CheckCircle2 className="w-4 h-4 text-accent-success" strokeWidth={2.25} />;
   }
   return (
     <motion.div
@@ -75,7 +75,7 @@ function SubmittedCheck({ reduceMotion }) {
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 420, damping: 16 }}
     >
-      <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" strokeWidth={2.25} />
+      <CheckCircle2 className="w-4 h-4 text-accent-success" strokeWidth={2.25} />
     </motion.div>
   );
 }
@@ -637,7 +637,7 @@ export function TaskAssignment() {
     return (
       <div className="h-full flex items-center justify-center bg-bg-base">
         <div className="text-center p-8">
-          <AlertCircle className="w-16 h-16 text-text-muted mx-auto mb-4" />
+          <AlertCircle className="w-[72px] h-[72px] text-text-muted mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-text-primary mb-1">
             No Active Session
           </h2>
@@ -720,7 +720,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <Send className="w-3.5 h-3.5" />
+              <Send className="w-4 h-4" />
               Assign Task
             </button>
             <button
@@ -732,7 +732,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <List className="w-3.5 h-3.5" />
+              <List className="w-4 h-4" />
               Active Tasks ({tasks.length})
             </button>
           </div>
@@ -747,7 +747,7 @@ export function TaskAssignment() {
                 className="p-4 bg-accent-warning/10 border border-accent-warning/20 rounded-[var(--radius-lg)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
               >
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-accent-warning mt-0.5 flex-shrink-0" />
+                  <AlertTriangle className="w-[22px] h-[22px] text-accent-warning mt-0.5 flex-shrink-0" />
                   <div>
                     <h4 className="text-sm font-bold text-text-primary">
                       Time Expired: {alert.title}
@@ -919,7 +919,7 @@ export function TaskAssignment() {
                   <>Assigning Task...</>
                 ) : (
                   <>
-                    <Send className="w-4 h-4 mr-2" />
+                    <Send className="w-[18px] h-[18px] mr-2" />
                     Assign & Broadcast Task to Students
                   </>
                 )}
@@ -984,7 +984,7 @@ export function TaskAssignment() {
 
                         {formData.hasTimeLimit && (
                           <div className="flex items-center gap-1.5 text-accent-warning flex-shrink-0 bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded-[var(--radius-sm)]">
-                            <Clock className="w-3.5 h-3.5" />
+                            <Clock className="w-4 h-4" />
                             <span className="tnum text-xs font-semibold">
                               {String(formData.timeLimitMinutes).padStart(2, "0")}:00
                             </span>
@@ -1002,7 +1002,7 @@ export function TaskAssignment() {
                       </div>
 
                       <div className="p-6 bg-bg-base rounded-[var(--radius-md)] border border-border border-dashed flex flex-col items-center justify-center gap-2">
-                        <Code className="w-7 h-7 text-text-muted" />
+                        <Code className="w-8 h-8 text-text-muted" />
                         <p className="text-xs text-text-muted text-center">
                           Student's Monaco code workspace renders here
                         </p>
@@ -1042,7 +1042,7 @@ export function TaskAssignment() {
             </div>
           ) : tasks.length === 0 ? (
             <div className="py-16 text-center text-text-muted flex flex-col items-center justify-center gap-2">
-              <ClipboardList className="w-12 h-12 text-text-muted" />
+              <ClipboardList className="w-14 h-14 text-text-muted" />
               <h2 className="text-base font-semibold text-text-primary">No Session Tasks</h2>
               <p className="text-xs text-text-secondary">Assign a coding task to monitor student progress.</p>
             </div>
@@ -1077,7 +1077,7 @@ export function TaskAssignment() {
                     )}
                   >
                     <CircleDot
-                      className={cn("w-3 h-3 flex-shrink-0", isLive ? "text-accent-live" : "text-text-muted")}
+                      className={cn("w-3.5 h-3.5 flex-shrink-0", isLive ? "text-accent-live" : "text-text-muted")}
                       strokeWidth={2.5}
                     />
                     <span className="max-w-[180px] truncate">#{t.sequence_order}: {t.title}</span>

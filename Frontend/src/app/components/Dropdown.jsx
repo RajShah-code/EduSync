@@ -61,14 +61,14 @@ export default function Dropdown({
         )}
       >
         <span className="flex items-center gap-2 truncate">
-          {Icon && <Icon className="w-3.5 h-3.5 text-accent-info shrink-0" strokeWidth={1.75} />}
+          {Icon && <Icon className="w-4 h-4 text-accent-info shrink-0" strokeWidth={1.75} />}
           <span className={cn("truncate", !selected && "text-text-muted")}>
             {selected ? selected.label : placeholder}
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "w-3.5 h-3.5 text-text-muted shrink-0 transition-transform duration-150",
+            "w-4 h-4 text-text-muted shrink-0 transition-transform duration-150",
             isOpen && "rotate-180"
           )}
           strokeWidth={1.75}
@@ -104,7 +104,7 @@ export default function Dropdown({
                 )}
               >
                 <span className="truncate">{opt.label}</span>
-                {isSelected && <Check className="w-3.5 h-3.5 shrink-0" strokeWidth={2.25} />}
+                {isSelected && <Check className="w-4 h-4 shrink-0" strokeWidth={2.25} />}
               </button>
             );
           })}

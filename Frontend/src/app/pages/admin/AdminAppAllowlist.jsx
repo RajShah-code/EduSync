@@ -151,13 +151,13 @@ export function AdminAppAllowlist() {
             disabled={classes.length === 0}
             className="bg-accent-info hover:bg-accent-info/90 text-white"
           >
-            <Plus className="w-4 h-4" strokeWidth={1.75} />
+            <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
             Add App
           </Button>
         </div>
 
         <div className="p-3 bg-accent-info/5 border border-accent-info/20 rounded-[var(--radius-lg)] flex items-start gap-2.5 text-xs text-text-secondary">
-          <Info className="w-4 h-4 text-accent-info shrink-0 mt-0.5" />
+          <Info className="w-[18px] h-[18px] text-accent-info shrink-0 mt-0.5" />
           <p>
             Enter the exact process/executable name (e.g. <span className="font-mono text-text-primary">chrome.exe</span>,{" "}
             <span className="font-mono text-text-primary">Code.exe</span>). A class with no entries below still allows core Windows
@@ -168,7 +168,7 @@ export function AdminAppAllowlist() {
 
         <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] flex flex-col md:flex-row gap-4 items-center flex-shrink-0">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" strokeWidth={1.75} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-muted" strokeWidth={1.75} />
             <input
               type="text"
               placeholder="Search app or class..."
@@ -204,7 +204,7 @@ export function AdminAppAllowlist() {
             </div>
           ) : filteredEntries.length === 0 ? (
             <div className="py-20 text-center flex flex-col items-center justify-center text-text-muted">
-              <ShieldCheck className="w-8 h-8 mb-2" />
+              <ShieldCheck className="w-9 h-9 mb-2" />
               <p className="text-sm font-semibold text-text-primary">No allow-list entries found</p>
               <p className="text-xs text-text-secondary mt-1">
                 {entries.length === 0
@@ -239,7 +239,7 @@ export function AdminAppAllowlist() {
                           className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-accent-critical transition-colors"
                           title="Remove from allow-list"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -261,7 +261,7 @@ export function AdminAppAllowlist() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -334,7 +334,7 @@ export function AdminAppAllowlist() {
           <div className="bg-bg-surface border border-border rounded-xl shadow-2xl max-w-sm w-full flex flex-col p-6 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
               <h3 className="text-lg font-semibold text-accent-critical flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-[22px] h-[22px]" />
                 <span>Remove Allowed App?</span>
               </h3>
               <button
@@ -342,7 +342,7 @@ export function AdminAppAllowlist() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 

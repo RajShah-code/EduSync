@@ -115,12 +115,12 @@ export function SubmissionReview() {
             size="sm"
             className="text-xs text-text-secondary hover:text-text-primary px-2"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
+            <ChevronLeft className="w-[18px] h-[18px] mr-1" />
             Back to Progress
           </Button>
           <div className="h-4 w-px bg-border" />
           <h1 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
-            <Award className="w-4 h-4 text-accent-info" />
+            <Award className="w-[18px] h-[18px] text-accent-info" />
             Submission Reviews
           </h1>
         </div>
@@ -132,7 +132,7 @@ export function SubmissionReview() {
           className="h-8 text-xs font-semibold"
           disabled={loading}
         >
-          <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-4 h-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
@@ -171,7 +171,7 @@ export function SubmissionReview() {
         </div>
       ) : error && submissions.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
-          <Code className="w-12 h-12 text-text-muted" />
+          <Code className="w-14 h-14 text-text-muted" />
           <p className="text-base font-semibold text-text-primary">
             Couldn't load submissions
           </p>
@@ -189,7 +189,7 @@ export function SubmissionReview() {
         </div>
       ) : submissions.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
-          <Code className="w-12 h-12 text-text-muted" />
+          <Code className="w-14 h-14 text-text-muted" />
           <p className="text-base font-semibold text-text-primary">
             No Submissions Found
           </p>
@@ -264,7 +264,7 @@ export function SubmissionReview() {
                       </span>
                       {selectedSubmission.submitted_at && (
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-text-muted" />
+                          <Clock className="w-4 h-4 text-text-muted" />
                           Finalized: {new Date(selectedSubmission.submitted_at).toLocaleString()}
                         </span>
                       )}
@@ -330,7 +330,7 @@ export function SubmissionReview() {
 
                   {selectedSubmission.score !== null && (
                     <div className="flex items-center gap-2 text-accent-success font-semibold text-sm bg-accent-success/5 border border-accent-success/20 px-3 py-1.5 rounded-[var(--radius-sm)]">
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-[18px] h-[18px]" />
                       <span>Graded: {selectedSubmission.score} / 100</span>
                     </div>
                   )}
@@ -339,7 +339,7 @@ export function SubmissionReview() {
               </div>
             ) : (
               <div className="flex-grow flex flex-col items-center justify-center text-text-muted text-xs italic gap-1.5">
-                <FileCode className="w-8 h-8 text-text-muted" />
+                <FileCode className="w-9 h-9 text-text-muted" />
                 Select a student submission to review code and assign grades.
               </div>
             )}

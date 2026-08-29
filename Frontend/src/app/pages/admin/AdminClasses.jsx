@@ -131,7 +131,7 @@ export function AdminClasses() {
       {/* Add Class Card */}
       <div className="p-6 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
-          <BookOpen className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+          <BookOpen className="w-[18px] h-[18px] text-accent-info" strokeWidth={1.75} />
           <span>Add New Class</span>
         </h3>
         <form onSubmit={handleAddClass} className="flex gap-3">
@@ -144,7 +144,7 @@ export function AdminClasses() {
             className="flex-1 bg-bg-base border border-border rounded-[var(--radius-md)] px-4 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-info transition-colors"
           />
           <Button type="submit" className="bg-accent-info hover:bg-accent-info/90 text-white">
-            <Plus className="w-4 h-4" strokeWidth={1.75} />
+            <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
             Create Class
           </Button>
         </form>
@@ -201,14 +201,14 @@ export function AdminClasses() {
                             className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success rounded border border-accent-success/20 transition-all"
                             title="Save"
                           >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="w-4 h-4" />
                           </button>
                           <button
                             onClick={handleCancelEdit}
                             className="p-1.5 bg-white/5 hover:bg-white/10 rounded border border-border transition-all"
                             title="Cancel"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-4 h-4" />
                           </button>
                         </div>
                       ) : (
@@ -217,7 +217,7 @@ export function AdminClasses() {
                           className="p-1.5 hover:bg-white/5 rounded text-text-secondary hover:text-text-primary transition-colors inline-flex items-center gap-1"
                           title="Rename Class"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className="w-4 h-4" />
                           <span className="text-xs">Rename</span>
                         </button>
                       )}

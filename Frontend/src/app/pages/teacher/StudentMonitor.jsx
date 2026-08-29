@@ -106,7 +106,7 @@ export function StudentMonitor() {
     return (
       <div className="h-full flex items-center justify-center bg-bg-base">
         <div className="text-center p-8">
-          <Monitor className="w-16 h-16 text-text-muted mx-auto mb-4" />
+          <Monitor className="w-[72px] h-[72px] text-text-muted mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-text-primary mb-1">
             No Active Session
           </h2>
@@ -134,7 +134,7 @@ export function StudentMonitor() {
         <div className="flex items-center gap-3">
           {/* Filter Buttons */}
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-text-secondary" />
+            <Filter className="w-[18px] h-[18px] text-text-secondary" />
             <button
               onClick={() => setFilter("all")}
               aria-pressed={filter === "all"}
@@ -185,7 +185,7 @@ export function StudentMonitor() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <Grid2x2 className="w-4 h-4" />
+              <Grid2x2 className="w-[18px] h-[18px]" />
             </button>
             <button
               type="button"
@@ -198,7 +198,7 @@ export function StudentMonitor() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <Grid3x3 className="w-4 h-4" />
+              <Grid3x3 className="w-[18px] h-[18px]" />
             </button>
           </div>
         </div>
@@ -230,7 +230,7 @@ export function StudentMonitor() {
           </div>
         ) : students.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 py-16">
-            <Monitor className="w-12 h-12 text-text-muted" />
+            <Monitor className="w-14 h-14 text-text-muted" />
             <p className="text-base font-medium text-text-primary">
               No students connected yet
             </p>

@@ -204,7 +204,7 @@ export function Attendance() {
         </div>
         {attendance.length > 0 && (
           <Button onClick={handleExportCSV} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-[18px] h-[18px] mr-2" />
             Export CSV
           </Button>
         )}
@@ -212,7 +212,7 @@ export function Attendance() {
 
       {sessions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <CalendarCheck className="w-12 h-12 text-text-muted" />
+          <CalendarCheck className="w-14 h-14 text-text-muted" />
           <p className="text-base font-medium text-text-primary">
             No attendance records yet
           </p>
@@ -339,9 +339,9 @@ export function Attendance() {
                               className="px-2.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 font-semibold text-xs h-7 flex items-center gap-1"
                             >
                               {actionLoading === record.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               ) : (
-                                <Check className="w-3.5 h-3.5 mr-1" />
+                                <Check className="w-4 h-4 mr-1" />
                               )}
                               Mark Present
                             </Button>

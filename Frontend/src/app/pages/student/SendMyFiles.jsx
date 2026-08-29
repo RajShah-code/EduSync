@@ -320,7 +320,7 @@ export function SendMyFiles() {
       {/* Header */}
       <div className="border-b border-border pb-4">
         <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-          <Mail className="w-6 h-6 text-accent-500" strokeWidth={1.75} />
+          <Mail className="w-7 h-7 text-accent-500" strokeWidth={1.75} />
           Email My Files / Folder
         </h1>
         <p className="text-sm text-text-secondary mt-1">
@@ -331,7 +331,7 @@ export function SendMyFiles() {
       {/* Unsupported Browser Alert */}
       {!isSupported && (
         <div className="p-4 bg-accent-warning/10 border border-accent-warning/30 rounded-[var(--radius-md)] flex items-start gap-3 text-text-primary">
-          <AlertTriangle className="w-5 h-5 text-accent-warning flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+          <AlertTriangle className="w-[22px] h-[22px] text-accent-warning flex-shrink-0 mt-0.5" strokeWidth={1.75} />
           <div>
             <h4 className="font-semibold text-accent-warning">Browser Not Supported</h4>
             <p className="text-sm text-text-secondary mt-1">
@@ -356,7 +356,7 @@ export function SendMyFiles() {
             </label>
             {/* Subtle Limits Info Line */}
             <div className="text-xs text-text-secondary flex items-center gap-1.5 font-medium" data-tour="sendfiles-limits">
-              <Info className="w-3.5 h-3.5 text-accent-500 flex-shrink-0" strokeWidth={1.75} />
+              <Info className="w-4 h-4 text-accent-500 flex-shrink-0" strokeWidth={1.75} />
               <span className="tnum">Max size: 20MB per send &bull; Up to 5 sends per hour</span>
             </div>
           </div>
@@ -369,7 +369,7 @@ export function SendMyFiles() {
               disabled={!isSupported || isZipping || isSending}
               className="bg-accent-700 hover:bg-accent-700/90 text-white font-medium flex items-center gap-2"
             >
-              <FolderOpen className="w-4 h-4" strokeWidth={1.75} />
+              <FolderOpen className="w-[18px] h-[18px]" strokeWidth={1.75} />
               Select Folder
             </Button>
 
@@ -381,7 +381,7 @@ export function SendMyFiles() {
               variant="outline"
               className="border-border text-text-primary hover:bg-bg-base font-medium flex items-center gap-2"
             >
-              <File className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
+              <File className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
               Select File(s)
             </Button>
 
@@ -394,7 +394,7 @@ export function SendMyFiles() {
                 variant="ghost"
                 className="text-accent-critical hover:bg-accent-critical/10 text-xs font-semibold flex items-center gap-1.5 h-9"
               >
-                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <Trash2 className="w-4 h-4" strokeWidth={1.75} />
                 Clear All
               </Button>
             )}
@@ -412,7 +412,7 @@ export function SendMyFiles() {
               {dirHandle && (
                 <div className="flex items-center justify-between py-1 px-2.5 bg-bg-surface border border-border rounded-[var(--radius-sm)] text-text-primary">
                   <span className="flex items-center gap-2 truncate font-medium">
-                    <FolderOpen className="w-4 h-4 text-accent-500 flex-shrink-0" strokeWidth={1.75} />
+                    <FolderOpen className="w-[18px] h-[18px] text-accent-500 flex-shrink-0" strokeWidth={1.75} />
                     <span className="truncate">Folder: {dirHandle.name}</span>
                   </span>
                   <button
@@ -423,7 +423,7 @@ export function SendMyFiles() {
                     aria-label="Remove folder from selection"
                     className="p-1 text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                   >
-                    <X className="w-4 h-4" strokeWidth={1.75} />
+                    <X className="w-[18px] h-[18px]" strokeWidth={1.75} />
                   </button>
                 </div>
               )}
@@ -436,7 +436,7 @@ export function SendMyFiles() {
                   style={{ animationDelay: `${Math.min(idx, 6) * 40}ms` }}
                 >
                   <span className="flex items-center gap-2 truncate font-medium">
-                    <File className="w-4 h-4 text-text-muted flex-shrink-0" strokeWidth={1.75} />
+                    <File className="w-[18px] h-[18px] text-text-muted flex-shrink-0" strokeWidth={1.75} />
                     <span className="truncate">{fh.name}</span>
                   </span>
                   <button
@@ -447,7 +447,7 @@ export function SendMyFiles() {
                     aria-label={`Remove ${fh.name} from selection`}
                     className="p-1 text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                   >
-                    <X className="w-4 h-4" strokeWidth={1.75} />
+                    <X className="w-[18px] h-[18px]" strokeWidth={1.75} />
                   </button>
                 </div>
               ))}
@@ -460,7 +460,7 @@ export function SendMyFiles() {
           <div className="p-4 bg-accent-500/10 border border-accent-500/30 rounded-[var(--radius-md)] space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-accent-500">
               <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+                <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
                 Compressing files...
               </span>
               <span className="tnum">{zipProgressPercent}%</span>
@@ -485,7 +485,7 @@ export function SendMyFiles() {
           >
             <div className="flex items-center gap-3">
               <FileArchive
-                className={`w-5 h-5 ${zipSizeMB > 20 ? "text-accent-critical" : "text-accent-success"}`}
+                className={`w-[22px] h-[22px] ${zipSizeMB > 20 ? "text-accent-critical" : "text-accent-success"}`}
                 strokeWidth={1.75}
               />
               <div>
@@ -517,7 +517,7 @@ export function SendMyFiles() {
           <div className="p-4 bg-accent-500/10 border border-accent-500/30 rounded-[var(--radius-md)] space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-accent-500">
               <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+                <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
                 Sending email via SMTP...
               </span>
               <span className="tnum">{sendProgressPercent}%</span>
@@ -553,7 +553,7 @@ export function SendMyFiles() {
                   emailError ? "border-accent-critical focus-visible:ring-accent-critical" : ""
                 }`}
               />
-              <Mail className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" strokeWidth={1.75} />
+              <Mail className="w-[18px] h-[18px] text-text-muted absolute left-3 top-1/2 -translate-y-1/2" strokeWidth={1.75} />
             </div>
             {emailError && <p className="text-xs text-accent-critical mt-1">{emailError}</p>}
           </div>
@@ -570,12 +570,12 @@ export function SendMyFiles() {
           >
             {isSending ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+                <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
                 <span className="tnum">Sending Email ({sendProgressPercent}%)...</span>
               </>
             ) : (
               <>
-                <Send className="w-4 h-4" strokeWidth={1.75} />
+                <Send className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 Email Me the Link
               </>
             )}
@@ -585,7 +585,7 @@ export function SendMyFiles() {
         {/* Success Message Banner */}
         {sendSuccess && (
           <div className="p-4 bg-accent-success/10 border border-accent-success/30 rounded-[var(--radius-md)] flex items-center gap-2 text-accent-success badge-enter">
-            <CheckCircle2 className="w-4 h-4 flex-shrink-0" strokeWidth={1.75} />
+            <CheckCircle2 className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.75} />
             <span className="text-sm font-medium">{sendSuccess}</span>
           </div>
         )}

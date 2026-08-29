@@ -583,7 +583,7 @@ export function ExamScreen() {
       <div className="h-screen bg-bg-base flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-5">
           <div className="w-16 h-16 mx-auto rounded-full bg-accent-success/10 border-2 border-accent-success/30 flex items-center justify-center">
-            <FileText className="w-8 h-8 text-accent-success" strokeWidth={1.75} />
+            <FileText className="w-9 h-9 text-accent-success" strokeWidth={1.75} />
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-text-primary mb-2">Exam Submitted</h1>
@@ -615,9 +615,9 @@ export function ExamScreen() {
     return (
       <div className="h-screen bg-bg-base flex flex-col items-center justify-center gap-4 p-6">
         {loadingQuestions ? (
-          <Loader2 className="w-12 h-12 text-accent-info animate-spin" strokeWidth={1.75} />
+          <Loader2 className="w-14 h-14 text-accent-info animate-spin" strokeWidth={1.75} />
         ) : (
-          <ShieldCheck className="w-12 h-12 text-accent-info" strokeWidth={1.75} />
+          <ShieldCheck className="w-14 h-14 text-accent-info" strokeWidth={1.75} />
         )}
         <h1 className="text-xl font-semibold text-text-primary">
           {loadingQuestions ? "Loading exam..." : "Waiting for exam to begin"}
@@ -628,7 +628,7 @@ export function ExamScreen() {
             : "Your teacher will start the exam shortly. Stay on this page. Do not switch tabs or exit fullscreen once the exam begins."}
         </p>
         <div className="mt-4 p-3 bg-bg-surface border border-border rounded-[var(--radius-md)] flex items-center gap-1.5 text-xs text-text-muted">
-          <Clock className="w-3.5 h-3.5" strokeWidth={1.75} />
+          <Clock className="w-4 h-4" strokeWidth={1.75} />
           <span>Exam ID: <span className="tnum">{examId}</span></span>
         </div>
       </div>
@@ -650,7 +650,7 @@ export function ExamScreen() {
         disabled={currentIdx === 0}
         className="text-text-secondary hover:text-text-primary"
       >
-        <ChevronLeft className="w-4 h-4 mr-2" strokeWidth={1.75} />
+        <ChevronLeft className="w-[18px] h-[18px] mr-2" strokeWidth={1.75} />
         Previous
       </Button>
 
@@ -661,7 +661,7 @@ export function ExamScreen() {
           className="bg-accent-success hover:bg-accent-success/90 text-white font-semibold px-6"
         >
           {submitting ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={1.75} />
+            <Loader2 className="w-[18px] h-[18px] mr-2 animate-spin" strokeWidth={1.75} />
           ) : null}
           Submit Exam
         </Button>
@@ -672,7 +672,7 @@ export function ExamScreen() {
           className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-surface-3"
         >
           Next
-          <ChevronRight className="w-4 h-4 ml-2" strokeWidth={1.75} />
+          <ChevronRight className="w-[18px] h-[18px] ml-2" strokeWidth={1.75} />
         </Button>
       )}
     </div>
@@ -687,7 +687,7 @@ export function ExamScreen() {
       <div className="h-16 px-6 bg-bg-surface border-b border-border flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5 text-xs text-text-muted">
-            <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <ShieldCheck className="w-4 h-4" strokeWidth={1.75} />
             Secure mode
           </span>
           {!hasFocus && (
@@ -717,7 +717,7 @@ export function ExamScreen() {
             )}
           >
             <Clock
-              className={cn("w-4 h-4", isCritical ? "text-accent-critical" : "text-text-muted")}
+              className={cn("w-[18px] h-[18px]", isCritical ? "text-accent-critical" : "text-text-muted")}
               strokeWidth={1.75}
             />
             {secondsRemaining !== null && (
@@ -837,17 +837,17 @@ export function ExamScreen() {
                     >
                       {pyodideLoading[question.id] ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
+                          <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
                           <span>Loading Pyodide...</span>
                         </>
                       ) : isRunning[question.id] ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.75} />
+                          <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
                           <span>Running...</span>
                         </>
                       ) : (
                         <>
-                          <Play className="w-3.5 h-3.5" strokeWidth={1.75} />
+                          <Play className="w-4 h-4" strokeWidth={1.75} />
                           <span>Run Code</span>
                         </>
                       )}
@@ -907,7 +907,7 @@ export function ExamScreen() {
                         className="text-[11px] text-text-muted hover:text-text-primary px-2 py-1 rounded-[var(--radius-sm)] hover:bg-bg-surface-3 transition-colors flex items-center gap-1"
                         title="Clear console output"
                       >
-                        <X className="w-3 h-3" strokeWidth={1.75} />
+                        <X className="w-3.5 h-3.5" strokeWidth={1.75} />
                         Clear
                       </button>
                       <div className="relative" ref={dockMenuRef}>
@@ -919,9 +919,9 @@ export function ExamScreen() {
                           aria-haspopup="true"
                           aria-expanded={isDockMenuOpen}
                         >
-                          <DockIcon className="w-3 h-3 text-accent-500" />
+                          <DockIcon className="w-3.5 h-3.5 text-accent-500" />
                           Dock {DOCK_OPTIONS.find((o) => o.value === consoleDockPosition)?.label}
-                          <ChevronDown className="w-3 h-3 text-text-muted" />
+                          <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
                         </button>
 
                         {isDockMenuOpen && (
@@ -939,7 +939,7 @@ export function ExamScreen() {
                                   consoleDockPosition === opt.value ? "text-accent-500 font-semibold" : "text-text-primary"
                                 )}
                               >
-                                <opt.icon className="w-3.5 h-3.5" />
+                                <opt.icon className="w-4 h-4" />
                                 Dock {opt.label}
                               </button>
                             ))}
@@ -1145,7 +1145,7 @@ export function ExamScreen() {
           }}
         >
           <div className="w-16 h-16 rounded-full bg-accent-warning/10 border-2 border-accent-warning/30 flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 text-accent-warning" strokeWidth={1.75} />
+            <ShieldCheck className="w-9 h-9 text-accent-warning" strokeWidth={1.75} />
           </div>
           <p className="text-text-primary font-semibold">Fullscreen required</p>
           <p className="text-text-secondary text-sm">
@@ -1192,7 +1192,7 @@ export function ExamScreen() {
               className="bg-accent-success hover:bg-accent-success/90 text-white border-0"
             >
               {submitting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={1.75} />
+                <Loader2 className="w-[18px] h-[18px] mr-2 animate-spin" strokeWidth={1.75} />
               ) : null}
               Submit Exam
             </AlertDialogAction>

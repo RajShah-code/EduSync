@@ -203,7 +203,7 @@ export function TeacherSettings() {
           <Card className="bg-bg-surface border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-                <User className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Profile
+                <User className="h-[18px] w-[18px] text-accent-500" strokeWidth={1.75} /> Profile
               </CardTitle>
               <CardDescription className="text-xs text-text-secondary">
                 Your display name and sign-in email.
@@ -255,7 +255,7 @@ export function TeacherSettings() {
           <Card className="bg-bg-surface border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base font-semibold text-text-primary">
-                <Key className="h-4 w-4 text-accent-500" strokeWidth={1.75} /> Change Password
+                <Key className="h-[18px] w-[18px] text-accent-500" strokeWidth={1.75} /> Change Password
               </CardTitle>
               <CardDescription className="text-xs text-text-secondary">
                 Use at least 8 characters. You'll stay signed in on this device.
@@ -331,7 +331,7 @@ export function TeacherSettings() {
           has its own sidebar nav entry). */}
       <div className="flex items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] px-5 py-4">
         <div className="flex items-start gap-3">
-          <HelpCircle className="h-4 w-4 text-text-muted mt-0.5 shrink-0" strokeWidth={1.75} />
+          <HelpCircle className="h-[18px] w-[18px] text-text-muted mt-0.5 shrink-0" strokeWidth={1.75} />
           <div>
             <p className="text-sm font-medium text-text-primary">App tour</p>
             <p className="text-xs text-text-secondary mt-0.5">
@@ -346,7 +346,7 @@ export function TeacherSettings() {
           onClick={() => navigate("/teacher", { state: { startTour: true } })}
           className="text-xs shrink-0"
         >
-          <HelpCircle className="h-3.5 w-3.5 text-accent-500" strokeWidth={1.75} />
+          <HelpCircle className="h-4 w-4 text-accent-500" strokeWidth={1.75} />
           Restart tour
         </Button>
       </div>

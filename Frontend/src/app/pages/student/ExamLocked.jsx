@@ -39,7 +39,7 @@ export function ExamLocked({
       <div className="page-enter max-w-md w-full text-center space-y-6">
         {/* Lock Icon */}
         <div className="w-20 h-20 mx-auto rounded-full bg-accent-locked/10 border-2 border-accent-locked/30 flex items-center justify-center">
-          <ShieldOff className="w-10 h-10 text-accent-locked" strokeWidth={1.75} />
+          <ShieldOff className="w-11 h-11 text-accent-locked" strokeWidth={1.75} />
         </div>
 
         {/* Heading */}

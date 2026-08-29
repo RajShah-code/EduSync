@@ -482,7 +482,7 @@ export function AdminUsers() {
             variant="outline"
             title="Restart App Tour"
           >
-            <HelpCircle className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+            <HelpCircle className="w-[18px] h-[18px] text-accent-info" strokeWidth={1.75} />
             Restart Tour
           </Button>
           <Button
@@ -490,7 +490,7 @@ export function AdminUsers() {
             variant="outline"
             title="Download Excel Import Template"
           >
-            <Download className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+            <Download className="w-[18px] h-[18px] text-accent-info" strokeWidth={1.75} />
             Download Template
           </Button>
           <Button
@@ -502,7 +502,7 @@ export function AdminUsers() {
             variant="outline"
             title="Bulk Import Users via Excel"
           >
-            <FileSpreadsheet className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+            <FileSpreadsheet className="w-[18px] h-[18px] text-accent-info" strokeWidth={1.75} />
             Bulk Import
           </Button>
           <Button
@@ -510,7 +510,7 @@ export function AdminUsers() {
             onClick={() => setIsCreateModalOpen(true)}
             className="bg-accent-info hover:bg-accent-info/90 text-white"
           >
-            <UserPlus className="w-4 h-4" strokeWidth={1.75} />
+            <UserPlus className="w-[18px] h-[18px]" strokeWidth={1.75} />
             Provision User
           </Button>
         </div>
@@ -520,7 +520,7 @@ export function AdminUsers() {
       <div data-tour="admin-filters" className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] flex flex-col md:flex-row gap-4 items-center flex-shrink-0">
         {/* Search */}
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" strokeWidth={1.75} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-muted" strokeWidth={1.75} />
           <input
             type="text"
             placeholder="Search by name or email/username..."
@@ -632,7 +632,7 @@ export function AdminUsers() {
                           title="Edit Details"
                           aria-label={`Edit details for ${user.name || "this user"}`}
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-[18px] h-[18px]" />
                         </button>
                         <button
                           type="button"
@@ -641,7 +641,7 @@ export function AdminUsers() {
                           title="Reset Password"
                           aria-label={`Reset password for ${user.name || "this user"}`}
                         >
-                          <Key className="w-4 h-4" />
+                          <Key className="w-[18px] h-[18px]" />
                         </button>
                         <button
                           type="button"
@@ -650,7 +650,7 @@ export function AdminUsers() {
                           title="Delete User"
                           aria-label={`Delete ${user.name || "this user"}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-[18px] h-[18px]" />
                         </button>
                       </div>
                     </td>
@@ -676,7 +676,7 @@ export function AdminUsers() {
                 className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                 aria-label="Previous page"
               >
-                <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
               </button>
               <span className="text-xs tnum text-text-primary px-2 min-w-[4.5rem] text-center">
                 Page {safePage} / {totalPages}
@@ -688,7 +688,7 @@ export function AdminUsers() {
                 className="p-1.5 rounded-[var(--radius-sm)] border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                 aria-label="Next page"
               >
-                <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <ChevronRight className="w-4 h-4" strokeWidth={1.75} />
               </button>
             </div>
           </div>
@@ -709,7 +709,7 @@ export function AdminUsers() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -845,7 +845,7 @@ export function AdminUsers() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -948,7 +948,7 @@ export function AdminUsers() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -997,7 +997,7 @@ export function AdminUsers() {
           <div className="bg-bg-surface border border-border rounded-xl shadow-2xl max-w-sm w-full flex flex-col p-6 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
               <h3 className="text-lg font-semibold text-accent-critical flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-[22px] h-[22px]" />
                 <span>Confirm Deletion</span>
               </h3>
               <button
@@ -1005,7 +1005,7 @@ export function AdminUsers() {
                 className="p-1 hover:bg-white/5 rounded-lg text-text-secondary hover:text-text-primary"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -1044,7 +1044,7 @@ export function AdminUsers() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[300] flex items-center justify-center p-4">
           <div className="bg-bg-surface border border-accent-success/35 rounded-xl shadow-2xl max-w-md w-full flex flex-col p-6 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center gap-3 text-accent-success mb-3 border-b border-border/80 pb-3">
-              <UserCheck className="w-6 h-6" />
+              <UserCheck className="w-7 h-7" />
               <h3 className="text-lg font-semibold text-text-primary">
                 Generated Login Credentials
               </h3>
@@ -1072,7 +1072,7 @@ export function AdminUsers() {
                       title="Copy Password"
                       aria-label="Copy password to clipboard"
                     >
-                      <Copy className="w-4 h-4" />
+                      <Copy className="w-[18px] h-[18px]" />
                     </button>
                   </div>
                 </div>
@@ -1083,7 +1083,7 @@ export function AdminUsers() {
                   onClick={() => setPasswordDisplay(null)}
                   className="w-full md:w-auto px-6 py-2.5 bg-accent-success hover:bg-accent-success/90 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2"
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className="w-[18px] h-[18px]" />
                   <span>I have saved the credentials</span>
                 </button>
               </div>
@@ -1099,7 +1099,7 @@ export function AdminUsers() {
             <div className="p-5 border-b border-border flex items-center justify-between sticky top-0 bg-bg-surface z-10">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-accent-info/10 border border-accent-info/20 rounded-lg">
-                  <FileSpreadsheet className="w-5 h-5 text-accent-info" />
+                  <FileSpreadsheet className="w-[22px] h-[22px] text-accent-info" />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-text-primary">Bulk User Import</h2>
@@ -1111,7 +1111,7 @@ export function AdminUsers() {
                 className="p-1 text-text-muted hover:text-text-primary rounded-lg transition-colors"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -1128,7 +1128,7 @@ export function AdminUsers() {
                   onClick={handleDownloadTemplate}
                   className="px-3.5 py-1.5 bg-white/5 hover:bg-white/10 text-text-primary border border-border rounded-lg text-xs font-medium flex items-center gap-1.5 shrink-0 transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5 text-accent-info" />
+                  <Download className="w-4 h-4 text-accent-info" />
                   <span>Template</span>
                 </button>
               </div>
@@ -1151,7 +1151,7 @@ export function AdminUsers() {
                     id="bulk-excel-upload"
                   />
                   <label htmlFor="bulk-excel-upload" className="cursor-pointer flex flex-col items-center gap-2">
-                    <Upload className="w-8 h-8 text-text-muted" />
+                    <Upload className="w-9 h-9 text-text-muted" />
                     <span className="text-sm font-medium text-text-primary">
                       {bulkFile ? bulkFile.name : "Click to browse or drop .xlsx file here"}
                     </span>
@@ -1182,7 +1182,7 @@ export function AdminUsers() {
                     </>
                   ) : (
                     <>
-                      <Upload className="w-4 h-4" />
+                      <Upload className="w-[18px] h-[18px]" />
                       <span>Upload & Import Users</span>
                     </>
                   )}
@@ -1222,11 +1222,11 @@ export function AdminUsers() {
                             <td className="p-2.5">
                               {res.status === "created" ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-success/10 text-accent-success border border-accent-success/20">
-                                  <Check className="w-3 h-3" /> Created
+                                  <Check className="w-3.5 h-3.5" /> Created
                                 </span>
                               ) : (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent-critical/10 text-accent-critical border border-accent-critical/20">
-                                  <X className="w-3 h-3" /> Failed
+                                  <X className="w-3.5 h-3.5" /> Failed
                                 </span>
                               )}
                             </td>

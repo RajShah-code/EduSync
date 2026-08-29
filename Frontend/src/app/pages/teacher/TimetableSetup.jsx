@@ -566,7 +566,7 @@ export function TimetableSetup() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5">
         <div>
           <h1 className="text-[length:var(--text-xl)] font-bold text-text-primary tracking-tight flex items-center gap-2.5">
-            <Calendar className="w-6 h-6 text-accent-info" />
+            <Calendar className="w-7 h-7 text-accent-info" />
             Weekly Timetable
           </h1>
           <p className="text-[length:var(--text-sm)] text-text-secondary mt-1">
@@ -579,7 +579,7 @@ export function TimetableSetup() {
             onClick={() => handleOpenAddModal(defaultDay)}
             className="bg-accent-info hover:bg-accent-info/90 text-white font-medium flex items-center gap-2 cursor-pointer text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-[18px] h-[18px]" />
             Add Lecture
           </Button>
 
@@ -591,9 +591,9 @@ export function TimetableSetup() {
               className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {importing ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Upload className="w-3.5 h-3.5" />
+                <Upload className="w-4 h-4" />
               )}
               Import Excel
             </Button>
@@ -603,7 +603,7 @@ export function TimetableSetup() {
               onClick={handleDownloadTemplate}
               className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-4 h-4" />
               Download Template
             </Button>
           </div>
@@ -615,7 +615,7 @@ export function TimetableSetup() {
         <div className="bg-accent-info/10 border border-accent-info/20 rounded-[var(--radius-lg)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
             <div className="p-2.5 rounded-lg bg-accent-info/20 border border-accent-info/30 text-accent-info shrink-0 mt-0.5 sm:mt-0">
-              <Calendar className="w-5 h-5" />
+              <Calendar className="w-[22px] h-[22px]" />
             </div>
             <div>
               <p className="text-[length:var(--text-base)] text-text-primary font-medium">
@@ -631,9 +631,9 @@ export function TimetableSetup() {
               className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-xs)] h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {importing ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Upload className="w-3.5 h-3.5" />
+                <Upload className="w-4 h-4" />
               )}
               Import Excel
             </Button>
@@ -751,7 +751,7 @@ export function TimetableSetup() {
                         className="group/cell w-full h-full min-h-28 rounded-[var(--radius-md)] border border-dashed border-transparent hover:border-accent-info/40 hover:bg-accent-info/5 transition-[border-color,background-color] duration-150 ease-[var(--ease-out-strong)] flex flex-col items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                       >
                         <div className="w-6 h-6 rounded-full border border-border/60 opacity-0 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100 flex items-center justify-center text-text-muted group-hover/cell:text-accent-info group-hover/cell:border-accent-info/40 transition-[opacity,color,border-color] duration-150">
-                          <Plus className="w-3.5 h-3.5" />
+                          <Plus className="w-4 h-4" />
                         </div>
                         <span className="text-[length:var(--text-xs)] font-medium text-text-muted opacity-0 group-hover/cell:opacity-100 group-focus-visible/cell:opacity-100 group-hover/cell:text-accent-info transition-opacity duration-150">
                           Add Lecture
@@ -781,7 +781,7 @@ export function TimetableSetup() {
                               title="Edit lecture"
                               aria-label="Edit lecture"
                             >
-                              <Edit3 className="w-3.5 h-3.5" />
+                              <Edit3 className="w-4 h-4" />
                             </button>
                             <button
                               onClick={(e) => handleDeleteEntry(entry.id, e)}
@@ -789,16 +789,16 @@ export function TimetableSetup() {
                               title="Delete lecture"
                               aria-label="Delete lecture"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
 
                           {/* 1st line: subject */}
                           <div className="font-semibold text-text-primary text-[length:var(--text-sm)] flex items-center gap-1.5 pr-12 min-w-0">
                             {entry.session_type === "lab" ? (
-                              <FlaskConical className="w-3.5 h-3.5 text-accent-live shrink-0" />
+                              <FlaskConical className="w-4 h-4 text-accent-live shrink-0" />
                             ) : (
-                              <BookOpen className="w-3.5 h-3.5 text-accent-info shrink-0" />
+                              <BookOpen className="w-4 h-4 text-accent-info shrink-0" />
                             )}
                             {shouldAbbreviateSubject(entry.subject) ? (
                               <Tooltip>
@@ -826,7 +826,7 @@ export function TimetableSetup() {
                           {/* 3rd line: class / room & reminder indicator */}
                           <div className="flex items-start justify-between text-[length:var(--text-xs)] text-text-secondary pt-1.5 border-t border-border/40 gap-1">
                             <div className="flex items-start gap-1 min-w-0">
-                              <School className="w-3 h-3 text-text-muted shrink-0 mt-0.5" />
+                              <School className="w-3.5 h-3.5 text-text-muted shrink-0 mt-0.5" />
                               <span className="break-words leading-tight">
                                 {entry.class_name || "Class #" + entry.class_id}
                                 {entry.room && ` • ${entry.room}`}
@@ -838,15 +838,15 @@ export function TimetableSetup() {
                                 className="flex items-center gap-1 text-accent-warning shrink-0"
                                 title="Reminder enabled"
                               >
-                                <Bell className="w-3.5 h-3.5" />
+                                <Bell className="w-4 h-4" />
                               </span>
                             ) : (
                               <span
                                 className="relative inline-flex items-center justify-center shrink-0"
                                 title="Reminder disabled"
                               >
-                                <Bell className="w-3.5 h-3.5 text-text-muted" />
-                                <X className="absolute -bottom-0.5 -right-0.5 w-2 h-2 text-text-muted stroke-[3]" />
+                                <Bell className="w-4 h-4 text-text-muted" />
+                                <X className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-text-muted stroke-[3]" />
                               </span>
                             )}
                           </div>
@@ -870,7 +870,7 @@ export function TimetableSetup() {
         <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4 flex flex-col justify-between">
           <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-accent-warning" />
+              <Sliders className="w-[18px] h-[18px] text-accent-warning" />
               Late Warning Delay
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
@@ -880,7 +880,7 @@ export function TimetableSetup() {
 
           <div className="flex items-center gap-4 bg-bg-base border border-border px-4 py-3 rounded-[var(--radius-md)]">
             <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5 whitespace-nowrap">
-              <Bell className="w-3.5 h-3.5 text-accent-warning" />
+              <Bell className="w-4 h-4 text-accent-warning" />
               Warn at
             </label>
             <input
@@ -901,7 +901,7 @@ export function TimetableSetup() {
         <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4">
           <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-              <CalendarOff className="w-4 h-4 text-accent-warning" />
+              <CalendarOff className="w-[18px] h-[18px] text-accent-warning" />
               Reminder Suppression Dates
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
@@ -922,9 +922,9 @@ export function TimetableSetup() {
               className="bg-accent-warning hover:bg-accent-warning/90 text-bg-base font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {addingException ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
               )}
               Mark Date
             </Button>
@@ -947,7 +947,7 @@ export function TimetableSetup() {
                     title="Remove suppression date"
                     aria-label="Remove suppression date"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               ))}
@@ -977,11 +977,11 @@ export function TimetableSetup() {
               <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
                 {editingEntryId ? (
                   <>
-                    <Edit3 className="w-5 h-5 text-accent-info" /> Edit Lecture
+                    <Edit3 className="w-[22px] h-[22px] text-accent-info" /> Edit Lecture
                   </>
                 ) : (
                   <>
-                    <Plus className="w-5 h-5 text-accent-info" /> Add New Lecture
+                    <Plus className="w-[22px] h-[22px] text-accent-info" /> Add New Lecture
                   </>
                 )}
               </h2>
@@ -990,7 +990,7 @@ export function TimetableSetup() {
                 className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -998,7 +998,7 @@ export function TimetableSetup() {
               {/* Subject */}
               <div>
                 <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-accent-info" /> Subject Name *
+                  <BookOpen className="w-4 h-4 text-accent-info" /> Subject Name *
                 </label>
                 <Input
                   type="text"
@@ -1014,7 +1014,7 @@ export function TimetableSetup() {
                 />
                 {subjectError && (
                   <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {subjectError}
+                    <AlertTriangle className="w-4 h-4 shrink-0" /> {subjectError}
                   </p>
                 )}
               </div>
@@ -1023,7 +1023,7 @@ export function TimetableSetup() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <School className="w-3.5 h-3.5 text-accent-info" /> Class *
+                    <School className="w-4 h-4 text-accent-info" /> Class *
                   </label>
                   <select
                     value={formClassId}
@@ -1043,14 +1043,14 @@ export function TimetableSetup() {
                   </select>
                   {classError && (
                     <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {classError}
+                      <AlertTriangle className="w-4 h-4 shrink-0" /> {classError}
                     </p>
                   )}
                 </div>
 
                 <div>
                   <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <Building className="w-3.5 h-3.5 text-accent-info" /> Room / Lab
+                    <Building className="w-4 h-4 text-accent-info" /> Room / Lab
                   </label>
                   <Input
                     type="text"
@@ -1077,7 +1077,7 @@ export function TimetableSetup() {
                         : "bg-bg-base border-border text-text-secondary"
                     }`}
                   >
-                    <BookOpen className="w-4 h-4 text-accent-info shrink-0" />
+                    <BookOpen className="w-[18px] h-[18px] text-accent-info shrink-0" />
                     <div>
                       <div className="text-[length:var(--text-sm)]">Standard</div>
                       <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Blue card style</div>
@@ -1093,7 +1093,7 @@ export function TimetableSetup() {
                         : "bg-bg-base border-border text-text-secondary"
                     }`}
                   >
-                    <FlaskConical className="w-4 h-4 text-accent-live shrink-0" />
+                    <FlaskConical className="w-[18px] h-[18px] text-accent-live shrink-0" />
                     <div>
                       <div className="text-[length:var(--text-sm)]">Lab Session</div>
                       <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Green card style</div>
@@ -1153,14 +1153,14 @@ export function TimetableSetup() {
               {/* Real-time Inline Time Error Banner */}
               {timeError && (
                 <p className="text-[length:var(--text-xs)] text-accent-critical font-medium flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {timeError}
+                  <AlertTriangle className="w-4 h-4 shrink-0" /> {timeError}
                 </p>
               )}
 
               {/* Network / General Save Error Banner */}
               {formError && (
                 <p className="text-[length:var(--text-xs)] text-accent-critical font-medium flex items-center gap-1">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {formError}
+                  <AlertTriangle className="w-4 h-4 shrink-0" /> {formError}
                 </p>
               )}
 
@@ -1168,7 +1168,7 @@ export function TimetableSetup() {
               <div className="bg-bg-base border border-border rounded-lg p-3">
                 <label className="flex items-center justify-between cursor-pointer">
                   <span className="font-medium text-text-primary flex items-center gap-1.5">
-                    <Bell className="w-3.5 h-3.5 text-accent-warning" /> Enable Late Warning Email Alert
+                    <Bell className="w-4 h-4 text-accent-warning" /> Enable Late Warning Email Alert
                   </span>
                   <input
                     type="checkbox"
@@ -1198,11 +1198,11 @@ export function TimetableSetup() {
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Save Entry
+                    <CheckCircle2 className="w-4 h-4" /> Save Entry
                   </>
                 )}
               </Button>
@@ -1250,14 +1250,14 @@ export function TimetableSetup() {
           >
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-accent-info" /> Excel Import Report
+                <FileSpreadsheet className="w-[22px] h-[22px] text-accent-info" /> Excel Import Report
               </h2>
               <button
                 onClick={closeImportReport}
                 className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-[22px] h-[22px]" />
               </button>
             </div>
 
@@ -1274,9 +1274,9 @@ export function TimetableSetup() {
                   <div className="flex items-center justify-between">
                     <span className="font-semibold flex items-center gap-1.5">
                       {resItem.status === "created" ? (
-                        <CheckCircle2 className="w-4 h-4 text-accent-live shrink-0" />
+                        <CheckCircle2 className="w-[18px] h-[18px] text-accent-live shrink-0" />
                       ) : (
-                        <AlertTriangle className="w-4 h-4 text-accent-critical shrink-0" />
+                        <AlertTriangle className="w-[18px] h-[18px] text-accent-critical shrink-0" />
                       )}
                       Row {resItem.row}: {resItem.subject || "Unnamed Entry"}
                     </span>
@@ -1293,7 +1293,7 @@ export function TimetableSetup() {
 
                   {resItem.note && (
                     <div className="text-[length:var(--text-xs)] text-accent-warning pl-5 flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3 shrink-0" /> {resItem.note}
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {resItem.note}
                     </div>
                   )}
                 </div>

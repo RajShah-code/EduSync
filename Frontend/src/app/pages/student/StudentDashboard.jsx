@@ -337,7 +337,7 @@ export function StudentDashboard() {
         <CardHeader className="border-b border-border pb-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <CardTitle className="font-display text-[length:var(--text-lg)] font-semibold text-text-primary flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-accent-500" strokeWidth={1.75} />
+              <Calendar className="w-[22px] h-[22px] text-accent-500" strokeWidth={1.75} />
               Today's Schedule
               <span className="text-text-muted font-normal">— {todayName}</span>
             </CardTitle>
@@ -358,7 +358,7 @@ export function StudentDashboard() {
               </button>
             ) : (
               <span className="flex items-center gap-1.5 text-xs text-text-muted">
-                <WifiOff className="w-3.5 h-3.5" strokeWidth={1.75} />
+                <WifiOff className="w-4 h-4" strokeWidth={1.75} />
                 No live sessions
               </span>
             )}
@@ -417,7 +417,7 @@ export function StudentDashboard() {
                           </span>
                         )}
                         <span className="text-sm font-medium text-text-primary flex items-center gap-2 truncate">
-                          <BookOpen className="w-4 h-4 text-text-muted shrink-0" strokeWidth={1.75} />
+                          <BookOpen className="w-[18px] h-[18px] text-text-muted shrink-0" strokeWidth={1.75} />
                           <span className="truncate">{entry.subject}</span>
                         </span>
                         {entry.session_type === "lab" && (
@@ -428,12 +428,12 @@ export function StudentDashboard() {
                       </div>
                       <div className="flex items-center gap-3 text-xs text-text-secondary truncate pl-0">
                         <span className="flex items-center gap-1.5 truncate">
-                          <User className="w-3.5 h-3.5 text-text-muted shrink-0" strokeWidth={1.75} />
+                          <User className="w-4 h-4 text-text-muted shrink-0" strokeWidth={1.75} />
                           <span className="truncate">{entry.teacher_name}</span>
                         </span>
                         {entry.room && (
                           <span className="flex items-center gap-1.5 shrink-0">
-                            <School className="w-3.5 h-3.5 text-text-muted shrink-0" strokeWidth={1.75} />
+                            <School className="w-4 h-4 text-text-muted shrink-0" strokeWidth={1.75} />
                             {entry.room}
                           </span>
                         )}
@@ -474,7 +474,7 @@ export function StudentDashboard() {
           <CardHeader>
             <CardTitle className="text-sm font-semibold text-text-primary flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-text-secondary" />
+                <Clock className="w-[18px] h-[18px] text-text-secondary" />
                 Exams
               </span>
               {hasActiveExam && <Badge variant="success">ACTIVE NOW</Badge>}
@@ -527,7 +527,7 @@ export function StudentDashboard() {
               </div>
             ) : (
               <div className="py-6 text-center space-y-2 my-auto">
-                <Clock className="w-5 h-5 text-text-muted mx-auto" strokeWidth={1.75} />
+                <Clock className="w-[22px] h-[22px] text-text-muted mx-auto" strokeWidth={1.75} />
                 <p className="text-xs text-text-secondary">No active or upcoming exams.</p>
               </div>
             )}
@@ -538,7 +538,7 @@ export function StudentDashboard() {
         <Card data-tour="student-attendance" className="bg-bg-surface border-border h-full flex flex-col justify-between">
           <CardHeader>
             <CardTitle className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-text-secondary" />
+              <Calendar className="w-[18px] h-[18px] text-text-secondary" />
               Attendance
             </CardTitle>
           </CardHeader>
@@ -593,13 +593,13 @@ export function StudentDashboard() {
         <Card className="bg-bg-surface border-border flex flex-col h-full justify-between">
           <CardHeader>
             <CardTitle className="text-sm font-semibold text-text-primary flex items-center gap-2">
-              <FileText className="w-4 h-4 text-text-secondary" />
+              <FileText className="w-[18px] h-[18px] text-text-secondary" />
               Recent Submissions
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
-              <FileText className="w-8 h-8 text-text-muted" strokeWidth={1.75} />
+              <FileText className="w-9 h-9 text-text-muted" strokeWidth={1.75} />
               <h3 className="text-sm font-medium text-text-primary">
                 No recent submissions
               </h3>
