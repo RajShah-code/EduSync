@@ -84,6 +84,28 @@ function getISTDayOfWeek(date = new Date()) {
   return weekdayMap[weekday] ?? 0;
 }
 
+/**
+ * Every calendar date between two YYYY-MM-DD strings, inclusive, both ends.
+ * Built from local y/m/d components (never toISOString/UTC) so it can't
+ * drift a day off from what the <input type="date"> fields actually show —
+ * the same reasoning istTime.js's own getISTDayOfWeek follows above.
+ */
+function getInclusiveDateRange(fromStr, toStr) {
+  const [fy, fm, fd] = fromStr.split("-").map(Number);
+  const [ty, tm, td] = toStr.split("-").map(Number);
+  const cursor = new Date(fy, fm - 1, fd);
+  const end = new Date(ty, tm - 1, td);
+  const dates = [];
+  while (cursor <= end) {
+    const y = cursor.getFullYear();
+    const m = String(cursor.getMonth() + 1).padStart(2, "0");
+    const d = String(cursor.getDate()).padStart(2, "0");
+    dates.push(`${y}-${m}-${d}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
 export function TimetableSetup() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -103,6 +125,7 @@ export function TimetableSetup() {
   const [defaultDelayMinutes, setDefaultDelayMinutes] = useState(5);
   const [updatingDelay, setUpdatingDelay] = useState(false);
   const [newExceptionDate, setNewExceptionDate] = useState("");
+  const [exceptionToDate, setExceptionToDate] = useState("");
   const [addingException, setAddingException] = useState(false);
 
   // Modal State for Add / Edit Entry
@@ -443,38 +466,80 @@ export function TimetableSetup() {
     }
   };
 
-  // Add Date Exception (Reminder Suppression)
+  // Add Date Exception(s) (Reminder Suppression) — a bare "From" marks one
+  // day exactly as before; adding "To" marks every day in that inclusive
+  // range. The backend only has a single-date endpoint, so a range is a
+  // sequential loop over it rather than a new bulk route — sequential
+  // (not Promise.all) so a slow/rate-limited backend isn't hit with a burst.
+  const MAX_EXCEPTION_RANGE_DAYS = 60;
+
   const handleAddException = async () => {
     if (!newExceptionDate) {
-      toast.error("Please select a date first");
+      toast.error("Please select a start date first");
+      return;
+    }
+    const toDate = exceptionToDate || newExceptionDate;
+    if (toDate < newExceptionDate) {
+      toast.error("End date must be on or after the start date");
+      return;
+    }
+
+    const dates = getInclusiveDateRange(newExceptionDate, toDate);
+    if (dates.length > MAX_EXCEPTION_RANGE_DAYS) {
+      toast.error(`Please choose a range of ${MAX_EXCEPTION_RANGE_DAYS} days or fewer`);
       return;
     }
 
     setAddingException(true);
     const token = localStorage.getItem("edusync_token");
-    try {
-      const res = await fetch(`${API_BASE_URL}/timetable/exceptions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ exception_date: newExceptionDate }),
-      });
+    let added = 0;
+    let alreadyMarked = 0;
+    let failed = 0;
 
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.message || "Failed to add date exception");
-      } else {
-        toast.success("Reminder suppression date added");
-        setNewExceptionDate("");
-        fetchInitialData();
+    for (const dateStr of dates) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/timetable/exceptions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ exception_date: dateStr }),
+        });
+        if (res.ok) {
+          added += 1;
+        } else {
+          const data = await res.json().catch(() => ({}));
+          if (data.message === "Exception date already marked") {
+            alreadyMarked += 1;
+          } else {
+            failed += 1;
+          }
+        }
+      } catch (err) {
+        failed += 1;
       }
-    } catch (err) {
-      toast.error("Network error adding exception date");
-    } finally {
-      setAddingException(false);
     }
+
+    if (added > 0) {
+      const parts = [`${added} date${added === 1 ? "" : "s"} marked`];
+      if (alreadyMarked > 0) parts.push(`${alreadyMarked} already marked`);
+      if (failed > 0) parts.push(`${failed} failed`);
+      toast.success(parts.join(" · "));
+      setNewExceptionDate("");
+      setExceptionToDate("");
+      fetchInitialData();
+    } else if (alreadyMarked > 0 && failed === 0) {
+      toast.error(
+        dates.length === 1
+          ? "That date is already marked"
+          : "Every date in that range is already marked"
+      );
+    } else {
+      toast.error("Failed to add date exception");
+    }
+
+    setAddingException(false);
   };
 
   // Remove Date Exception
@@ -859,10 +924,10 @@ export function TimetableSetup() {
       {/* C. LATE WARNING DELAY & REMINDER SUPPRESSION DATES PANEL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Late Warning Delay Card (Teacher setting) */}
-        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4 flex flex-col justify-between">
+        <div className="card-hover bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4 flex flex-col justify-between">
           <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-              <Sliders className="w-[18px] h-[18px] text-accent-warning" />
+              <Sliders className="w-[18px] h-[18px] text-accent-info" />
               Late Warning Delay
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
@@ -870,9 +935,9 @@ export function TimetableSetup() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-bg-base border border-border px-4 py-3 rounded-[var(--radius-md)]">
+          <div className="flex items-center gap-4 bg-bg-base border border-border px-4 py-3 rounded-[var(--radius-md)] transition-colors duration-200 focus-within:border-accent-info/50 focus-within:ring-1 focus-within:ring-accent-info/20">
             <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5 whitespace-nowrap">
-              <Bell className="w-4 h-4 text-accent-warning" />
+              <Bell className="w-4 h-4 text-accent-info" />
               Warn at
             </label>
             <input
@@ -881,19 +946,28 @@ export function TimetableSetup() {
               max="30"
               value={defaultDelayMinutes}
               onChange={(e) => handleUpdateGlobalDelay(Number(e.target.value))}
-              className="w-full accent-accent-warning cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, var(--accent-info) ${(defaultDelayMinutes / 30) * 100}%, var(--bg-elevated) ${(defaultDelayMinutes / 30) * 100}%)`,
+              }}
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer outline-none
+                [&::-webkit-slider-runnable-track]:appearance-none [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:-mt-[5px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-info [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-bg-surface [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(0,0,0,0.45)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-150
+                hover:[&::-webkit-slider-thumb]:scale-125 active:[&::-webkit-slider-thumb]:scale-95
+                [&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-transparent
+                [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent-info [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-bg-surface [&::-moz-range-thumb]:shadow-[0_1px_4px_rgba(0,0,0,0.45)] [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:duration-150
+                hover:[&::-moz-range-thumb]:scale-125 active:[&::-moz-range-thumb]:scale-95"
             />
-            <span className="text-[length:var(--text-xs)] tnum font-semibold text-accent-warning bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded-[var(--radius-sm)] shrink-0">
+            <span className="text-[length:var(--text-xs)] tnum font-semibold text-accent-info bg-accent-info/10 border border-accent-info/20 px-2 py-1 rounded-[var(--radius-sm)] shrink-0 transition-colors duration-200">
               {defaultDelayMinutes} min
             </span>
           </div>
         </div>
 
         {/* Reminder Suppression Dates Card */}
-        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4">
+        <div className="card-hover bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4">
           <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-              <CalendarSmile className="w-[18px] h-[18px] text-accent-warning" />
+              <CalendarSmile className="w-[18px] h-[18px] text-accent-info" />
               Reminder Suppression Dates
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
@@ -901,24 +975,44 @@ export function TimetableSetup() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Input
-              type="date"
-              value={newExceptionDate}
-              onChange={(e) => setNewExceptionDate(e.target.value)}
-              className="bg-bg-base border-border text-text-primary text-[length:var(--text-sm)] h-9 w-44"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-2 bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-1.5 flex-1 min-w-0 transition-colors duration-200 focus-within:border-accent-info/50 focus-within:ring-1 focus-within:ring-accent-info/20">
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">From</span>
+                <input
+                  type="date"
+                  value={newExceptionDate}
+                  disabled={addingException}
+                  onChange={(e) => setNewExceptionDate(e.target.value)}
+                  className="bg-transparent border-0 p-0 h-5 w-full text-text-primary text-[length:var(--text-sm)] outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+              <div className="w-px self-stretch bg-border shrink-0" aria-hidden="true" />
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                  To <span className="normal-case font-normal text-text-muted/70">(optional)</span>
+                </span>
+                <input
+                  type="date"
+                  value={exceptionToDate}
+                  min={newExceptionDate || undefined}
+                  disabled={addingException}
+                  onChange={(e) => setExceptionToDate(e.target.value)}
+                  className="bg-transparent border-0 p-0 h-5 w-full text-text-primary text-[length:var(--text-sm)] outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
             <Button
               onClick={handleAddException}
               disabled={addingException}
-              className="bg-accent-warning hover:bg-accent-warning/90 text-bg-base font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="bg-accent-info hover:bg-accent-info/90 text-white font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {addingException ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              Mark Date
+              {exceptionToDate && exceptionToDate !== newExceptionDate ? "Mark Range" : "Mark Date"}
             </Button>
           </div>
 
@@ -930,14 +1024,14 @@ export function TimetableSetup() {
               {exceptions.map((ex) => (
                 <div
                   key={ex.id}
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-[var(--radius-md)] bg-accent-warning/10 border border-accent-warning/30 text-accent-warning text-[length:var(--text-xs)] tnum"
+                  className="badge-enter flex items-center gap-2 px-2.5 py-1 rounded-[var(--radius-md)] bg-accent-info/10 border border-accent-info/30 text-accent-info text-[length:var(--text-xs)] tnum transition-colors duration-150 hover:border-accent-info/50"
                 >
                   <span>{ex.exception_date}</span>
                   <button
                     onClick={() => handleDeleteException(ex.id)}
-                    className="hover:text-accent-critical text-accent-warning transition-colors cursor-pointer rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                    className="hover:text-accent-critical hover:bg-accent-critical/10 text-accent-info transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-90 cursor-pointer p-0.5 rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-1 focus-visible:ring-offset-bg-surface"
                     title="Remove suppression date"
-                    aria-label="Remove suppression date"
+                    aria-label={`Remove suppression date ${ex.exception_date}`}
                   >
                     <X className="w-4 h-4" />
                   </button>
