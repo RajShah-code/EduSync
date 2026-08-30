@@ -833,20 +833,12 @@ export function TimetableSetup() {
                               </span>
                             </div>
 
-                            {entry.reminder_enabled ? (
+                            {entry.reminder_enabled && (
                               <span
                                 className="flex items-center gap-1 text-accent-warning shrink-0"
                                 title="Reminder enabled"
                               >
                                 <BellRinging className="w-4 h-4" />
-                              </span>
-                            ) : (
-                              <span
-                                className="relative inline-flex items-center justify-center shrink-0"
-                                title="Reminder disabled"
-                              >
-                                <Bell className="w-4 h-4 text-text-muted" />
-                                <X className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-text-muted stroke-[3]" />
                               </span>
                             )}
                           </div>
