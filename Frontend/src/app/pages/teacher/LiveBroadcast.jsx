@@ -206,6 +206,11 @@ export function LiveBroadcast() {
 
   // ── Modal / form state ──────────────────────────────────────────────────────
   const [showSetupModal, setShowSetupModal] = useState(false);
+  // setupModalMode: which flow opened the Session Setup Modal — "instant"
+  // (handleOpenSetupModal, blank form) or "scheduled" (prefilled from a
+  // timetable entry, or the dashboard's "Start Now" auto-open). Drives the
+  // modal's title/icon and the Start Lecture button's icon.
+  const [setupModalMode, setSetupModalMode] = useState("instant");
   // Idle Schedule/Instant pill pair (see the Control Bar below). Both pills are
   // always mounted. Exactly one is the "active" (violet, labelled) pill; the
   // other rests as a dim icon-only circle. Which one is active:
@@ -342,6 +347,7 @@ export function LiveBroadcast() {
     setSelectedClassIds(entry.class_id ? [Number(entry.class_id)] : []);
     setShowPassword(false);
     setModalError("");
+    setSetupModalMode("scheduled");
     setShowSetupModal(true);
   };
 
@@ -1216,6 +1222,7 @@ export function LiveBroadcast() {
       }
       setShowPassword(false);
       setModalError("");
+      setSetupModalMode("scheduled");
       setShowSetupModal(true);
     }
   }, [location.state]);
@@ -1252,6 +1259,7 @@ export function LiveBroadcast() {
     setSelectedClassIds([]);
     setShowPassword(false);
     setModalError("");
+    setSetupModalMode("instant");
     setShowSetupModal(true);
   };
 
@@ -2979,8 +2987,13 @@ export function LiveBroadcast() {
       >
         <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-text-primary">
-              Start New Lecture Session
+            <DialogTitle className="text-text-primary flex items-center gap-2">
+              {setupModalMode === "scheduled" ? (
+                <CalendarStats className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              ) : (
+                <Monitor className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              )}
+              {setupModalMode === "scheduled" ? "Start Scheduled Lecture" : "Start Instant Lecture"}
             </DialogTitle>
           </DialogHeader>
 
@@ -3134,6 +3147,8 @@ export function LiveBroadcast() {
             >
               {startLoading ? (
                 <Loader2 className="w-[18px] h-[18px] mr-2 animate-spin" />
+              ) : setupModalMode === "scheduled" ? (
+                <CalendarStats className="w-[18px] h-[18px] mr-2" />
               ) : (
                 <Monitor className="w-[18px] h-[18px] mr-2" />
               )}
