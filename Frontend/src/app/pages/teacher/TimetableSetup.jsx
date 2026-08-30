@@ -8,7 +8,7 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { Skeleton } from "../../components/ui/skeleton";
-import { DateRangePicker } from "../../components/ui/date-range-picker";
+import { DateMultiPicker } from "../../components/ui/date-range-picker";
 import { cn } from "../../components/ui/utils";
 import PageShell from "../../components/PageShell";
 import {
@@ -89,28 +89,6 @@ function getISTDayOfWeek(date = new Date()) {
   return weekdayMap[weekday] ?? 0;
 }
 
-/**
- * Every calendar date between two YYYY-MM-DD strings, inclusive, both ends.
- * Built from local y/m/d components (never toISOString/UTC) so it can't
- * drift a day off from what the <input type="date"> fields actually show —
- * the same reasoning istTime.js's own getISTDayOfWeek follows above.
- */
-function getInclusiveDateRange(fromStr, toStr) {
-  const [fy, fm, fd] = fromStr.split("-").map(Number);
-  const [ty, tm, td] = toStr.split("-").map(Number);
-  const cursor = new Date(fy, fm - 1, fd);
-  const end = new Date(ty, tm - 1, td);
-  const dates = [];
-  while (cursor <= end) {
-    const y = cursor.getFullYear();
-    const m = String(cursor.getMonth() + 1).padStart(2, "0");
-    const d = String(cursor.getDate()).padStart(2, "0");
-    dates.push(`${y}-${m}-${d}`);
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return dates;
-}
-
 export function TimetableSetup() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -138,8 +116,10 @@ export function TimetableSetup() {
   const [customDelayMode, setCustomDelayMode] = useState(false);
   const [customDelayDraft, setCustomDelayDraft] = useState("");
   const customDelayInputRef = useRef(null);
-  const [newExceptionDate, setNewExceptionDate] = useState("");
-  const [exceptionToDate, setExceptionToDate] = useState("");
+  // A flexible, possibly-scattered set of ISO dates — the picker itself
+  // handles both drag-a-range and click-a-single-day, already expanded to
+  // exact dates by the time onChange fires here.
+  const [selectedExceptionDates, setSelectedExceptionDates] = useState([]);
   const [addingException, setAddingException] = useState(false);
 
   // Modal State for Add / Edit Entry
@@ -510,27 +490,17 @@ export function TimetableSetup() {
     }
   };
 
-  // Add Date Exception(s) (Reminder Suppression) — a bare "From" marks one
-  // day exactly as before; adding "To" marks every day in that inclusive
-  // range. The backend only has a single-date endpoint, so a range is a
-  // sequential loop over it rather than a new bulk route — sequential
-  // (not Promise.all) so a slow/rate-limited backend isn't hit with a burst.
-  const MAX_EXCEPTION_RANGE_DAYS = 60;
-
+  // Add Date Exception(s) (Reminder Suppression) — selectedExceptionDates is
+  // already an exact, deduplicated array of ISO dates by the time it gets
+  // here (the picker itself expands any dragged ranges), so this is just a
+  // straight submit. The backend only has a single-date endpoint, so
+  // multiple dates are a sequential loop over it rather than a bulk route —
+  // sequential (not Promise.all) so a slow/rate-limited backend isn't hit
+  // with a burst.
   const handleAddException = async () => {
-    if (!newExceptionDate) {
-      toast.error("Please select a start date first");
-      return;
-    }
-    const toDate = exceptionToDate || newExceptionDate;
-    if (toDate < newExceptionDate) {
-      toast.error("End date must be on or after the start date");
-      return;
-    }
-
-    const dates = getInclusiveDateRange(newExceptionDate, toDate);
-    if (dates.length > MAX_EXCEPTION_RANGE_DAYS) {
-      toast.error(`Please choose a range of ${MAX_EXCEPTION_RANGE_DAYS} days or fewer`);
+    const dates = selectedExceptionDates;
+    if (dates.length === 0) {
+      toast.error("Please select at least one date first");
       return;
     }
 
@@ -570,14 +540,13 @@ export function TimetableSetup() {
       if (alreadyMarked > 0) parts.push(`${alreadyMarked} already marked`);
       if (failed > 0) parts.push(`${failed} failed`);
       toast.success(parts.join(" · "));
-      setNewExceptionDate("");
-      setExceptionToDate("");
+      setSelectedExceptionDates([]);
       fetchInitialData();
     } else if (alreadyMarked > 0 && failed === 0) {
       toast.error(
         dates.length === 1
           ? "That date is already marked"
-          : "Every date in that range is already marked"
+          : "Every one of those dates is already marked"
       );
     } else {
       toast.error("Failed to add date exception");
@@ -1054,18 +1023,15 @@ export function TimetableSetup() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <DateRangePicker
-              value={{ from: newExceptionDate, to: exceptionToDate }}
-              onChange={(from, to) => {
-                setNewExceptionDate(from);
-                setExceptionToDate(to === from ? "" : to);
-              }}
+            <DateMultiPicker
+              value={selectedExceptionDates}
+              onChange={setSelectedExceptionDates}
               disabled={addingException}
               className="flex-1 min-w-0"
             />
             <Button
               onClick={handleAddException}
-              disabled={addingException}
+              disabled={addingException || selectedExceptionDates.length === 0}
               className="bg-accent-info hover:bg-accent-info/90 text-white font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {addingException ? (
@@ -1073,7 +1039,9 @@ export function TimetableSetup() {
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              {exceptionToDate && exceptionToDate !== newExceptionDate ? "Mark Range" : "Mark Date"}
+              {selectedExceptionDates.length > 1
+                ? `Mark ${selectedExceptionDates.length} Dates`
+                : "Mark Date"}
             </Button>
           </div>
 
