@@ -43,9 +43,9 @@ function SelectTrigger({ className, size = "default", children, ...props }) {
   );
 }
 
-function SelectContent({ className, children, position = "popper", ...props }) {
+function SelectContent({ className, children, position = "popper", container, ...props }) {
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={container}>
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
