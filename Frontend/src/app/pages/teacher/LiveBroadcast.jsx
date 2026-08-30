@@ -2901,7 +2901,10 @@ export function LiveBroadcast() {
       <Dialog open={showSessionInfoDialog} onOpenChange={setShowSessionInfoDialog}>
         <DialogContent data-role="teacher" className="bg-bg-elevated border-border text-text-primary sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-text-primary">Session Info</DialogTitle>
+            <DialogTitle className="text-text-primary flex items-center gap-2">
+              <Info className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              Lecture Info
+            </DialogTitle>
           </DialogHeader>
           {sessionInfo && (
             <div className="flex flex-col gap-4 pt-1">
