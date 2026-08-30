@@ -2337,7 +2337,7 @@ export function LiveBroadcast() {
                       data-tour="broadcast-languages"
                       size="sm"
                       onMouseEnter={openLangMenu}
-                      className="rounded-[var(--radius-md)] bg-bg-elevated hover:bg-bg-elevated"
+                      className="rounded-[var(--radius-md)] bg-bg-elevated hover:bg-bg-surface-3"
                     >
                       {/* Explicit children, not the default value-mirroring —
                           the closed trigger always shows the plain language
@@ -2355,7 +2355,10 @@ export function LiveBroadcast() {
                         })()}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="shadow-[var(--shadow-dropdown)]">
+                    <SelectContent
+                      className="shadow-[var(--shadow-dropdown)]"
+                      container={isFullScreen ? fullScreenContainerRef.current : undefined}
+                    >
                       {LANGUAGES.map((l) => {
                         const justPicked = justPickedLangId === l.id;
                         return (
