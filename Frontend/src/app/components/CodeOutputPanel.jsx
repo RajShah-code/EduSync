@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from "react";
-import { IconLayoutBottombar as PanelBottom, IconLayoutSidebarRight as PanelRight, IconLayoutSidebar as PanelLeft, IconLayoutNavbar as PanelTop, IconChevronDown as ChevronDown } from "@tabler/icons-react";
+import { IconLayoutBottombar as PanelBottom, IconLayoutSidebarRight as PanelRight, IconLayoutSidebar as PanelLeft, IconLayoutNavbar as PanelTop, IconChevronDown as ChevronDown, IconCheck as Check } from "@tabler/icons-react";
 
 export function CodeOutputPanel({
   outputMode = "none",
@@ -164,11 +164,23 @@ export function CodeOutputPanel({
                     onDockChange("bottom");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "bottom" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelBottom className="w-4 h-4" /> Dock Bottom
+                  <span className="relative w-4 h-4 shrink-0">
+                    <PanelBottom
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "bottom" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                      }`}
+                    />
+                    <Check
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "bottom" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}
+                    />
+                  </span>
+                  Dock Bottom
                 </button>
                 <button
                   type="button"
@@ -176,11 +188,23 @@ export function CodeOutputPanel({
                     onDockChange("top");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "top" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelTop className="w-4 h-4" /> Dock Top
+                  <span className="relative w-4 h-4 shrink-0">
+                    <PanelTop
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "top" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                      }`}
+                    />
+                    <Check
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "top" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}
+                    />
+                  </span>
+                  Dock Top
                 </button>
                 <button
                   type="button"
@@ -188,11 +212,23 @@ export function CodeOutputPanel({
                     onDockChange("right");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "right" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelRight className="w-4 h-4" /> Dock Right
+                  <span className="relative w-4 h-4 shrink-0">
+                    <PanelRight
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "right" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                      }`}
+                    />
+                    <Check
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "right" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}
+                    />
+                  </span>
+                  Dock Right
                 </button>
                 <button
                   type="button"
@@ -200,11 +236,23 @@ export function CodeOutputPanel({
                     onDockChange("left");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "left" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
-                  <PanelLeft className="w-4 h-4" /> Dock Left
+                  <span className="relative w-4 h-4 shrink-0">
+                    <PanelLeft
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "left" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                      }`}
+                    />
+                    <Check
+                      className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
+                        dockPosition === "left" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      }`}
+                    />
+                  </span>
+                  Dock Left
                 </button>
               </div>
             )}
