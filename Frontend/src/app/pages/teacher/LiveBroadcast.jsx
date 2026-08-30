@@ -3112,22 +3112,6 @@ export function LiveBroadcast() {
 
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
-              variant="outline"
-              onClick={() => {
-                // Backing out without starting — mirror the onOpenChange reset
-                // (this path sets showSetupModal directly, so onOpenChange never
-                // fires): drop both "Starting…" states and un-park the pill so
-                // the calendar side returns to its resting "Scheduled Lecture".
-                setShowSetupModal(false);
-                setPillTarget("start");
-                setScheduleIconLoading(false);
-                setStartButtonLoading(false);
-              }}
-              className="border-border text-text-secondary hover:bg-bg-elevated"
-            >
-              Cancel
-            </Button>
-            <Button
               onClick={handleStartBroadcast}
               disabled={startLoading}
               aria-disabled={!isFormValid || startLoading}
