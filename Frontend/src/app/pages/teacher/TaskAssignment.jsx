@@ -10,7 +10,7 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { StatusBadge } from "../../components/StatusBadge";
 import { TaskStatusModal } from "../../components/TaskStatusModal";
 import { cn } from "../../components/ui/utils";
-import { IconCode as Code, IconClock as Clock, IconSend as Send, IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCopy as ClipboardCopy, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography } from "@tabler/icons-react";
+import { IconCode as Code, IconClock as Clock, IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography, IconAlarm as Alarm, IconSquarePlus as SquarePlus, IconMenu2 as Menu2 } from "@tabler/icons-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
@@ -721,7 +721,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <ClipboardListIcon className="w-4 h-4" />
+              <SquarePlus className="w-4 h-4" />
               Assign Task
             </button>
             <button
@@ -733,7 +733,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <ClipboardCopy className="w-4 h-4" />
+              <Menu2 className="w-4 h-4" />
               Active Tasks ({tasks.length})
             </button>
           </div>
@@ -883,8 +883,9 @@ export function TaskAssignment() {
 
                   {formData.hasTimeLimit && (
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="timeLimitMinutes" className="text-text-secondary text-xs font-semibold whitespace-nowrap">
-                        Limit:
+                      <Label htmlFor="timeLimitMinutes" className="text-text-secondary text-xs font-semibold whitespace-nowrap flex items-center gap-1">
+                        <Alarm className="w-3.5 h-3.5 shrink-0" />
+                        Duration:
                       </Label>
                       <div className="relative">
                         <Input
@@ -920,7 +921,7 @@ export function TaskAssignment() {
                   <>Assigning Task...</>
                 ) : (
                   <>
-                    <Send className="w-[18px] h-[18px] mr-2" />
+                    <SquarePlus className="w-[18px] h-[18px] mr-2" />
                     Assign & Broadcast Task to Students
                   </>
                 )}

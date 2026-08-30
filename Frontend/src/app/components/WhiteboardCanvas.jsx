@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { IconPencil as Pencil, IconEraser as Eraser, IconMinus as Minus, IconSquare as Square, IconCircle as Circle, IconTrash as Trash2, IconMoon as Moon, IconSun as Sun, IconArrowBackUp as Undo2, IconArrowForwardUp as Redo2 } from "@tabler/icons-react";
+import { IconPencil as Pencil, IconEraser as Eraser, IconMinus as Minus, IconSquare as Square, IconCircle as Circle, IconTrash as Trash2, IconMoon as Moon, IconSun as Sun, IconArrowBackUp as Undo2, IconArrowForwardUp as Redo2, IconRuler2 as Ruler2 } from "@tabler/icons-react";
 
 const PRESET_COLORS = [
   "#FFFFFF",
@@ -670,6 +670,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
           {/* Requirement 2: Dedicated Size selector — binds dynamically to tool === 'eraser' ? eraserSize : thickness */}
           <div className="flex items-center gap-1 bg-bg-surface px-2 py-1 rounded-[var(--radius-md)] border border-border">
+            <Ruler2 className="w-3.5 h-3.5 text-text-muted mr-0.5 shrink-0" />
             <span className="text-[10px] text-text-muted mr-1 font-mono">
               {isEraserActive ? "Eraser Size:" : "Pen Size:"}
             </span>
