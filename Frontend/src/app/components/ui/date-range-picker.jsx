@@ -45,6 +45,12 @@ function expandRange(fromStr, toStr) {
   }
   return out;
 }
+function todayISO() {
+  return toISO(new Date());
+}
+function isPastISO(iso) {
+  return iso < todayISO();
+}
 
 function buildMonthGrid(viewMonth) {
   const year = viewMonth.getFullYear();
@@ -52,7 +58,7 @@ function buildMonthGrid(viewMonth) {
   const first = new Date(year, month, 1);
   const firstWeekday = (first.getDay() + 6) % 7; // Mon=0 .. Sun=6
   const gridStart = addDays(first, -firstWeekday);
-  const todayISO = toISO(new Date());
+  const today = todayISO();
 
   const cells = [];
   for (let i = 0; i < 42; i++) {
@@ -62,7 +68,8 @@ function buildMonthGrid(viewMonth) {
       iso,
       day: d.getDate(),
       inCurrentMonth: d.getMonth() === month,
-      isToday: iso === todayISO,
+      isToday: iso === today,
+      isPast: iso < today,
       colIndex: i % 7,
     });
   }
@@ -135,6 +142,17 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
   const [dragMoved, setDragMoved] = useState(false);
   const isDragging = dragAnchor !== null;
 
+  // Past-date rejection feedback — a brief shake + red flash on the exact
+  // cell that was clicked, cleared automatically once the animation ends.
+  const [shakeISO, setShakeISO] = useState(null);
+  const shakeTimeoutRef = useRef(null);
+  const triggerShake = (iso) => {
+    if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+    setShakeISO(iso);
+    shakeTimeoutRef.current = setTimeout(() => setShakeISO(null), 400);
+  };
+  useEffect(() => () => clearTimeout(shakeTimeoutRef.current), []);
+
   const containerRef = useRef(null);
   const presets = useRef(buildPresets()).current;
 
@@ -165,7 +183,11 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
       setDraftDates((prev) => {
         const next = new Set(prev);
         if (dragMoved && dragAnchor && dragCurrent) {
+          // The anchor is always a valid (non-past) day — see the mousedown
+          // guard below — but a drag can still wander backward through past
+          // days on its way to dragCurrent. Only the non-past portion commits.
           for (const iso of expandRange(dragAnchor, dragCurrent)) {
+            if (isPastISO(iso)) continue;
             if (next.size >= MAX_SELECTED_DATES) break;
             next.add(iso);
           }
@@ -230,7 +252,9 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
     if (!isDragging) return draftDates;
     const next = new Set(draftDates);
     if (dragMoved && dragAnchor && dragCurrent) {
-      for (const iso of expandRange(dragAnchor, dragCurrent)) next.add(iso);
+      for (const iso of expandRange(dragAnchor, dragCurrent)) {
+        if (!isPastISO(iso)) next.add(iso);
+      }
     } else if (dragAnchor) {
       next.add(dragAnchor);
     }
@@ -351,12 +375,18 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
                 const roundRight = selected && (isLastInRow || !nextSelected);
                 const isLiveDragOnly = isDragging && selected && !draftDates.has(cell.iso);
 
+                const isShaking = shakeISO === cell.iso;
+
                 return (
                   <button
                     key={cell.iso}
                     type="button"
                     onMouseDown={(e) => {
                       e.preventDefault(); // no native text-drag ghosting
+                      if (cell.isPast) {
+                        triggerShake(cell.iso);
+                        return;
+                      }
                       setDragAnchor(cell.iso);
                       setDragCurrent(cell.iso);
                       setDragMoved(false);
@@ -369,21 +399,29 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
+                        if (cell.isPast) {
+                          triggerShake(cell.iso);
+                          return;
+                        }
                         toggleSingleDate(cell.iso);
                       }
                     }}
-                    aria-label={fromISO(cell.iso).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
+                    aria-label={
+                      fromISO(cell.iso).toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      }) + (cell.isPast ? " (in the past, unavailable)" : "")
+                    }
                     aria-pressed={selected}
                     className={cn(
-                      "relative h-8 flex items-center justify-center cursor-pointer",
+                      "relative h-8 flex items-center justify-center",
+                      cell.isPast ? "cursor-not-allowed" : "cursor-pointer",
                       selected && (isLiveDragOnly ? "bg-accent-info/15" : "bg-accent-info/20"),
                       roundLeft && "rounded-l-full",
-                      roundRight && "rounded-r-full"
+                      roundRight && "rounded-r-full",
+                      isShaking && "shake-error"
                     )}
                   >
                     {cell.isToday && !selected && (
@@ -395,9 +433,12 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
                     <span
                       className={cn(
                         "relative z-10 w-7 h-7 flex items-center justify-center rounded-full text-[length:var(--text-xs)] tnum transition-[background-color,color,transform] duration-100",
-                        !cell.inCurrentMonth && "text-text-muted/50",
-                        cell.inCurrentMonth && !selected && "text-text-primary hover:bg-bg-surface-3",
-                        selected && "bg-accent-info text-white font-semibold"
+                        cell.isPast
+                          ? "text-text-muted/40"
+                          : !cell.inCurrentMonth && "text-text-muted/50",
+                        cell.inCurrentMonth && !cell.isPast && !selected && "text-text-primary hover:bg-bg-surface-3",
+                        selected && "bg-accent-info text-white font-semibold",
+                        isShaking && "!bg-accent-critical/20 !text-accent-critical"
                       )}
                     >
                       {cell.day}
