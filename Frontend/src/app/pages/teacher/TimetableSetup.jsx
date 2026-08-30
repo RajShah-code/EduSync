@@ -8,6 +8,8 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { Skeleton } from "../../components/ui/skeleton";
+import { DateRangePicker } from "../../components/ui/date-range-picker";
+import { cn } from "../../components/ui/utils";
 import PageShell from "../../components/PageShell";
 import {
   AlertDialog,
@@ -19,6 +21,9 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
+
+// Late-warning delay presets — the "Custom" chip covers everything else.
+const DELAY_PRESETS = [5, 10, 20];
 
 // Monday through Saturday (day_of_week 0–5)
 const DAYS = [
@@ -124,6 +129,15 @@ export function TimetableSetup() {
   // Global Timetable Options State (Teacher-level single setting)
   const [defaultDelayMinutes, setDefaultDelayMinutes] = useState(5);
   const [updatingDelay, setUpdatingDelay] = useState(false);
+  // Late-warning delay is a preset chip (5/10/20) unless the loaded/entered
+  // value doesn't match one — then it's "Custom" with its own inline field.
+  // customDelayMode is a UI-only flag: it opens on an explicit "Custom"
+  // click or a non-preset value, and only closes when a preset is clicked
+  // directly (never auto-closes mid-edit just because a typed value happens
+  // to pass through a preset number).
+  const [customDelayMode, setCustomDelayMode] = useState(false);
+  const [customDelayDraft, setCustomDelayDraft] = useState("");
+  const customDelayInputRef = useRef(null);
   const [newExceptionDate, setNewExceptionDate] = useState("");
   const [exceptionToDate, setExceptionToDate] = useState("");
   const [addingException, setAddingException] = useState(false);
@@ -268,6 +282,36 @@ export function TimetableSetup() {
     } finally {
       setUpdatingDelay(false);
     }
+  };
+
+  // Keep the "Custom" chip in sync with a loaded/committed value that isn't
+  // one of the presets — deliberately one-directional (only ever turns
+  // custom mode ON here); turning it back off only happens when a preset
+  // chip is clicked directly (see handleSelectDelayPreset), never as a side
+  // effect of a value passing through a preset number mid-edit.
+  useEffect(() => {
+    if (!DELAY_PRESETS.includes(defaultDelayMinutes)) {
+      setCustomDelayMode(true);
+      setCustomDelayDraft(String(defaultDelayMinutes));
+    }
+  }, [defaultDelayMinutes]);
+
+  const handleSelectDelayPreset = (mins) => {
+    setCustomDelayMode(false);
+    handleUpdateGlobalDelay(mins);
+  };
+
+  const handleOpenCustomDelay = () => {
+    setCustomDelayDraft(String(defaultDelayMinutes));
+    setCustomDelayMode(true);
+    requestAnimationFrame(() => customDelayInputRef.current?.focus());
+  };
+
+  const commitCustomDelay = () => {
+    const parsed = parseInt(customDelayDraft, 10);
+    const clamped = Number.isFinite(parsed) ? Math.min(180, Math.max(0, parsed)) : defaultDelayMinutes;
+    setCustomDelayDraft(String(clamped));
+    if (clamped !== defaultDelayMinutes) handleUpdateGlobalDelay(clamped);
   };
 
   // Organize entries per day (sorted by start_time ascending)
@@ -935,31 +979,65 @@ export function TimetableSetup() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-bg-base border border-border px-4 py-3 rounded-[var(--radius-md)] transition-colors duration-200 focus-within:border-accent-info/50 focus-within:ring-1 focus-within:ring-accent-info/20">
-            <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5 whitespace-nowrap">
+          <div className="space-y-2">
+            <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5">
               <Bell className="w-4 h-4 text-accent-info" />
               Warn at
             </label>
-            <input
-              type="range"
-              min="0"
-              max="30"
-              value={defaultDelayMinutes}
-              onChange={(e) => handleUpdateGlobalDelay(Number(e.target.value))}
-              style={{
-                background: `linear-gradient(to right, var(--accent-info) ${(defaultDelayMinutes / 30) * 100}%, var(--bg-elevated) ${(defaultDelayMinutes / 30) * 100}%)`,
-              }}
-              className="w-full h-1.5 rounded-full appearance-none cursor-pointer outline-none
-                [&::-webkit-slider-runnable-track]:appearance-none [&::-webkit-slider-runnable-track]:h-1.5 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-transparent
-                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:-mt-[5px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-info [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-bg-surface [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(0,0,0,0.45)] [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:duration-150
-                hover:[&::-webkit-slider-thumb]:scale-125 active:[&::-webkit-slider-thumb]:scale-95
-                [&::-moz-range-track]:h-1.5 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-transparent
-                [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent-info [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-bg-surface [&::-moz-range-thumb]:shadow-[0_1px_4px_rgba(0,0,0,0.45)] [&::-moz-range-thumb]:transition-transform [&::-moz-range-thumb]:duration-150
-                hover:[&::-moz-range-thumb]:scale-125 active:[&::-moz-range-thumb]:scale-95"
-            />
-            <span className="text-[length:var(--text-xs)] tnum font-semibold text-accent-info bg-accent-info/10 border border-accent-info/20 px-2 py-1 rounded-[var(--radius-sm)] shrink-0 transition-colors duration-200">
-              {defaultDelayMinutes} min
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {DELAY_PRESETS.map((mins) => {
+                const isActive = !customDelayMode && defaultDelayMinutes === mins;
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => handleSelectDelayPreset(mins)}
+                    aria-pressed={isActive}
+                    className={cn(
+                      "px-3 py-1.5 rounded-[var(--radius-pill)] text-[length:var(--text-xs)] font-semibold border cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96]",
+                      isActive
+                        ? "bg-accent-info border-accent-info text-white"
+                        : "bg-bg-base border-border text-text-secondary hover:border-border-hover hover:text-text-primary"
+                    )}
+                  >
+                    {mins} min
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={handleOpenCustomDelay}
+                aria-pressed={customDelayMode}
+                className={cn(
+                  "px-3 py-1.5 rounded-[var(--radius-pill)] text-[length:var(--text-xs)] font-semibold border cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96]",
+                  customDelayMode
+                    ? "bg-accent-info border-accent-info text-white"
+                    : "bg-bg-base border-border text-text-secondary hover:border-border-hover hover:text-text-primary"
+                )}
+              >
+                Custom
+              </button>
+
+              {customDelayMode && (
+                <div className="flex items-center gap-1 bg-bg-base border border-border rounded-[var(--radius-pill)] pl-3 pr-1.5 py-1 transition-colors duration-200 focus-within:border-accent-info/50 focus-within:ring-1 focus-within:ring-accent-info/20 animate-in fade-in zoom-in-95 duration-150">
+                  <input
+                    ref={customDelayInputRef}
+                    type="number"
+                    min={0}
+                    max={180}
+                    value={customDelayDraft}
+                    onChange={(e) => setCustomDelayDraft(e.target.value)}
+                    onBlur={commitCustomDelay}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                    className="w-8 bg-transparent border-0 outline-none text-text-primary text-[length:var(--text-xs)] font-semibold tnum text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <span className="text-[length:var(--text-xs)] text-text-muted pr-1">min</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -976,32 +1054,15 @@ export function TimetableSetup() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="flex items-center gap-2 bg-bg-base border border-border rounded-[var(--radius-md)] px-3 py-1.5 flex-1 min-w-0 transition-colors duration-200 focus-within:border-accent-info/50 focus-within:ring-1 focus-within:ring-accent-info/20">
-              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">From</span>
-                <input
-                  type="date"
-                  value={newExceptionDate}
-                  disabled={addingException}
-                  onChange={(e) => setNewExceptionDate(e.target.value)}
-                  className="bg-transparent border-0 p-0 h-5 w-full text-text-primary text-[length:var(--text-sm)] outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-              <div className="w-px self-stretch bg-border shrink-0" aria-hidden="true" />
-              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                  To <span className="normal-case font-normal text-text-muted/70">(optional)</span>
-                </span>
-                <input
-                  type="date"
-                  value={exceptionToDate}
-                  min={newExceptionDate || undefined}
-                  disabled={addingException}
-                  onChange={(e) => setExceptionToDate(e.target.value)}
-                  className="bg-transparent border-0 p-0 h-5 w-full text-text-primary text-[length:var(--text-sm)] outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-            </div>
+            <DateRangePicker
+              value={{ from: newExceptionDate, to: exceptionToDate }}
+              onChange={(from, to) => {
+                setNewExceptionDate(from);
+                setExceptionToDate(to === from ? "" : to);
+              }}
+              disabled={addingException}
+              className="flex-1 min-w-0"
+            />
             <Button
               onClick={handleAddException}
               disabled={addingException}
