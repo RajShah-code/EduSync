@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../components/ui/dialog";
-import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconMenu2 as Menu2, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3 } from "@tabler/icons-react";
+import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconMenu2 as Menu2, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3, IconPencilQuestion as PencilQuestion, IconCircleDashedCheck as CircleDashedCheck } from "@tabler/icons-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 
@@ -546,7 +546,7 @@ export function ExamCreation() {
 
                 <div>
                   <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-2">
-                    <CheckSquare className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+                    <PencilQuestion className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
                     Question Format
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -797,6 +797,15 @@ export function ExamCreation() {
                   <Button variant="outline" onClick={() => setStep(1)}>
                     <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={1.75} />
                     Back
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="ml-auto"
+                    onClick={() => setActiveTab("manage")}
+                    title="Questions are already saved — this just exits the wizard, leaving the exam in Draft."
+                  >
+                    <CircleDashedCheck className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                    Save as Draft
                   </Button>
                   <Button
                     onClick={() => setStep(3)}

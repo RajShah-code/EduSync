@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { StudentTile } from "../../components/StudentTile";
 import { StatusBadge } from "../../components/StatusBadge";
-import { IconFilter as Filter, IconGrid3x3 as Grid3x3, IconLayoutGrid as Grid2x2, IconDeviceDesktop as Monitor, IconEyeCheck as EyeCheck, IconEyeX as EyeX } from "@tabler/icons-react";
+import { IconFilter as Filter, IconGrid3x3 as Grid3x3, IconLayoutGrid as Grid2x2, IconBinoculars as Monitor, IconEyeCheck as EyeCheck, IconEyeX as EyeX } from "@tabler/icons-react";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";

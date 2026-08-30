@@ -394,6 +394,11 @@ export function LiveBroadcast() {
   // owns the other close paths — pick an item, Esc, click outside.
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const langMenuCloseTimerRef = useRef(null);
+  // Brief checkmark flash on the language option that was just clicked —
+  // confirms the click landed before the menu closes. Not tied to
+  // "selected": the selected item shows its own icon at rest (see the
+  // language dropdown below), this is only the momentary click feedback.
+  const [justPickedLangId, setJustPickedLangId] = useState(null);
 
   const cancelLangMenuClose = () => {
     if (langMenuCloseTimerRef.current) {
@@ -2344,22 +2349,32 @@ export function LiveBroadcast() {
                     </SelectTrigger>
                     <SelectContent className="shadow-[var(--shadow-dropdown)]">
                       {LANGUAGES.map((l) => {
-                        const isSelected = editorLanguage === l.id;
+                        const justPicked = justPickedLangId === l.id;
                         return (
                           <SelectItem
                             key={l.id}
                             value={l.id}
-                            className="group pr-2 [&>span:first-child]:hidden"
+                            onClick={() => {
+                              setJustPickedLangId(l.id);
+                              setTimeout(() => setJustPickedLangId(null), 400);
+                            }}
+                            className="pr-2 [&>span:first-child]:hidden"
                           >
                             <span className="flex items-center gap-1.5">
-                              {isSelected ? (
-                                <Check className="w-3.5 h-3.5 shrink-0" />
-                              ) : (
-                                <span className="relative w-3.5 h-3.5 shrink-0">
-                                  <l.icon className="w-3.5 h-3.5 absolute inset-0 group-hover:opacity-0 transition-opacity duration-150" />
-                                  <Check className="w-3.5 h-3.5 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
-                                </span>
-                              )}
+                              <span className="relative w-3.5 h-3.5 shrink-0">
+                                <l.icon
+                                  className={cn(
+                                    "w-3.5 h-3.5 absolute inset-0 transition-opacity duration-150",
+                                    justPicked && "opacity-0"
+                                  )}
+                                />
+                                <Check
+                                  className={cn(
+                                    "w-3.5 h-3.5 absolute inset-0 opacity-0 transition-opacity duration-150",
+                                    justPicked && "opacity-100"
+                                  )}
+                                />
+                              </span>
                               {l.label}
                             </span>
                           </SelectItem>
@@ -2627,7 +2642,7 @@ export function LiveBroadcast() {
                     </TooltipTrigger>
                     <TooltipContent
                       side="top"
-                      className="bg-bg-elevated border border-accent-500/40 text-text-primary px-3.5 py-2.5 rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] max-w-[240px]"
+                      className="bg-bg-elevated text-text-primary px-3.5 py-2.5 rounded-[var(--radius-lg)] shadow-[var(--shadow-modal)] max-w-[240px]"
                     >
                       {scheduledNow ? (
                         <div className="flex flex-col gap-1">

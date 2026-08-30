@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
-import { IconCalendar as Calendar, IconClock as Clock, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconBellRinging as BellRinging, IconPlus as Plus, IconTrash as Trash2, IconPencil as Edit3, IconLoader2 as Loader2, IconFileSpreadsheet as FileSpreadsheet, IconDownload as Download, IconFileTypeXls as FileTypeXls, IconX as X, IconCircleCheck as CheckCircle2, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as Sliders, IconFlask as FlaskConical, IconDeviceDesktop as DeviceDesktop, IconCalendarSmile as CalendarSmile } from "@tabler/icons-react";
+import { IconCalendar as Calendar, IconCalendarWeek as CalendarWeek, IconClock as Clock, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconBellRinging as BellRinging, IconPlus as Plus, IconTrash as Trash2, IconPencil as Edit3, IconLoader2 as Loader2, IconFileSpreadsheet as FileSpreadsheet, IconDownload as Download, IconFileTypeXls as FileTypeXls, IconX as X, IconCircleCheck as CheckCircle2, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as Sliders, IconCalendarSmile as CalendarSmile, IconMapPin as MapPin, IconPencilCode as PencilCode, IconDeviceDesktopCode as DeviceDesktopCode } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
@@ -566,7 +566,7 @@ export function TimetableSetup() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5">
         <div>
           <h1 className="text-[length:var(--text-xl)] font-bold text-text-primary tracking-tight flex items-center gap-2.5">
-            <Calendar className="w-7 h-7 text-accent-info" />
+            <CalendarWeek className="w-7 h-7 text-accent-info" />
             Weekly Timetable
           </h1>
           <p className="text-[length:var(--text-sm)] text-text-secondary mt-1">
@@ -796,9 +796,9 @@ export function TimetableSetup() {
                           {/* 1st line: subject */}
                           <div className="font-semibold text-text-primary text-[length:var(--text-sm)] flex items-center gap-1.5 pr-12 min-w-0">
                             {entry.session_type === "lab" ? (
-                              <FlaskConical className="w-4 h-4 text-accent-live shrink-0" />
+                              <DeviceDesktopCode className="w-4 h-4 text-accent-live shrink-0" />
                             ) : (
-                              <BookOpen className="w-4 h-4 text-accent-info shrink-0" />
+                              <PencilCode className="w-4 h-4 text-accent-info shrink-0" />
                             )}
                             {shouldAbbreviateSubject(entry.subject) ? (
                               <Tooltip>
@@ -1050,7 +1050,7 @@ export function TimetableSetup() {
 
                 <div>
                   <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <DeviceDesktop className="w-4 h-4 text-accent-info" /> Room / Lab
+                    <MapPin className="w-4 h-4 text-accent-info" /> Room / Lab
                   </label>
                   <Input
                     type="text"
@@ -1077,7 +1077,7 @@ export function TimetableSetup() {
                         : "bg-bg-base border-border text-text-secondary"
                     }`}
                   >
-                    <BookOpen className="w-[18px] h-[18px] text-accent-info shrink-0" />
+                    <PencilCode className="w-[18px] h-[18px] text-accent-info shrink-0" />
                     <div>
                       <div className="text-[length:var(--text-sm)]">Standard</div>
                       <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Blue card style</div>
@@ -1093,7 +1093,7 @@ export function TimetableSetup() {
                         : "bg-bg-base border-border text-text-secondary"
                     }`}
                   >
-                    <FlaskConical className="w-[18px] h-[18px] text-accent-live shrink-0" />
+                    <DeviceDesktopCode className="w-[18px] h-[18px] text-accent-live shrink-0" />
                     <div>
                       <div className="text-[length:var(--text-sm)]">Lab Session</div>
                       <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Green card style</div>
