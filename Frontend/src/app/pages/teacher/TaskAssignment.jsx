@@ -867,7 +867,8 @@ export function TaskAssignment() {
                 <div className="space-y-3 pt-2 border-t border-border">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label htmlFor="hasTimeLimit" className="text-text-primary text-sm font-medium cursor-pointer">
+                      <Label htmlFor="hasTimeLimit" className="text-text-primary text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                        <Alarm className="w-3.5 h-3.5 shrink-0" />
                         Enable Time Limit
                       </Label>
                       <p className="text-xs text-text-muted mt-0.5">
@@ -915,14 +916,14 @@ export function TaskAssignment() {
               <Button
                 type="submit"
                 disabled={!isFormValid || isPushing}
-                className="w-full bg-accent-info hover:bg-accent-info/90 text-white font-semibold py-3 text-sm h-11"
+                className="w-full bg-accent-info hover:bg-accent-info/90 text-white font-semibold py-3 text-sm h-11 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98]"
               >
                 {isPushing ? (
                   <>Assigning Task...</>
                 ) : (
                   <>
-                    <SquarePlus className="w-[18px] h-[18px] mr-2" />
-                    Assign & Broadcast Task to Students
+                    <ClipboardListIcon className="w-[18px] h-[18px] mr-2" />
+                    Assign Task
                   </>
                 )}
               </Button>
