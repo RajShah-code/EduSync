@@ -10,7 +10,7 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { StatusBadge } from "../../components/StatusBadge";
 import { TaskStatusModal } from "../../components/TaskStatusModal";
 import { cn } from "../../components/ui/utils";
-import { IconCode as Code, IconClock as Clock, IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography, IconAlarm as Alarm, IconSquarePlus as SquarePlus, IconMenu2 as Menu2 } from "@tabler/icons-react";
+import { IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography, IconAlarm as Alarm, IconSquarePlus as SquarePlus, IconMenu2 as Menu2 } from "@tabler/icons-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
@@ -797,7 +797,7 @@ export function TaskAssignment() {
 
         {/* Tab Contents */}
         {effectiveTab === "assign" ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div className="max-w-2xl mx-auto">
 
             {/* Form */}
             <form onSubmit={handlePushTask} className="space-y-6">
@@ -928,99 +928,6 @@ export function TaskAssignment() {
                 )}
               </Button>
             </form>
-
-            {/* Preview Column — framed as a literal device window so it reads as
-                "this is exactly what lands on student screens", not a generic card. */}
-            <div className="sticky top-6 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
-                Live Preview
-              </h3>
-
-              <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
-                {/* Window chrome */}
-                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-bg-elevated">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-bg-surface-3" />
-                    <span className="w-2 h-2 rounded-full bg-bg-surface-3" />
-                    <span className="w-2 h-2 rounded-full bg-bg-surface-3" />
-                  </div>
-                  <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider ml-1">
-                    Student View
-                  </span>
-                  {formData.title && (
-                    <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold tracking-wide text-accent-live">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-accent-live pulse-dot" />
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent-live" />
-                      </span>
-                      LIVE ON SEND
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-5 space-y-4">
-                  {formData.title ? (
-                    <>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <h2 className="text-base font-semibold text-text-primary truncate">
-                            {formData.title}
-                          </h2>
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {formData.languages.map((langLower) => {
-                              const lang = LANGUAGES.find((l) => l.name.toLowerCase() === langLower);
-                              return (
-                                <span
-                                  key={langLower}
-                                  className="flex items-center gap-1 px-2 py-0.5 text-[10px] tracking-wide border border-border bg-bg-base text-text-secondary rounded-[var(--radius-sm)] uppercase"
-                                >
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full shrink-0"
-                                    style={{ backgroundColor: lang?.dot || "var(--text-muted)" }}
-                                  />
-                                  {langLower}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {formData.hasTimeLimit && (
-                          <div className="flex items-center gap-1.5 text-accent-warning flex-shrink-0 bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded-[var(--radius-sm)]">
-                            <Clock className="w-4 h-4" />
-                            <span className="tnum text-xs font-semibold">
-                              {String(formData.timeLimitMinutes).padStart(2, "0")}:00
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="p-4 bg-bg-base rounded-[var(--radius-md)] border border-border">
-                        <h4 className="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-2">Instructions</h4>
-                        <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
-                          {formData.description || (
-                            <span className="italic text-text-muted">No description yet — students will see this section once you add one.</span>
-                          )}
-                        </p>
-                      </div>
-
-                      <div className="p-6 bg-bg-base rounded-[var(--radius-md)] border border-border border-dashed flex flex-col items-center justify-center gap-2">
-                        <Code className="w-8 h-8 text-text-muted" />
-                        <p className="text-xs text-text-muted text-center">
-                          Student's Monaco code workspace renders here
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-16">
-                      <p className="text-text-muted text-sm">
-                        Fill in the task details to see the live preview.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
 
           </div>
         ) : (
