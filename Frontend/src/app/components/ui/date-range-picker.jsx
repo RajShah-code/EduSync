@@ -149,7 +149,7 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
   const triggerShake = (iso) => {
     if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
     setShakeISO(iso);
-    shakeTimeoutRef.current = setTimeout(() => setShakeISO(null), 400);
+    shakeTimeoutRef.current = setTimeout(() => setShakeISO(null), 600);
   };
   useEffect(() => () => clearTimeout(shakeTimeoutRef.current), []);
 
@@ -416,8 +416,7 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
                     }
                     aria-pressed={selected}
                     className={cn(
-                      "relative h-8 flex items-center justify-center",
-                      cell.isPast ? "cursor-not-allowed" : "cursor-pointer",
+                      "relative h-8 flex items-center justify-center cursor-pointer",
                       selected && (isLiveDragOnly ? "bg-accent-info/15" : "bg-accent-info/20"),
                       roundLeft && "rounded-l-full",
                       roundRight && "rounded-r-full",
