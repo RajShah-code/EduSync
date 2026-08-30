@@ -433,7 +433,7 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
                       className={cn(
                         "relative z-10 w-7 h-7 flex items-center justify-center rounded-full text-[length:var(--text-xs)] tnum transition-[background-color,color,transform] duration-100",
                         cell.isPast
-                          ? "text-text-muted/40"
+                          ? "text-text-secondary"
                           : !cell.inCurrentMonth && "text-text-muted/50",
                         cell.inCurrentMonth && !cell.isPast && !selected && "text-text-primary hover:bg-bg-surface-3",
                         selected && "bg-accent-info text-white font-semibold",
