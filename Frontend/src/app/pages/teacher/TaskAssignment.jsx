@@ -986,10 +986,17 @@ export function TaskAssignment() {
                         : "text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary"
                     )}
                   >
-                    <CircleDot
-                      className={cn("w-3.5 h-3.5 flex-shrink-0", isLive ? "text-accent-live" : "text-text-muted")}
-                      strokeWidth={2.5}
-                    />
+                    {t.status === "closed" ? (
+                      <CheckCircle2
+                        className="w-3.5 h-3.5 flex-shrink-0 text-text-muted"
+                        strokeWidth={2.5}
+                      />
+                    ) : (
+                      <CircleDot
+                        className={cn("w-3.5 h-3.5 flex-shrink-0", isLive ? "text-accent-500" : "text-text-muted")}
+                        strokeWidth={2.5}
+                      />
+                    )}
                     <span className="max-w-[180px] truncate">#{t.sequence_order}: {t.title}</span>
                   </button>
                 );
