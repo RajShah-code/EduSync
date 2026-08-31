@@ -33,6 +33,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     readOnly = false,
     isActive = true,
     onStrokeEmit,
+    onStrokeDeleteEmit,
     onClearEmit,
     onSnapshotEmit,
     onSyncEmit,
@@ -139,6 +140,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     undo: () => handleUndoInternal(),
     redo: () => handleRedoInternal(),
     applyRemoteStroke: (stroke) => handleRemoteStroke(stroke),
+    applyRemoteStrokeDelete: (strokeId) => handleRemoteStrokeDelete(strokeId),
     applyRemoteClear: () => handleRemoteClear(),
     loadSnapshot: (strokes, bg) => handleLoadSnapshot(strokes, bg),
   }));
@@ -192,7 +194,18 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         e.preventDefault();
         e.stopPropagation();
         handleRedoInternal();
+      } else if (
+        selectedShapeIdRef.current &&
+        (e.key === "Delete" || code === "Delete" || e.key === "Backspace" || code === "Backspace")
+      ) {
+        // A shape is activated — Delete/Backspace removes just that shape.
+        e.preventDefault();
+        e.stopPropagation();
+        handleDeleteSelectedShape();
       } else if (e.key === "Delete" || code === "Delete") {
+        // Nothing activated — Delete keeps its original "clear whole canvas"
+        // behavior. Backspace alone (nothing selected) intentionally does
+        // nothing, so it never doubles as a surprise wipe-canvas shortcut.
         e.preventDefault();
         e.stopPropagation();
         handleClearAllInternal();
@@ -862,6 +875,22 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     redrawAll();
   };
 
+  // Removes a stroke by id when a *remote* delete arrives — does not
+  // re-emit, since the sender already told everyone else.
+  const handleRemoteStrokeDelete = (strokeId) => {
+    if (!strokeId) return;
+    const exists = strokesRef.current.some((s) => s.id === strokeId);
+    if (!exists) return;
+
+    pushSnapshotBeforeChange();
+    strokesRef.current = strokesRef.current.filter((s) => s.id !== strokeId);
+    if (selectedShapeIdRef.current === strokeId) {
+      deselectShape();
+    }
+    updateHistoryState();
+    redrawAll();
+  };
+
   const handleRemoteClear = () => {
     pushSnapshotBeforeChange();
     strokesRef.current = [];
@@ -894,6 +923,26 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     }
     if (onSyncEmit) {
       onSyncEmit([]);
+    }
+  };
+
+  // Deletes just the currently activated shape (Delete/Backspace) — the
+  // local action; the remote/mirroring side applies it via
+  // handleRemoteStrokeDelete instead of re-running this.
+  const handleDeleteSelectedShape = () => {
+    const id = selectedShapeIdRef.current;
+    if (!id) return;
+    const exists = strokesRef.current.some((s) => s.id === id);
+    if (!exists) return;
+
+    pushSnapshotBeforeChange();
+    strokesRef.current = strokesRef.current.filter((s) => s.id !== id);
+    deselectShape();
+    updateHistoryState();
+    redrawAll();
+
+    if (onStrokeDeleteEmit) {
+      onStrokeDeleteEmit(id);
     }
   };
 

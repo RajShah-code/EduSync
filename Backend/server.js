@@ -959,6 +959,20 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('teacher:whiteboard_stroke_delete', (payload) => {
+    try {
+      if (role !== 'teacher') return;
+      const { sessionId, strokeId } = payload;
+      const prev = getSessionState(sessionId);
+      if (prev) {
+        prev.whiteboardStrokes = (prev.whiteboardStrokes || []).filter((s) => s.id !== strokeId);
+      }
+      socket.to(`session:${sessionId}`).emit('teacher:whiteboard_stroke_delete', payload);
+    } catch (err) {
+      console.error('[Socket] teacher:whiteboard_stroke_delete relay error:', err);
+    }
+  });
+
   socket.on('teacher:whiteboard_clear', (payload) => {
     try {
       if (role !== 'teacher') return;
