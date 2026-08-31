@@ -233,6 +233,10 @@ export function LiveBroadcast() {
   // button's label so the icon centers, same width-shrink mechanism as the
   // Schedule/Instant pills above, just triggered by hover instead of state.
   const [hoveredControlButton, setHoveredControlButton] = useState(null);
+  // startLectureButtonHovered: same icon-centers/text-collapses hover
+  // treatment as the control-bar buttons, applied to the Setup Modal's
+  // Start Lecture button.
+  const [startLectureButtonHovered, setStartLectureButtonHovered] = useState(false);
   // schedTipOpen: controls the recoloured shadcn tooltip on the Schedule pill —
   // the rich "what's on now" card when a lecture is scheduled, or the plain
   // "No lecture scheduled" line when idle. Kept fully controlled (rather than
@@ -3209,12 +3213,15 @@ export function LiveBroadcast() {
           )}
 
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button
+            <button
+              type="button"
               onClick={handleStartBroadcast}
               disabled={startLoading}
               aria-disabled={!isFormValid || startLoading}
+              onMouseEnter={() => setStartLectureButtonHovered(true)}
+              onMouseLeave={() => setStartLectureButtonHovered(false)}
               className={cn(
-                "btn-press text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150",
+                "btn-press relative inline-flex items-center justify-center h-9 px-4 rounded-md text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150",
                 // Live/running → high-vis broadcast green; not-yet-started → teacher violet
                 isBroadcasting
                   ? "bg-accent-live hover:bg-accent-live/90"
@@ -3227,15 +3234,41 @@ export function LiveBroadcast() {
                   : "opacity-40 cursor-not-allowed hover:bg-accent-info"
               )}
             >
-              {startLoading ? (
-                <Loader2 className="w-[18px] h-[18px] mr-2 animate-spin" />
-              ) : setupModalMode === "scheduled" ? (
-                <CalendarStats className="w-[18px] h-[18px] mr-2" />
-              ) : (
-                <Monitor className="w-[18px] h-[18px] mr-2" />
-              )}
-              {startLoading ? "Starting…" : "Start Lecture"}
-            </Button>
+              {/* Invisible sizer — always the full expanded content, so
+                  hovering (which collapses the label below) never changes
+                  this button's own width. */}
+              <span className="invisible flex items-center" aria-hidden="true">
+                {startLoading ? (
+                  <Loader2 className="w-[18px] h-[18px] animate-spin" />
+                ) : setupModalMode === "scheduled" ? (
+                  <CalendarStats className="w-[18px] h-[18px]" />
+                ) : (
+                  <Monitor className="w-[18px] h-[18px]" />
+                )}
+                <span className="pl-2 whitespace-nowrap">{startLoading ? "Starting…" : "Start Lecture"}</span>
+              </span>
+              <span className="absolute inset-0 flex items-center justify-center">
+                {startLoading ? (
+                  <Loader2 className="w-[18px] h-[18px] shrink-0 animate-spin" />
+                ) : setupModalMode === "scheduled" ? (
+                  <CalendarStats className="w-[18px] h-[18px] shrink-0" />
+                ) : (
+                  <Monitor className="w-[18px] h-[18px] shrink-0" />
+                )}
+                <motion.span
+                  className="overflow-hidden whitespace-nowrap"
+                  initial={false}
+                  animate={
+                    startLectureButtonHovered
+                      ? { width: 0, opacity: 0 }
+                      : { width: "auto", opacity: 1 }
+                  }
+                  transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                >
+                  <span className="pl-2">{startLoading ? "Starting…" : "Start Lecture"}</span>
+                </motion.span>
+              </span>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
