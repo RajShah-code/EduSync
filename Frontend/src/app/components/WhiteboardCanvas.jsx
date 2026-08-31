@@ -69,8 +69,12 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   const [selectedShapeId, setSelectedShapeId] = useState(null);
   const [selectedShapeTool, setSelectedShapeTool] = useState(null); // 'line' | 'rectangle' | 'circle' | null
   const [resizeHandlePositions, setResizeHandlePositions] = useState(null); // {x1,y1,x2,y2} in on-screen CSS px
-  // In-progress Select-tool move-drag on the activated shape's body.
+  // In-progress Select-tool move-drag on the activated shape's body (interior).
   const movingShapeRef = useRef(null);
+  // In-progress Select-tool resize-drag triggered from the activated shape's
+  // outline (as opposed to the dedicated corner dot handles, which use their
+  // own pointer handlers below).
+  const resizingShapeRef = useRef(null); // { id, which: 'p1' | 'p2' }
 
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -92,6 +96,10 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     setSelectedShapeId(null);
     setSelectedShapeTool(null);
     setResizeHandlePositions(null);
+    // Defensive: drop any in-progress drag too, in case deselection happens
+    // mid-drag (e.g. Escape pressed while dragging).
+    movingShapeRef.current = null;
+    resizingShapeRef.current = null;
   };
 
   const handleUndoInternal = () => {
@@ -410,33 +418,74 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     return Math.hypot(px - boundaryX, py - boundaryY);
   };
 
+  // Classifies a click point (on-screen CSS-px, from getCanvasCoords) against
+  // ONE shape: 'p1' / 'p2' → near that corner/endpoint (paint-style: grabbing
+  // the outline resizes from whichever stored corner is closer — Line's
+  // endpoints count as "outline" too, since a line has no interior); 'move'
+  // → inside the shape's body (Rectangle bounding box / Circle ellipse;
+  // for Line, the middle stretch of the segment away from either endpoint);
+  // null → the click doesn't land on this shape at all.
+  const classifyShapeInteraction = (stroke, coords) => {
+    if (!stroke || !SELECTABLE_TOOLS.includes(stroke.tool)) return null;
+
+    const { scaleX, scaleY } = getStrokeScale(stroke);
+    const scaleAvg = (scaleX + scaleY) / 2;
+    const sx1 = stroke.x1 * scaleX;
+    const sy1 = stroke.y1 * scaleY;
+    const sx2 = stroke.x2 * scaleX;
+    const sy2 = stroke.y2 * scaleY;
+    const px = coords.x;
+    const py = coords.y;
+
+    const borderTolerance = Math.max(6, (stroke.thickness || 0) * scaleAvg / 2 + 4);
+    const nearerCorner = () =>
+      Math.hypot(px - sx1, py - sy1) <= Math.hypot(px - sx2, py - sy2) ? "p1" : "p2";
+
+    if (stroke.tool === "line") {
+      const handleTolerance = Math.max(10, borderTolerance);
+      const distP1 = Math.hypot(px - sx1, py - sy1);
+      const distP2 = Math.hypot(px - sx2, py - sy2);
+      if (distP1 <= handleTolerance && distP1 <= distP2) return "p1";
+      if (distP2 <= handleTolerance) return "p2";
+      if (distToSegment(px, py, sx1, sy1, sx2, sy2) <= borderTolerance) return "move";
+      return null;
+    }
+
+    if (stroke.tool === "rectangle") {
+      if (distToRectBorder(px, py, sx1, sy1, sx2, sy2) <= borderTolerance) return nearerCorner();
+      const rectX = Math.min(sx1, sx2);
+      const rectY = Math.min(sy1, sy2);
+      const rectW = Math.abs(sx2 - sx1);
+      const rectH = Math.abs(sy2 - sy1);
+      if (px > rectX && px < rectX + rectW && py > rectY && py < rectY + rectH) return "move";
+      return null;
+    }
+
+    // circle
+    if (distToEllipseBoundary(px, py, sx1, sy1, sx2, sy2) <= borderTolerance) return nearerCorner();
+    const radiusX = Math.abs(sx2 - sx1) / 2;
+    const radiusY = Math.abs(sy2 - sy1) / 2;
+    if (radiusX > 0.5 && radiusY > 0.5) {
+      const centerX = Math.min(sx1, sx2) + radiusX;
+      const centerY = Math.min(sy1, sy2) + radiusY;
+      const norm = Math.pow((px - centerX) / radiusX, 2) + Math.pow((py - centerY) / radiusY, 2);
+      if (norm < 1) return "move";
+    }
+    return null;
+  };
+
   // Iterates strokesRef.current back-to-front (most recently drawn = topmost)
-  // and returns the first selectable shape whose outline passes near coords
-  // (already in on-screen CSS-px, from getCanvasCoords), or null.
+  // for a shape whose OUTLINE (not interior) passes near coords — used only
+  // to pick up a not-yet-active shape. An inactive, unfilled shape's interior
+  // looks like empty canvas, so it isn't a valid hit target until it's
+  // already selected (see classifyShapeInteraction, used directly once a
+  // shape is active).
   const hitTestShapeAt = (coords) => {
     for (let i = strokesRef.current.length - 1; i >= 0; i--) {
       const stroke = strokesRef.current[i];
       if (!SELECTABLE_TOOLS.includes(stroke.tool)) continue;
-
-      const { scaleX, scaleY } = getStrokeScale(stroke);
-      const scaleAvg = (scaleX + scaleY) / 2;
-      const sx1 = stroke.x1 * scaleX;
-      const sy1 = stroke.y1 * scaleY;
-      const sx2 = stroke.x2 * scaleX;
-      const sy2 = stroke.y2 * scaleY;
-
-      const tolerance = Math.max(6, (stroke.thickness || 0) * scaleAvg / 2 + 4);
-
-      let dist;
-      if (stroke.tool === "line") {
-        dist = distToSegment(coords.x, coords.y, sx1, sy1, sx2, sy2);
-      } else if (stroke.tool === "rectangle") {
-        dist = distToRectBorder(coords.x, coords.y, sx1, sy1, sx2, sy2);
-      } else {
-        dist = distToEllipseBoundary(coords.x, coords.y, sx1, sy1, sx2, sy2);
-      }
-
-      if (dist <= tolerance) return stroke;
+      const interaction = classifyShapeInteraction(stroke, coords);
+      if (interaction === "p1" || interaction === "p2") return stroke;
     }
     return null;
   };
@@ -539,45 +588,76 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // A new stroke is starting (or the teacher clicked elsewhere on the
-    // canvas) — drop any active shape selection/handles.
-    if (selectedShapeIdRef.current) {
-      deselectShape();
-    }
-
     // Select tool: click an existing Line/Rectangle/Circle to activate it —
-    // and arm a move-drag from this same pointerdown, in case the teacher
-    // drags rather than just clicks. Never starts a new stroke, hit or not.
-    // (A click that actually landed on a resize handle never reaches here —
-    // the handle is a separate, topmost element with its own pointer
-    // handlers — so that priority is already preserved.)
+    // and arm a move- or resize-drag from this same pointerdown, in case the
+    // teacher drags rather than just clicks. Never starts a new stroke, hit
+    // or not. (A click that actually landed on a corner-dot handle never
+    // reaches here — the handle is a separate, topmost element with its own
+    // pointer handlers — so that priority is already preserved.)
     if (tool === "select") {
       const coords = getCanvasCoords(e);
-      const hitStroke = hitTestShapeAt(coords);
-      if (hitStroke) {
-        selectedShapeIdRef.current = hitStroke.id;
-        setSelectedShapeId(hitStroke.id);
-        setSelectedShapeTool(hitStroke.tool);
-        setResizeHandlePositions(computeHandlePositions(hitStroke));
 
-        try {
-          canvas.setPointerCapture(e.pointerId);
-        } catch {
-          // Safe fallback for synthetic events or touch emulation
+      // Prefer the already-active shape if this click lands on it at all —
+      // keeps it selected without ever bouncing through a deselect first.
+      // Its whole bounding box is fair game (interior = move, outline =
+      // resize) since it's already visibly highlighted.
+      const activeStroke = selectedShapeIdRef.current
+        ? strokesRef.current.find((s) => s.id === selectedShapeIdRef.current)
+        : null;
+      let targetStroke = activeStroke;
+      let interaction = activeStroke ? classifyShapeInteraction(activeStroke, coords) : null;
+
+      if (!interaction) {
+        // Active shape wasn't hit (or nothing was active) — try a different
+        // shape by its outline only (an inactive, unfilled shape's interior
+        // looks like empty canvas, so it isn't a valid hit target yet).
+        const hitStroke = hitTestShapeAt(coords);
+        if (!hitStroke) {
+          deselectShape();
+          return;
         }
+        targetStroke = hitStroke;
+        interaction = classifyShapeInteraction(hitStroke, coords);
+      }
 
+      if (!interaction || !targetStroke) {
+        deselectShape();
+        return;
+      }
+
+      selectedShapeIdRef.current = targetStroke.id;
+      setSelectedShapeId(targetStroke.id);
+      setSelectedShapeTool(targetStroke.tool);
+      setResizeHandlePositions(computeHandlePositions(targetStroke));
+
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch {
+        // Safe fallback for synthetic events or touch emulation
+      }
+
+      if (interaction === "p1" || interaction === "p2") {
+        pushSnapshotBeforeChange();
+        resizingShapeRef.current = { id: targetStroke.id, which: interaction };
+      } else {
         movingShapeRef.current = {
-          id: hitStroke.id,
+          id: targetStroke.id,
           startX: coords.x,
           startY: coords.y,
-          origX1: hitStroke.x1,
-          origY1: hitStroke.y1,
-          origX2: hitStroke.x2,
-          origY2: hitStroke.y2,
+          origX1: targetStroke.x1,
+          origY1: targetStroke.y1,
+          origX2: targetStroke.x2,
+          origY2: targetStroke.y2,
           snapshotPushed: false,
         };
       }
       return;
+    }
+
+    // A new stroke is starting (or the teacher clicked elsewhere on the
+    // canvas) — drop any active shape selection/handles.
+    if (selectedShapeIdRef.current) {
+      deselectShape();
     }
 
     const isPen = e.pointerType === "pen";
@@ -642,6 +722,21 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   };
 
   const handlePointerMove = (e) => {
+    // Select-tool resize-drag, started from the shape's outline rather than
+    // a corner-dot handle — same math as makeHandleDragHandlers, via the
+    // shared applyResizeDrag helper.
+    if (resizingShapeRef.current) {
+      if (readOnly) return;
+      const { id, which } = resizingShapeRef.current;
+      const stroke = strokesRef.current.find((s) => s.id === id);
+      if (!stroke) {
+        resizingShapeRef.current = null;
+        return;
+      }
+      applyResizeDrag(stroke, which, getCanvasCoords(e));
+      return;
+    }
+
     // Select-tool move-drag on the activated shape's body takes priority
     // over the normal drawing path (which is inert anyway while dragging,
     // since isDrawingRef is never set true for the Select tool).
@@ -718,6 +813,23 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   };
 
   const handlePointerUp = (e) => {
+    if (resizingShapeRef.current) {
+      const canvas = canvasRef.current;
+      if (canvas && e.pointerId !== undefined) {
+        try {
+          canvas.releasePointerCapture(e.pointerId);
+        } catch {
+          // Safe fallback if already released
+        }
+      }
+      const { id } = resizingShapeRef.current;
+      resizingShapeRef.current = null;
+      const stroke = strokesRef.current.find((s) => s.id === id);
+      if (!stroke) return;
+      finishResizeDrag(stroke);
+      return;
+    }
+
     if (movingShapeRef.current) {
       const canvas = canvasRef.current;
       if (canvas && e.pointerId !== undefined) {
@@ -782,12 +894,43 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     handlePointerUp(e);
   };
 
-  // ── Resize Handle Drag (Line/Rectangle/Circle, post-draw) ─────────────────
-  // Builds the pointerdown/move/up trio for one handle ('p1' → x1,y1 or
-  // 'p2' → x2,y2), mutating the selected stroke in strokesRef.current by id
-  // and re-emitting it through the existing onStrokeEmit sync path — same
-  // "draw"/"end" phases already used for in-progress strokes, so the
-  // receiving side doesn't need a new sync mechanism.
+  // ── Resize Drag (Line/Rectangle/Circle, post-draw) ─────────────────────────
+  // Mutates the selected stroke in strokesRef.current by id and re-emits it
+  // through the existing onStrokeEmit sync path — same "draw"/"end" phases
+  // already used for in-progress strokes, so the receiving side doesn't need
+  // a new sync mechanism. Shared by the dedicated corner-dot handles AND an
+  // outline-drag started straight from the canvas (Select tool) — same math,
+  // same sync, just two different trigger elements/pointer-capture targets.
+  const applyResizeDrag = (stroke, which, coords) => {
+    const { scaleX, scaleY } = getStrokeScale(stroke);
+    const strokeX = coords.x / (scaleX || 1);
+    const strokeY = coords.y / (scaleY || 1);
+
+    if (which === "p1") {
+      stroke.x1 = strokeX;
+      stroke.y1 = strokeY;
+    } else {
+      stroke.x2 = strokeX;
+      stroke.y2 = strokeY;
+    }
+
+    redrawAll();
+    setResizeHandlePositions(computeHandlePositions(stroke));
+
+    if (onStrokeEmit) {
+      onStrokeEmit({ ...stroke, phase: "draw" });
+    }
+  };
+
+  const finishResizeDrag = (stroke) => {
+    redrawAll();
+    setResizeHandlePositions(computeHandlePositions(stroke));
+
+    if (onStrokeEmit) {
+      onStrokeEmit({ ...stroke, phase: "end" });
+    }
+  };
+
   const makeHandleDragHandlers = (which) => {
     const onDown = (e) => {
       e.preventDefault();
@@ -807,26 +950,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       const stroke = strokesRef.current.find((s) => s.id === selectedShapeIdRef.current);
       if (!stroke) return;
       e.preventDefault();
-
-      const coords = getCanvasCoords(e);
-      const { scaleX, scaleY } = getStrokeScale(stroke);
-      const strokeX = coords.x / (scaleX || 1);
-      const strokeY = coords.y / (scaleY || 1);
-
-      if (which === "p1") {
-        stroke.x1 = strokeX;
-        stroke.y1 = strokeY;
-      } else {
-        stroke.x2 = strokeX;
-        stroke.y2 = strokeY;
-      }
-
-      redrawAll();
-      setResizeHandlePositions(computeHandlePositions(stroke));
-
-      if (onStrokeEmit) {
-        onStrokeEmit({ ...stroke, phase: "draw" });
-      }
+      applyResizeDrag(stroke, which, getCanvasCoords(e));
     };
 
     const onUp = (e) => {
@@ -837,13 +961,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         // Safe fallback if already released
       }
       if (!stroke) return;
-
-      redrawAll();
-      setResizeHandlePositions(computeHandlePositions(stroke));
-
-      if (onStrokeEmit) {
-        onStrokeEmit({ ...stroke, phase: "end" });
-      }
+      finishResizeDrag(stroke);
     };
 
     return { onDown, onMove, onUp };
