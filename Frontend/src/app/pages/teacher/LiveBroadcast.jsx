@@ -405,11 +405,6 @@ export function LiveBroadcast() {
   // owns the other close paths — pick an item, Esc, click outside.
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const langMenuCloseTimerRef = useRef(null);
-  // Brief checkmark flash on the language option that was just clicked —
-  // confirms the click landed before the menu closes. Not tied to
-  // "selected": the selected item shows its own icon at rest (see the
-  // language dropdown below), this is only the momentary click feedback.
-  const [justPickedLangId, setJustPickedLangId] = useState(null);
 
   const cancelLangMenuClose = () => {
     if (langMenuCloseTimerRef.current) {
@@ -2383,29 +2378,30 @@ export function LiveBroadcast() {
                       container={isFullScreen ? fullScreenContainerRef.current : undefined}
                     >
                       {LANGUAGES.map((l) => {
-                        const justPicked = justPickedLangId === l.id;
+                        const isSelected = editorLanguage === l.id;
                         return (
                           <SelectItem
                             key={l.id}
                             value={l.id}
-                            onClick={() => {
-                              setJustPickedLangId(l.id);
-                              setTimeout(() => setJustPickedLangId(null), 400);
-                            }}
-                            className="pr-2 [&>span:first-child]:hidden"
+                            className="group pr-2 [&>span:first-child]:hidden"
                           >
-                            <span className="flex items-center gap-1.5">
+                            <span
+                              className={cn(
+                                "flex items-center gap-1.5",
+                                isSelected ? "text-accent-info font-bold" : "text-text-primary"
+                              )}
+                            >
                               <span className="relative w-3.5 h-3.5 shrink-0">
                                 <l.icon
                                   className={cn(
                                     "w-3.5 h-3.5 absolute inset-0 transition-opacity duration-150",
-                                    justPicked && "opacity-0"
+                                    isSelected ? "opacity-100" : "opacity-100 group-hover:opacity-0"
                                   )}
                                 />
                                 <Check
                                   className={cn(
-                                    "w-3.5 h-3.5 absolute inset-0 opacity-0 transition-opacity duration-150",
-                                    justPicked && "opacity-100"
+                                    "w-3.5 h-3.5 absolute inset-0 transition-opacity duration-150",
+                                    isSelected ? "opacity-0" : "opacity-0 group-hover:opacity-100"
                                   )}
                                 />
                               </span>
