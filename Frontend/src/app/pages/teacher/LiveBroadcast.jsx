@@ -2770,7 +2770,7 @@ export function LiveBroadcast() {
                       permission hasn't been granted (or was denied), clicking
                       (re)prompts the OS/browser permission dialog instead of
                       being disabled, so the teacher always has a way to turn it on. */}
-                  <motion.button
+                  <button
                     type="button"
                     onClick={handleMicToggle}
                     onMouseEnter={() => setHoveredControlButton("mic")}
@@ -2786,7 +2786,7 @@ export function LiveBroadcast() {
                     }
                     aria-label={!hasMic ? "Turn on microphone" : micMuted ? "Unmute microphone" : "Mute microphone"}
                     className={cn(
-                      "btn-press relative h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative h-10 min-w-[9.5rem] px-4 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
                       !hasMic
                         ? micWarning
                           ? "border-accent-warning/40 bg-accent-warning/15 text-accent-warning hover:bg-accent-warning/25"
@@ -2795,13 +2795,6 @@ export function LiveBroadcast() {
                         ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
-                    initial={false}
-                    animate={
-                      hoveredControlButton === "mic"
-                        ? { minWidth: "2.5rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
-                        : { minWidth: "auto", paddingLeft: "1rem", paddingRight: "1rem" }
-                    }
-                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
                     {micWarning && (
                       <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-warning ring-2 ring-bg-elevated" aria-hidden="true" />
@@ -2819,10 +2812,10 @@ export function LiveBroadcast() {
                     >
                       <span className="pl-2">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
                     </motion.span>
-                  </motion.button>
+                  </button>
 
                   {/* Screen Share toggle */}
-                  <motion.button
+                  <button
                     data-tour="broadcast-screenshare"
                     type="button"
                     onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
@@ -2831,18 +2824,11 @@ export function LiveBroadcast() {
                     title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
                     aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
                     className={cn(
-                      "btn-press h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
+                      "btn-press h-10 min-w-[13rem] px-4 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
                       isScreenSharing
                         ? "border-accent-700/50 bg-accent-700 text-white hover:bg-accent-700/90"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
-                    initial={false}
-                    animate={
-                      hoveredControlButton === "screenshare"
-                        ? { minWidth: "2.5rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
-                        : { minWidth: "auto", paddingLeft: "1rem", paddingRight: "1rem" }
-                    }
-                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
                     {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px] shrink-0" /> : <ScreenShareOn className="w-[18px] h-[18px] shrink-0" />}
                     <motion.span
@@ -2857,10 +2843,10 @@ export function LiveBroadcast() {
                     >
                       <span className="pl-2">{isScreenSharing ? "Stop Sharing" : "Start Screen Share"}</span>
                     </motion.span>
-                  </motion.button>
+                  </button>
 
                   {/* Record toggle */}
-                  <motion.button
+                  <button
                     data-tour="broadcast-record"
                     type="button"
                     onClick={handleToggleRecording}
@@ -2869,18 +2855,11 @@ export function LiveBroadcast() {
                     title={isRecording ? "Stop recording" : "Start recording"}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
                     className={cn(
-                      "btn-press relative h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative h-10 min-w-[11rem] px-4 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
                       isRecording
                         ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
-                    initial={false}
-                    animate={
-                      hoveredControlButton === "record"
-                        ? { minWidth: "2.5rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
-                        : { minWidth: "auto", paddingLeft: "1rem", paddingRight: "1rem" }
-                    }
-                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
                     {isRecording && (
                       <span className="absolute inset-0 rounded-full ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
@@ -2902,7 +2881,7 @@ export function LiveBroadcast() {
                     >
                       <span className="pl-2">{isRecording ? "Stop Recording" : "Record"}</span>
                     </motion.span>
-                  </motion.button>
+                  </button>
 
                   {/* Download Recording — appears only once a finished recording is ready */}
                   {recordingDownloadUrl && recordingState === "off" && (
@@ -2931,21 +2910,14 @@ export function LiveBroadcast() {
                     <Users className="w-4 h-4" />
                     <span className="tnum">{connectedStudents.length}</span>
                   </button>
-                  <motion.button
+                  <button
                     type="button"
                     onClick={() => setShowStopConfirm(true)}
                     onMouseEnter={() => setHoveredControlButton("end")}
                     onMouseLeave={() => setHoveredControlButton(null)}
                     title="End lecture"
                     aria-label="End lecture"
-                    className="btn-press h-11 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
-                    initial={false}
-                    animate={
-                      hoveredControlButton === "end"
-                        ? { minWidth: "2.75rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
-                        : { minWidth: "auto", paddingLeft: "1.25rem", paddingRight: "1.25rem" }
-                    }
-                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                    className="btn-press h-11 min-w-[6rem] px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
                   >
                     <MonitorStop className="w-[18px] h-[18px] shrink-0" />
                     <motion.span
@@ -2960,7 +2932,7 @@ export function LiveBroadcast() {
                     >
                       <span className="pl-2">End</span>
                     </motion.span>
-                  </motion.button>
+                  </button>
                 </div>
               </div>
             )}
