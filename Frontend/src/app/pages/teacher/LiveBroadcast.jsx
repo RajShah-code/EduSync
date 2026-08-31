@@ -2764,7 +2764,7 @@ export function LiveBroadcast() {
                     }
                     aria-label={!hasMic ? "Turn on microphone" : micMuted ? "Unmute microphone" : "Mute microphone"}
                     className={cn(
-                      "relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                      "btn-press relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-colors duration-150",
                       !hasMic
                         ? micWarning
                           ? "border-accent-warning/40 bg-accent-warning/15 text-accent-warning hover:bg-accent-warning/25"
@@ -2789,7 +2789,7 @@ export function LiveBroadcast() {
                     title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
                     aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
                     className={cn(
-                      "h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                      "btn-press h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-colors duration-150",
                       isScreenSharing
                         ? "border-accent-700/50 bg-accent-700 text-white hover:bg-accent-700/90"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
@@ -2807,7 +2807,7 @@ export function LiveBroadcast() {
                     title={isRecording ? "Stop recording" : "Start recording"}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
                     className={cn(
-                      "relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                      "btn-press relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-colors duration-150",
                       isRecording
                         ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
@@ -2856,7 +2856,7 @@ export function LiveBroadcast() {
                     onClick={() => setShowStopConfirm(true)}
                     title="End lecture"
                     aria-label="End lecture"
-                    className="h-11 px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center gap-2 font-medium text-sm shadow-[var(--shadow-modal)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
+                    className="btn-press h-11 px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center gap-2 font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
                   >
                     <MonitorStop className="w-[18px] h-[18px]" />
                     End
