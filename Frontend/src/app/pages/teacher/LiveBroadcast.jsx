@@ -3088,7 +3088,7 @@ export function LiveBroadcast() {
             {/* Icon sits ON the pill's own border (native fieldset/legend
                 notch — the browser breaks the top border around the legend
                 box automatically), not inside the input area. */}
-            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+            <fieldset className="relative min-w-0 rounded-[1.4375rem] border border-border p-0">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <Books className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
@@ -3099,11 +3099,11 @@ export function LiveBroadcast() {
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, lectureName: e.target.value }))
                 }
-                className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
+                className="border-0 rounded-[1.4375rem] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
               />
             </fieldset>
 
-            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+            <fieldset className="relative min-w-0 rounded-[1.4375rem] border border-border p-0">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <Book2 className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
@@ -3114,11 +3114,11 @@ export function LiveBroadcast() {
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, subject: e.target.value }))
                 }
-                className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
+                className="border-0 rounded-[1.4375rem] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
               />
             </fieldset>
 
-            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+            <fieldset className="relative min-w-0 rounded-[1.4375rem] border border-border p-0">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <Lock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
@@ -3130,7 +3130,7 @@ export function LiveBroadcast() {
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, password: e.target.value }))
                   }
-                  className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted pr-10 focus-visible:ring-0"
+                  className="border-0 rounded-[1.4375rem] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted pr-10 focus-visible:ring-0"
                 />
                 <button
                   type="button"
@@ -3144,7 +3144,7 @@ export function LiveBroadcast() {
               </div>
             </fieldset>
 
-            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+            <fieldset className="relative min-w-0 rounded-[1.4375rem] border border-border p-0">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <MapPin className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
@@ -3155,7 +3155,7 @@ export function LiveBroadcast() {
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, labRoom: e.target.value }))
                 }
-                className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
+                className="border-0 rounded-[1.4375rem] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
               />
             </fieldset>
 
