@@ -18,6 +18,32 @@ export function CodeOutputPanel({
   const isDraggingRef = useRef(false);
   const [isDockMenuOpen, setIsDockMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
+  // Hover-to-open, matching the language dropdown. Dock is a plain div/button
+  // (not Radix), so it doesn't have Radix Select's `body { pointer-events:
+  // none }` quirk — a normal mouseleave-with-delay is enough, no pointer-
+  // coordinate hit-testing needed here.
+  const dockMenuCloseTimerRef = useRef(null);
+
+  const openDockMenu = () => {
+    if (dockMenuCloseTimerRef.current) {
+      clearTimeout(dockMenuCloseTimerRef.current);
+      dockMenuCloseTimerRef.current = null;
+    }
+    setIsDockMenuOpen(true);
+  };
+  const scheduleDockMenuClose = () => {
+    if (dockMenuCloseTimerRef.current) return;
+    dockMenuCloseTimerRef.current = setTimeout(() => {
+      dockMenuCloseTimerRef.current = null;
+      setIsDockMenuOpen(false);
+    }, 180);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (dockMenuCloseTimerRef.current) clearTimeout(dockMenuCloseTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -126,7 +152,12 @@ export function CodeOutputPanel({
 
         {/* Dock position selector dropdown */}
         {resizable && onDockChange && (
-          <div className="relative" ref={dropdownRef}>
+          <div
+            className="relative"
+            ref={dropdownRef}
+            onMouseEnter={openDockMenu}
+            onMouseLeave={scheduleDockMenuClose}
+          >
             <button
               type="button"
               onClick={() => setIsDockMenuOpen((prev) => !prev)}
