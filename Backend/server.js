@@ -944,7 +944,12 @@ io.on('connection', (socket) => {
       if (prev) {
         if (!prev.whiteboardStrokes) prev.whiteboardStrokes = [];
         if (stroke && stroke.phase === 'end') {
-          prev.whiteboardStrokes.push(stroke);
+          const idx = prev.whiteboardStrokes.findIndex((s) => s.id === stroke.id);
+          if (idx !== -1) {
+            prev.whiteboardStrokes[idx] = stroke;
+          } else {
+            prev.whiteboardStrokes.push(stroke);
+          }
         }
         if (bgColor) prev.whiteboardBgColor = bgColor;
       }
