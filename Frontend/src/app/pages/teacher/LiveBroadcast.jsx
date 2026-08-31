@@ -3122,7 +3122,7 @@ export function LiveBroadcast() {
               disabled={startLoading}
               aria-disabled={!isFormValid || startLoading}
               className={cn(
-                "text-white disabled:opacity-40 disabled:cursor-not-allowed transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]",
+                "btn-press text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150",
                 // Live/running → high-vis broadcast green; not-yet-started → teacher violet
                 isBroadcasting
                   ? "bg-accent-live hover:bg-accent-live/90"
