@@ -944,32 +944,13 @@ io.on('connection', (socket) => {
       if (prev) {
         if (!prev.whiteboardStrokes) prev.whiteboardStrokes = [];
         if (stroke && stroke.phase === 'end') {
-          const idx = prev.whiteboardStrokes.findIndex((s) => s.id === stroke.id);
-          if (idx !== -1) {
-            prev.whiteboardStrokes[idx] = stroke;
-          } else {
-            prev.whiteboardStrokes.push(stroke);
-          }
+          prev.whiteboardStrokes.push(stroke);
         }
         if (bgColor) prev.whiteboardBgColor = bgColor;
       }
       socket.to(`session:${sessionId}`).emit('teacher:whiteboard_stroke', payload);
     } catch (err) {
       console.error('[Socket] teacher:whiteboard_stroke relay error:', err);
-    }
-  });
-
-  socket.on('teacher:whiteboard_stroke_delete', (payload) => {
-    try {
-      if (role !== 'teacher') return;
-      const { sessionId, strokeId } = payload;
-      const prev = getSessionState(sessionId);
-      if (prev) {
-        prev.whiteboardStrokes = (prev.whiteboardStrokes || []).filter((s) => s.id !== strokeId);
-      }
-      socket.to(`session:${sessionId}`).emit('teacher:whiteboard_stroke_delete', payload);
-    } catch (err) {
-      console.error('[Socket] teacher:whiteboard_stroke_delete relay error:', err);
     }
   });
 

@@ -2037,12 +2037,7 @@ export function LiveBroadcast() {
 
   const handleWhiteboardStroke = (stroke) => {
     if (stroke && stroke.phase === "end") {
-      const idx = teacherWhiteboardStrokesRef.current.findIndex((s) => s.id === stroke.id);
-      if (idx !== -1) {
-        teacherWhiteboardStrokesRef.current[idx] = stroke;
-      } else {
-        teacherWhiteboardStrokesRef.current.push(stroke);
-      }
+      teacherWhiteboardStrokesRef.current.push(stroke);
     }
     const currentBg = whiteboardRef.current?.getBgColor?.() || teacherWhiteboardBgColorRef.current;
     teacherWhiteboardBgColorRef.current = currentBg;
@@ -2063,19 +2058,6 @@ export function LiveBroadcast() {
     if (socket && sessionInfoRef.current) {
       socket.emit("teacher:whiteboard_clear", {
         sessionId: sessionInfoRef.current.id,
-      });
-    }
-  };
-
-  const handleWhiteboardStrokeDelete = (strokeId) => {
-    teacherWhiteboardStrokesRef.current = teacherWhiteboardStrokesRef.current.filter(
-      (s) => s.id !== strokeId
-    );
-    const socket = getSocket();
-    if (socket && sessionInfoRef.current) {
-      socket.emit("teacher:whiteboard_stroke_delete", {
-        sessionId: sessionInfoRef.current.id,
-        strokeId,
       });
     }
   };
@@ -2512,7 +2494,6 @@ export function LiveBroadcast() {
                         initialStrokes={[...teacherWhiteboardStrokesRef.current]}
                         initialBgColor={teacherWhiteboardBgColorRef.current}
                         onStrokeEmit={handleWhiteboardStroke}
-                        onStrokeDeleteEmit={handleWhiteboardStrokeDelete}
                         onClearEmit={handleWhiteboardClear}
                         onSyncEmit={handleWhiteboardSync}
                       />
