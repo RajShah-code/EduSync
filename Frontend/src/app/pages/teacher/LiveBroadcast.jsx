@@ -3085,11 +3085,13 @@ export function LiveBroadcast() {
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
-            <div className="relative">
-              <Books
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
-                strokeWidth={1.75}
-              />
+            {/* Icon sits ON the pill's own border (native fieldset/legend
+                notch — the browser breaks the top border around the legend
+                box automatically), not inside the input area. */}
+            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+                <Books className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+              </legend>
               <Input
                 type="text"
                 placeholder="Lecture Name"
@@ -3097,15 +3099,14 @@ export function LiveBroadcast() {
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, lectureName: e.target.value }))
                 }
-                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 focus-visible:ring-0"
+                className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
               />
-            </div>
+            </fieldset>
 
-            <div className="relative">
-              <Book2
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
-                strokeWidth={1.75}
-              />
+            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+                <Book2 className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+              </legend>
               <Input
                 type="text"
                 placeholder="Subject Name"
@@ -3113,40 +3114,40 @@ export function LiveBroadcast() {
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, subject: e.target.value }))
                 }
-                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 focus-visible:ring-0"
+                className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
               />
-            </div>
+            </fieldset>
 
-            <div className="relative">
-              <Lock
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
-                strokeWidth={1.75}
-              />
-              <Input
-                type={showPassword ? "text" : "password"}
-                placeholder="Lecture Password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, password: e.target.value }))
-                }
-                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 pr-10 focus-visible:ring-0"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((p) => !p)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
-                tabIndex={-1}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
-              </button>
-            </div>
+            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+                <Lock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+              </legend>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Lecture Password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, password: e.target.value }))
+                  }
+                  className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted pr-10 focus-visible:ring-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((p) => !p)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+                </button>
+              </div>
+            </fieldset>
 
-            <div className="relative">
-              <MapPin
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
-                strokeWidth={1.75}
-              />
+            <fieldset className="relative min-w-0 rounded-full border border-border p-0">
+              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+                <MapPin className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+              </legend>
               <Input
                 type="text"
                 placeholder="Lab Room"
@@ -3154,9 +3155,9 @@ export function LiveBroadcast() {
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, labRoom: e.target.value }))
                 }
-                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 focus-visible:ring-0"
+                className="border-0 rounded-full bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
               />
-            </div>
+            </fieldset>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
