@@ -3096,7 +3096,7 @@ export function LiveBroadcast() {
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <Books className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
+              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
                   type="text"
                   placeholder="Lecture Name"
@@ -3113,7 +3113,7 @@ export function LiveBroadcast() {
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <Book2 className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
+              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
                   type="text"
                   placeholder="Subject Name"
@@ -3130,7 +3130,7 @@ export function LiveBroadcast() {
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <Lock className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="relative border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
+              <div style={{ height: '46px', borderRadius: '12px' }} className="relative border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Lecture Password"
@@ -3156,7 +3156,7 @@ export function LiveBroadcast() {
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <MapPin className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
+              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
                   type="text"
                   placeholder="Lab Room"
