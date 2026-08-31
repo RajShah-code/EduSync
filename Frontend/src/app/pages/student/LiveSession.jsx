@@ -593,7 +593,12 @@ export function LiveSession() {
       if (currentSessionId && String(sessionId) !== String(currentSessionId)) return;
 
       if (stroke && stroke.phase === "end") {
-        studentWhiteboardStrokesRef.current.push(stroke);
+        const idx = studentWhiteboardStrokesRef.current.findIndex((s) => s.id === stroke.id);
+        if (idx !== -1) {
+          studentWhiteboardStrokesRef.current[idx] = stroke;
+        } else {
+          studentWhiteboardStrokesRef.current.push(stroke);
+        }
       }
       if (bgColor) {
         studentWhiteboardBgColorRef.current = bgColor;
