@@ -27,7 +27,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
-import { Input } from "../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { getSocket } from "../../store/socket";
@@ -3088,49 +3087,49 @@ export function LiveBroadcast() {
             {/* Icon sits ON the pill's own border (native fieldset/legend
                 notch — the browser breaks the top border around the legend
                 box automatically), not inside the input area. */}
-            <fieldset className="relative min-w-0 rounded-[23px] border border-border p-0">
+            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <Books className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
-              <Input
+              <input
                 type="text"
                 placeholder="Lecture Name"
                 value={formData.lectureName}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, lectureName: e.target.value }))
                 }
-                className="border-0 rounded-[23px] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
+                className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
               />
             </fieldset>
 
-            <fieldset className="relative min-w-0 rounded-[23px] border border-border p-0">
+            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <Book2 className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
-              <Input
+              <input
                 type="text"
                 placeholder="Subject Name"
                 value={formData.subject}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, subject: e.target.value }))
                 }
-                className="border-0 rounded-[23px] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
+                className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
               />
             </fieldset>
 
-            <fieldset className="relative min-w-0 rounded-[23px] border border-border p-0">
+            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <Lock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
-              <div className="relative">
-                <Input
+              <div className="relative flex-1 min-w-0 h-full">
+                <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Lecture Password"
                   value={formData.password}
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, password: e.target.value }))
                   }
-                  className="border-0 rounded-[23px] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted pr-10 focus-visible:ring-0"
+                  className="w-full h-full bg-transparent border-0 outline-none px-4 pr-10 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
                 />
                 <button
                   type="button"
@@ -3144,18 +3143,18 @@ export function LiveBroadcast() {
               </div>
             </fieldset>
 
-            <fieldset className="relative min-w-0 rounded-[23px] border border-border p-0">
+            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
               <legend className="ml-3 px-1 flex items-center pointer-events-none">
                 <MapPin className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
               </legend>
-              <Input
+              <input
                 type="text"
                 placeholder="Lab Room"
                 value={formData.labRoom}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, labRoom: e.target.value }))
                 }
-                className="border-0 rounded-[23px] bg-transparent dark:bg-transparent text-text-primary placeholder:text-text-muted focus-visible:ring-0"
+                className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
               />
             </fieldset>
 
