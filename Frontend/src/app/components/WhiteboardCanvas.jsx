@@ -57,6 +57,11 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   const currentStrokeRef = useRef(null);
   const strokeToolOverrideRef = useRef(null);
 
+  // Post-draw shape selection (Line/Rectangle/Circle) — drives the resize handles.
+  const selectedShapeIdRef = useRef(null);
+  const [selectedShapeId, setSelectedShapeId] = useState(null);
+  const [resizeHandlePositions, setResizeHandlePositions] = useState(null); // {x1,y1,x2,y2} in on-screen CSS px
+
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
@@ -71,12 +76,20 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     updateHistoryState();
   };
 
+  // Clears the post-draw shape selection and its resize handles.
+  const deselectShape = () => {
+    selectedShapeIdRef.current = null;
+    setSelectedShapeId(null);
+    setResizeHandlePositions(null);
+  };
+
   const handleUndoInternal = () => {
     if (readOnly || undoStackRef.current.length === 0) return;
     const previousSnapshot = undoStackRef.current.pop();
     if (previousSnapshot) {
       redoStackRef.current.push([...strokesRef.current.map((s) => ({ ...s }))]);
       strokesRef.current = previousSnapshot;
+      deselectShape();
       redrawAll();
       updateHistoryState();
       if (onSyncEmit) onSyncEmit([...strokesRef.current]);
@@ -90,6 +103,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     if (nextSnapshot) {
       undoStackRef.current.push([...strokesRef.current.map((s) => ({ ...s }))]);
       strokesRef.current = nextSnapshot;
+      deselectShape();
       redrawAll();
       updateHistoryState();
       if (onSyncEmit) onSyncEmit([...strokesRef.current]);
@@ -123,6 +137,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   useEffect(() => {
     if (initialStrokes) {
       strokesRef.current = [...initialStrokes];
+      deselectShape();
       updateHistoryState();
       redrawAll();
     }
@@ -134,6 +149,12 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       setBgColor(initialBgColor);
     }
   }, [initialBgColor]);
+
+  // Switching tools drops the current shape selection/handles.
+  useEffect(() => {
+    deselectShape();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tool]);
 
   // Stylus button / Context menu and Keyboard shortcuts
   useEffect(() => {
@@ -165,6 +186,12 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         e.preventDefault();
         e.stopPropagation();
         handleClearAllInternal();
+      } else if (e.key === "Escape" || code === "Escape") {
+        if (selectedShapeIdRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          deselectShape();
+        }
       } else if (
         isCtrlOrCmd &&
         (keyLower === "=" || keyLower === "+" || code === "Equal" || code === "NumpadAdd")
@@ -235,6 +262,13 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
       // Redraw everything after resize
       redrawAll();
+
+      // Re-derive resize-handle screen positions for the selected shape —
+      // the scale factor between stroke-space and CSS px just changed.
+      if (selectedShapeIdRef.current) {
+        const stroke = strokesRef.current.find((s) => s.id === selectedShapeIdRef.current);
+        setResizeHandlePositions(stroke ? computeHandlePositions(stroke) : null);
+      }
     };
 
     handleResize();
@@ -265,8 +299,11 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, width, height);
 
-    // Render historical strokes
+    // Render historical strokes — skip one whose id matches the in-progress
+    // stroke below, so a resize-in-flight (same id, already-committed shape)
+    // doesn't draw the stale committed version underneath the live preview.
     for (const stroke of strokesRef.current) {
+      if (currentStrokeRef.current && stroke.id === currentStrokeRef.current.id) continue;
       drawSingleStroke(ctx, stroke);
     }
 
@@ -278,9 +315,12 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     ctx.restore();
   };
 
-  const drawSingleStroke = (ctx, stroke) => {
-    const { tool, color, thickness, points, x1, y1, x2, y2, canvasWidth, canvasHeight } = stroke;
-
+  // Shared stroke-space → live-canvas-CSS-px scale factor, reconciling a stroke's
+  // stored canvasWidth/canvasHeight against the current canvas size. Used both
+  // when rendering a stroke and when positioning its resize handles, so the two
+  // never drift apart.
+  const getStrokeScale = (stroke) => {
+    const { canvasWidth, canvasHeight } = stroke;
     const canvas = canvasRef.current;
     const dpr = window.devicePixelRatio || 1;
     const curW = canvas ? canvas.width / dpr : (canvasWidth || 800);
@@ -288,6 +328,26 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
     const scaleX = (canvasWidth && canvasWidth > 0) ? (curW / canvasWidth) : 1;
     const scaleY = (canvasHeight && canvasHeight > 0) ? (curH / canvasHeight) : 1;
+    return { scaleX, scaleY };
+  };
+
+  // On-screen CSS-px position of a Line/Rectangle/Circle stroke's two resize
+  // handles, reusing the exact same scale factor as rendering.
+  const computeHandlePositions = (stroke) => {
+    if (!stroke) return null;
+    const { scaleX, scaleY } = getStrokeScale(stroke);
+    return {
+      x1: stroke.x1 * scaleX,
+      y1: stroke.y1 * scaleY,
+      x2: stroke.x2 * scaleX,
+      y2: stroke.y2 * scaleY,
+    };
+  };
+
+  const drawSingleStroke = (ctx, stroke) => {
+    const { tool, color, thickness, points, x1, y1, x2, y2 } = stroke;
+
+    const { scaleX, scaleY } = getStrokeScale(stroke);
     const scaleAvg = (scaleX + scaleY) / 2;
 
     const effThickness = thickness * scaleAvg;
@@ -381,6 +441,12 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     if (readOnly) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    // A new stroke is starting (or the teacher clicked elsewhere on the
+    // canvas) — drop any active shape selection/handles.
+    if (selectedShapeIdRef.current) {
+      deselectShape();
+    }
 
     const isPen = e.pointerType === "pen";
     const button = e.button;
@@ -504,10 +570,85 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     if (onStrokeEmit) {
       onStrokeEmit(finishedStroke);
     }
+
+    // Keep a just-finished Line/Rectangle/Circle selected so the teacher can
+    // immediately resize it via handles at its two endpoints.
+    if (["line", "rectangle", "circle"].includes(finishedStroke.tool)) {
+      selectedShapeIdRef.current = finishedStroke.id;
+      setSelectedShapeId(finishedStroke.id);
+      setResizeHandlePositions(computeHandlePositions(finishedStroke));
+    }
   };
 
   const handlePointerCancel = (e) => {
     handlePointerUp(e);
+  };
+
+  // ── Resize Handle Drag (Line/Rectangle/Circle, post-draw) ─────────────────
+  // Builds the pointerdown/move/up trio for one handle ('p1' → x1,y1 or
+  // 'p2' → x2,y2), mutating the selected stroke in strokesRef.current by id
+  // and re-emitting it through the existing onStrokeEmit sync path — same
+  // "draw"/"end" phases already used for in-progress strokes, so the
+  // receiving side doesn't need a new sync mechanism.
+  const makeHandleDragHandlers = (which) => {
+    const onDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const stroke = strokesRef.current.find((s) => s.id === selectedShapeIdRef.current);
+      if (!stroke) return;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Safe fallback for synthetic events or touch emulation
+      }
+      pushSnapshotBeforeChange();
+    };
+
+    const onMove = (e) => {
+      if (e.buttons === 0) return; // ignore stray hover moves without an active press
+      const stroke = strokesRef.current.find((s) => s.id === selectedShapeIdRef.current);
+      if (!stroke) return;
+      e.preventDefault();
+
+      const coords = getCanvasCoords(e);
+      const { scaleX, scaleY } = getStrokeScale(stroke);
+      const strokeX = coords.x / (scaleX || 1);
+      const strokeY = coords.y / (scaleY || 1);
+
+      if (which === "p1") {
+        stroke.x1 = strokeX;
+        stroke.y1 = strokeY;
+      } else {
+        stroke.x2 = strokeX;
+        stroke.y2 = strokeY;
+      }
+
+      redrawAll();
+      setResizeHandlePositions(computeHandlePositions(stroke));
+
+      if (onStrokeEmit) {
+        onStrokeEmit({ ...stroke, phase: "draw" });
+      }
+    };
+
+    const onUp = (e) => {
+      const stroke = strokesRef.current.find((s) => s.id === selectedShapeIdRef.current);
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Safe fallback if already released
+      }
+      if (!stroke) return;
+
+      redrawAll();
+      setResizeHandlePositions(computeHandlePositions(stroke));
+
+      if (onStrokeEmit) {
+        onStrokeEmit({ ...stroke, phase: "end" });
+      }
+    };
+
+    return { onDown, onMove, onUp };
   };
 
   // ── Remote Event Handlers (Student / Mirroring Side) ──────────────────────
@@ -520,7 +661,15 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     } else if (phase === "draw") {
       currentStrokeRef.current = stroke;
     } else if (phase === "end") {
-      strokesRef.current.push(stroke);
+      // Update-by-id: a repeat "end" for an id we already have (e.g. a
+      // resize on an already-finished shape) replaces that entry instead of
+      // appending a duplicate.
+      const existingIndex = strokesRef.current.findIndex((s) => s.id === stroke.id);
+      if (existingIndex !== -1) {
+        strokesRef.current[existingIndex] = stroke;
+      } else {
+        strokesRef.current.push(stroke);
+      }
       currentStrokeRef.current = null;
       updateHistoryState();
     }
@@ -532,6 +681,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     pushSnapshotBeforeChange();
     strokesRef.current = [];
     currentStrokeRef.current = null;
+    deselectShape();
     updateHistoryState();
     redrawAll();
   };
@@ -540,6 +690,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     strokesRef.current = strokes || [];
     if (bg) setBgColor(bg);
     currentStrokeRef.current = null;
+    deselectShape();
     updateHistoryState();
     redrawAll();
   };
@@ -550,6 +701,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     }
     strokesRef.current = [];
     currentStrokeRef.current = null;
+    deselectShape();
     updateHistoryState();
     redrawAll();
     if (onClearEmit) {
@@ -780,6 +932,38 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             }}
           />
         )}
+
+        {/* Resize Handles — shown on a just-finished Line/Rectangle/Circle until
+            the teacher switches tool, starts a new stroke, presses Escape, or
+            clicks elsewhere on the canvas. */}
+        {!readOnly && selectedShapeId && resizeHandlePositions && (() => {
+          const p1Handlers = makeHandleDragHandlers("p1");
+          const p2Handlers = makeHandleDragHandlers("p2");
+          return (
+            <>
+              <div
+                onPointerDown={p1Handlers.onDown}
+                onPointerMove={p1Handlers.onMove}
+                onPointerUp={p1Handlers.onUp}
+                onPointerCancel={p1Handlers.onUp}
+                className="absolute z-40 w-3.5 h-3.5 rounded-full bg-accent-info border-2 border-white shadow-[var(--shadow-modal)] -translate-x-1/2 -translate-y-1/2 cursor-move touch-none"
+                style={{ left: `${resizeHandlePositions.x1}px`, top: `${resizeHandlePositions.y1}px` }}
+                title="Drag to resize"
+                aria-label="Resize handle, start point"
+              />
+              <div
+                onPointerDown={p2Handlers.onDown}
+                onPointerMove={p2Handlers.onMove}
+                onPointerUp={p2Handlers.onUp}
+                onPointerCancel={p2Handlers.onUp}
+                className="absolute z-40 w-3.5 h-3.5 rounded-full bg-accent-info border-2 border-white shadow-[var(--shadow-modal)] -translate-x-1/2 -translate-y-1/2 cursor-move touch-none"
+                style={{ left: `${resizeHandlePositions.x2}px`, top: `${resizeHandlePositions.y2}px` }}
+                title="Drag to resize"
+                aria-label="Resize handle, end point"
+              />
+            </>
+          );
+        })()}
 
         {/* Read-Only Indicator Overlay on Student side */}
         {readOnly && (
