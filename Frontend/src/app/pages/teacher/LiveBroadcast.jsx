@@ -3085,78 +3085,76 @@ export function LiveBroadcast() {
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Books className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-                Lecture Name
-              </label>
+            <div className="relative">
+              <Books
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                strokeWidth={1.75}
+              />
               <Input
                 type="text"
-                placeholder="e.g., Binary Search Trees — Lecture 12"
+                placeholder="Lecture Name"
                 value={formData.lectureName}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, lectureName: e.target.value }))
                 }
-                className="bg-bg-elevated border-border text-text-primary placeholder:text-text-muted"
+                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 focus-visible:ring-0"
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Book2 className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-                Subject
-              </label>
+            <div className="relative">
+              <Book2
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                strokeWidth={1.75}
+              />
               <Input
                 type="text"
-                placeholder="e.g., Data Structures & Algorithms"
+                placeholder="Subject Name"
                 value={formData.subject}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, subject: e.target.value }))
                 }
-                className="bg-bg-elevated border-border text-text-primary placeholder:text-text-muted"
+                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 focus-visible:ring-0"
               />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Lock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-                Session Password
-              </label>
-              <div className="relative">
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Students will need this to join"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, password: e.target.value }))
-                  }
-                  className="bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
-                </button>
-              </div>
+            <div className="relative">
+              <Lock
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                strokeWidth={1.75}
+              />
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Lecture Password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, password: e.target.value }))
+                }
+                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 pr-10 focus-visible:ring-0"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+              </button>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-                Lab Room (optional)
-              </label>
+            <div className="relative">
+              <MapPin
+                className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none"
+                strokeWidth={1.75}
+              />
               <Input
                 type="text"
-                placeholder="LAB 301"
+                placeholder="Lab Room"
                 value={formData.labRoom}
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, labRoom: e.target.value }))
                 }
-                className="bg-bg-elevated border-border text-text-primary placeholder:text-text-muted"
+                className="rounded-full bg-bg-elevated border-border text-text-primary placeholder:text-text-muted pl-10 focus-visible:ring-0"
               />
             </div>
 
