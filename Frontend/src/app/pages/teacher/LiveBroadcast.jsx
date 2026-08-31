@@ -3092,9 +3092,9 @@ export function LiveBroadcast() {
                 line, painted with the modal's own background color so it
                 visually breaks the border line underneath it, sitting above
                 the pill (z-10) so it's never clipped. */}
-            <div className="relative">
+            <div className="relative group">
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                <Books className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                <Books className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
               <div style={{ height: '46px', borderRadius: '17px' }} className="border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
@@ -3109,9 +3109,9 @@ export function LiveBroadcast() {
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative group">
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                <Book2 className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                <Book2 className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
               <div style={{ height: '46px', borderRadius: '17px' }} className="border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
@@ -3126,9 +3126,9 @@ export function LiveBroadcast() {
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative group">
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                <Lock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                <Lock className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
               <div style={{ height: '46px', borderRadius: '17px' }} className="relative border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
@@ -3152,9 +3152,9 @@ export function LiveBroadcast() {
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative group">
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                <MapPin className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                <MapPin className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
               </div>
               <div style={{ height: '46px', borderRadius: '17px' }} className="border border-solid border-text-secondary focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
