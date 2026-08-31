@@ -916,7 +916,7 @@ export function TaskAssignment() {
               <Button
                 type="submit"
                 disabled={!isFormValid || isPushing}
-                className="w-full bg-accent-info hover:bg-accent-info/90 text-white font-semibold py-3 text-sm h-11 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98]"
+                className="btn-press w-full bg-accent-info hover:bg-accent-info/90 text-white font-semibold py-3 text-sm h-11 transition-colors duration-150"
               >
                 {isPushing ? (
                   <>Assigning Task...</>
