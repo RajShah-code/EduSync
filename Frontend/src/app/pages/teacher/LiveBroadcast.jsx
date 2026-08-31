@@ -3176,7 +3176,7 @@ export function LiveBroadcast() {
                   return (
                     <div key={cls.id} className="relative">
                       {isSelected && (
-                        <div className="absolute left-3 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
+                        <div className="absolute left-2.5 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                           <Monitor className="w-3.5 h-3.5 text-accent-info" strokeWidth={1.75} />
                         </div>
                       )}
@@ -3189,10 +3189,10 @@ export function LiveBroadcast() {
                             setSelectedClassIds([...selectedClassIds, cls.id]);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-[5.5px] text-xs font-medium border transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center gap-1.5 ${
+                        className={`px-3 py-1.5 rounded-[5.5px] text-xs font-medium border bg-bg-elevated transition-[border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center ${
                           isSelected
-                            ? "bg-accent-info/20 border-accent-info text-accent-info"
-                            : "bg-bg-elevated border-border text-text-secondary hover:text-text-primary hover:border-border/80"
+                            ? "border-accent-info text-accent-info"
+                            : "border-border text-text-secondary hover:text-text-primary hover:border-border/80"
                         }`}
                       >
                         <span>{cls.name}</span>
