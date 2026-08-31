@@ -47,22 +47,6 @@ const ICE_CONFIG = {
 // different curve. Mirrors the value the old layoutId morph used.
 const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.45 };
 
-// Locks a button at its own natural (auto) width while `active` is true —
-// measured fresh off the DOM whenever NOT active, so the resting width is
-// always exactly whatever it naturally renders as (never a guessed/padded
-// value), and going active (e.g. on hover, to collapse a label) can't
-// shrink or grow the button, only what's inside it.
-function useLockedWidthOnHover(active, ref, deps) {
-  const [naturalWidth, setNaturalWidth] = useState(null);
-  useEffect(() => {
-    if (!active && ref.current) {
-      setNaturalWidth(ref.current.offsetWidth);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, ...deps]);
-  return active ? naturalWidth : null;
-}
-
 // ─── Language definitions ──────────────────────────────────────────────────────
 const LANGUAGES = [
   { id: "javascript", label: "JavaScript", icon: BrandJavascript },
@@ -250,14 +234,6 @@ export function LiveBroadcast() {
   // button's label so the icon centers, same width-shrink mechanism as the
   // Schedule/Instant pills above, just triggered by hover instead of state.
   const [hoveredControlButton, setHoveredControlButton] = useState(null);
-  // Refs + locked-width hooks for the 4 control buttons above — see
-  // useLockedWidthOnHover: keeps each button's resting width exactly as it
-  // naturally renders, and prevents it from shrinking while its label
-  // collapses on hover.
-  const micButtonRef = useRef(null);
-  const screenShareButtonRef = useRef(null);
-  const recordButtonRef = useRef(null);
-  const endButtonRef = useRef(null);
   // schedTipOpen: controls the recoloured shadcn tooltip on the Schedule pill —
   // the rich "what's on now" card when a lecture is scheduled, or the plain
   // "No lecture scheduled" line when idle. Kept fully controlled (rather than
@@ -2279,21 +2255,6 @@ export function LiveBroadcast() {
   const viewerCount = connectedStudents.length;
   const hasMic = !!micStreamRef.current;
 
-  const micLockedWidth = useLockedWidthOnHover(hoveredControlButton === "mic", micButtonRef, [
-    hasMic,
-    micMuted,
-    micWarning,
-  ]);
-  const screenShareLockedWidth = useLockedWidthOnHover(
-    hoveredControlButton === "screenshare",
-    screenShareButtonRef,
-    [isScreenSharing]
-  );
-  const recordLockedWidth = useLockedWidthOnHover(hoveredControlButton === "record", recordButtonRef, [
-    isRecording,
-  ]);
-  const endLockedWidth = useLockedWidthOnHover(hoveredControlButton === "end", endButtonRef, []);
-
   // ─── JSX ────────────────────────────────────────────────────────────────────
 
   return (
@@ -2792,8 +2753,6 @@ export function LiveBroadcast() {
                       being disabled, so the teacher always has a way to turn it on. */}
                   <button
                     type="button"
-                    ref={micButtonRef}
-                    style={micLockedWidth ? { minWidth: `${micLockedWidth}px` } : undefined}
                     onClick={handleMicToggle}
                     onMouseEnter={() => setHoveredControlButton("mic")}
                     onMouseLeave={() => setHoveredControlButton(null)}
@@ -2808,7 +2767,7 @@ export function LiveBroadcast() {
                     }
                     aria-label={!hasMic ? "Turn on microphone" : micMuted ? "Unmute microphone" : "Mute microphone"}
                     className={cn(
-                      "btn-press relative h-10 px-4 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative h-10 rounded-full text-sm font-medium border transition-colors duration-150",
                       !hasMic
                         ? micWarning
                           ? "border-accent-warning/40 bg-accent-warning/15 text-accent-warning hover:bg-accent-warning/25"
@@ -2821,67 +2780,79 @@ export function LiveBroadcast() {
                     {micWarning && (
                       <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-warning ring-2 ring-bg-elevated" aria-hidden="true" />
                     )}
-                    {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px] shrink-0" /> : <Mic className="w-[18px] h-[18px] shrink-0" />}
-                    <motion.span
-                      className="overflow-hidden whitespace-nowrap"
-                      initial={false}
-                      animate={
-                        hoveredControlButton === "mic"
-                          ? { width: 0, opacity: 0 }
-                          : { width: "auto", opacity: 1 }
-                      }
-                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                    >
-                      <span className="pl-2">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
-                    </motion.span>
+                    {/* Invisible sizer — always the full expanded content, so the
+                        button's own box (driven by this normal-flow child) never
+                        changes size. The real, animated content is the absolutely
+                        positioned layer below, which can't affect this size. */}
+                    <span className="invisible flex items-center px-4" aria-hidden="true">
+                      {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px] shrink-0" /> : <Mic className="w-[18px] h-[18px] shrink-0" />}
+                      <span className="pl-2 whitespace-nowrap">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
+                    </span>
+                    <span className="absolute inset-0 flex items-center justify-center px-4">
+                      {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px] shrink-0" /> : <Mic className="w-[18px] h-[18px] shrink-0" />}
+                      <motion.span
+                        className="overflow-hidden whitespace-nowrap"
+                        initial={false}
+                        animate={
+                          hoveredControlButton === "mic"
+                            ? { width: 0, opacity: 0 }
+                            : { width: "auto", opacity: 1 }
+                        }
+                        transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                      >
+                        <span className="pl-2">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
+                      </motion.span>
+                    </span>
                   </button>
 
                   {/* Screen Share toggle */}
                   <button
                     data-tour="broadcast-screenshare"
                     type="button"
-                    ref={screenShareButtonRef}
-                    style={screenShareLockedWidth ? { minWidth: `${screenShareLockedWidth}px` } : undefined}
                     onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
                     onMouseEnter={() => setHoveredControlButton("screenshare")}
                     onMouseLeave={() => setHoveredControlButton(null)}
                     title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
                     aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
                     className={cn(
-                      "btn-press h-10 px-4 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative h-10 rounded-full text-sm font-medium border transition-colors duration-150",
                       isScreenSharing
                         ? "border-accent-700/50 bg-accent-700 text-white hover:bg-accent-700/90"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
                   >
-                    {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px] shrink-0" /> : <ScreenShareOn className="w-[18px] h-[18px] shrink-0" />}
-                    <motion.span
-                      className="overflow-hidden whitespace-nowrap"
-                      initial={false}
-                      animate={
-                        hoveredControlButton === "screenshare"
-                          ? { width: 0, opacity: 0 }
-                          : { width: "auto", opacity: 1 }
-                      }
-                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                    >
-                      <span className="pl-2">{isScreenSharing ? "Stop Sharing" : "Start Screen Share"}</span>
-                    </motion.span>
+                    <span className="invisible flex items-center px-4" aria-hidden="true">
+                      {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px] shrink-0" /> : <ScreenShareOn className="w-[18px] h-[18px] shrink-0" />}
+                      <span className="pl-2 whitespace-nowrap">{isScreenSharing ? "Stop Sharing" : "Start Screen Share"}</span>
+                    </span>
+                    <span className="absolute inset-0 flex items-center justify-center px-4">
+                      {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px] shrink-0" /> : <ScreenShareOn className="w-[18px] h-[18px] shrink-0" />}
+                      <motion.span
+                        className="overflow-hidden whitespace-nowrap"
+                        initial={false}
+                        animate={
+                          hoveredControlButton === "screenshare"
+                            ? { width: 0, opacity: 0 }
+                            : { width: "auto", opacity: 1 }
+                        }
+                        transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                      >
+                        <span className="pl-2">{isScreenSharing ? "Stop Sharing" : "Start Screen Share"}</span>
+                      </motion.span>
+                    </span>
                   </button>
 
                   {/* Record toggle */}
                   <button
                     data-tour="broadcast-record"
                     type="button"
-                    ref={recordButtonRef}
-                    style={recordLockedWidth ? { minWidth: `${recordLockedWidth}px` } : undefined}
                     onClick={handleToggleRecording}
                     onMouseEnter={() => setHoveredControlButton("record")}
                     onMouseLeave={() => setHoveredControlButton(null)}
                     title={isRecording ? "Stop recording" : "Start recording"}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
                     className={cn(
-                      "btn-press relative h-10 px-4 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative h-10 rounded-full text-sm font-medium border transition-colors duration-150",
                       isRecording
                         ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
@@ -2890,23 +2861,29 @@ export function LiveBroadcast() {
                     {isRecording && (
                       <span className="absolute inset-0 rounded-full ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
                     )}
-                    {isRecording ? (
-                      <LivePhotoOff className="w-[18px] h-[18px] shrink-0" />
-                    ) : (
-                      <LivePhoto className="w-[18px] h-[18px] shrink-0" />
-                    )}
-                    <motion.span
-                      className="overflow-hidden whitespace-nowrap"
-                      initial={false}
-                      animate={
-                        hoveredControlButton === "record"
-                          ? { width: 0, opacity: 0 }
-                          : { width: "auto", opacity: 1 }
-                      }
-                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                    >
-                      <span className="pl-2">{isRecording ? "Stop Recording" : "Record"}</span>
-                    </motion.span>
+                    <span className="invisible flex items-center px-4" aria-hidden="true">
+                      {isRecording ? <LivePhotoOff className="w-[18px] h-[18px] shrink-0" /> : <LivePhoto className="w-[18px] h-[18px] shrink-0" />}
+                      <span className="pl-2 whitespace-nowrap">{isRecording ? "Stop Recording" : "Record"}</span>
+                    </span>
+                    <span className="absolute inset-0 flex items-center justify-center px-4">
+                      {isRecording ? (
+                        <LivePhotoOff className="w-[18px] h-[18px] shrink-0" />
+                      ) : (
+                        <LivePhoto className="w-[18px] h-[18px] shrink-0" />
+                      )}
+                      <motion.span
+                        className="overflow-hidden whitespace-nowrap"
+                        initial={false}
+                        animate={
+                          hoveredControlButton === "record"
+                            ? { width: 0, opacity: 0 }
+                            : { width: "auto", opacity: 1 }
+                        }
+                        transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                      >
+                        <span className="pl-2">{isRecording ? "Stop Recording" : "Record"}</span>
+                      </motion.span>
+                    </span>
                   </button>
 
                   {/* Download Recording — appears only once a finished recording is ready */}
@@ -2938,28 +2915,32 @@ export function LiveBroadcast() {
                   </button>
                   <button
                     type="button"
-                    ref={endButtonRef}
-                    style={endLockedWidth ? { minWidth: `${endLockedWidth}px` } : undefined}
                     onClick={() => setShowStopConfirm(true)}
                     onMouseEnter={() => setHoveredControlButton("end")}
                     onMouseLeave={() => setHoveredControlButton(null)}
                     title="End lecture"
                     aria-label="End lecture"
-                    className="btn-press h-11 px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
+                    className="btn-press relative h-11 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
                   >
-                    <MonitorStop className="w-[18px] h-[18px] shrink-0" />
-                    <motion.span
-                      className="overflow-hidden whitespace-nowrap"
-                      initial={false}
-                      animate={
-                        hoveredControlButton === "end"
-                          ? { width: 0, opacity: 0 }
-                          : { width: "auto", opacity: 1 }
-                      }
-                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                    >
-                      <span className="pl-2">End</span>
-                    </motion.span>
+                    <span className="invisible flex items-center px-5" aria-hidden="true">
+                      <MonitorStop className="w-[18px] h-[18px] shrink-0" />
+                      <span className="pl-2 whitespace-nowrap">End</span>
+                    </span>
+                    <span className="absolute inset-0 flex items-center justify-center px-5">
+                      <MonitorStop className="w-[18px] h-[18px] shrink-0" />
+                      <motion.span
+                        className="overflow-hidden whitespace-nowrap"
+                        initial={false}
+                        animate={
+                          hoveredControlButton === "end"
+                            ? { width: 0, opacity: 0 }
+                            : { width: "auto", opacity: 1 }
+                        }
+                        transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                      >
+                        <span className="pl-2">End</span>
+                      </motion.span>
+                    </span>
                   </button>
                 </div>
               </div>
