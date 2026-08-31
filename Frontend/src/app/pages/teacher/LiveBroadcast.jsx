@@ -2037,7 +2037,12 @@ export function LiveBroadcast() {
 
   const handleWhiteboardStroke = (stroke) => {
     if (stroke && stroke.phase === "end") {
-      teacherWhiteboardStrokesRef.current.push(stroke);
+      const idx = teacherWhiteboardStrokesRef.current.findIndex((s) => s.id === stroke.id);
+      if (idx !== -1) {
+        teacherWhiteboardStrokesRef.current[idx] = stroke;
+      } else {
+        teacherWhiteboardStrokesRef.current.push(stroke);
+      }
     }
     const currentBg = whiteboardRef.current?.getBgColor?.() || teacherWhiteboardBgColorRef.current;
     teacherWhiteboardBgColorRef.current = currentBg;
