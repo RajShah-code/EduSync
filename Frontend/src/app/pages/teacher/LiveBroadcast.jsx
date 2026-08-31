@@ -3189,7 +3189,7 @@ export function LiveBroadcast() {
                             setSelectedClassIds([...selectedClassIds, cls.id]);
                           }
                         }}
-                        className={`px-3 py-2.5 rounded-[9px] text-xs font-medium border bg-transparent transition-[border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center ${
+                        className={`px-3 pt-2.5 pb-1.5 rounded-[9px] text-xs font-medium border bg-transparent transition-[border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center ${
                           isSelected
                             ? "border-accent-info text-accent-info"
                             : "border-border text-text-secondary hover:text-text-primary hover:border-border/80"
