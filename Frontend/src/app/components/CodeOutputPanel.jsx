@@ -164,7 +164,7 @@ export function CodeOutputPanel({
                     onDockChange("bottom");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group btn-press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "bottom" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
@@ -188,7 +188,7 @@ export function CodeOutputPanel({
                     onDockChange("top");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group btn-press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "top" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
@@ -212,7 +212,7 @@ export function CodeOutputPanel({
                     onDockChange("right");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group btn-press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "right" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
@@ -236,7 +236,7 @@ export function CodeOutputPanel({
                     onDockChange("left");
                     setIsDockMenuOpen(false);
                   }}
-                  className={`group w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
+                  className={`group btn-press w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-white/5 transition-colors ${
                     dockPosition === "left" ? "text-accent-info font-bold" : "text-text-primary"
                   }`}
                 >
