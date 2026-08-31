@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { IconPencil as Pencil, IconEraser as Eraser, IconMinus as Minus, IconSquare as Square, IconCircle as Circle, IconTrash as Trash2, IconMoon as Moon, IconSun as Sun, IconArrowBackUp as Undo2, IconArrowForwardUp as Redo2, IconRuler2 as Ruler2 } from "@tabler/icons-react";
+import { IconPointer as Pointer, IconPencil as Pencil, IconEraser as Eraser, IconMinus as Minus, IconSquare as Square, IconCircle as Circle, IconTrash as Trash2, IconMoon as Moon, IconSun as Sun, IconArrowBackUp as Undo2, IconArrowForwardUp as Redo2, IconRuler2 as Ruler2 } from "@tabler/icons-react";
 
 const PRESET_COLORS = [
   "#FFFFFF",
@@ -46,7 +46,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   const canvasContainerRef = useRef(null);
 
   // Drawing tools & configuration state
-  const [tool, setTool] = useState("pen"); // 'pen' | 'eraser' | 'line' | 'rectangle' | 'circle'
+  const [tool, setTool] = useState("pen"); // 'select' | 'pen' | 'eraser' | 'line' | 'rectangle' | 'circle'
   const [color, setColor] = useState("#FFFFFF");
   const [thickness, setThickness] = useState(4); // default pen thickness = 4
   const [eraserSize, setEraserSize] = useState(20); // default eraser size = 20
@@ -61,10 +61,15 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   const currentStrokeRef = useRef(null);
   const strokeToolOverrideRef = useRef(null);
 
-  // Post-draw shape selection (Line/Rectangle/Circle) — drives the resize handles.
+  // Shape selection/activation (Line/Rectangle/Circle) — drives the marching-ants
+  // outline and the resize handles. Set either right after drawing, or by
+  // clicking an existing shape with the Select tool.
   const selectedShapeIdRef = useRef(null);
   const [selectedShapeId, setSelectedShapeId] = useState(null);
+  const [selectedShapeTool, setSelectedShapeTool] = useState(null); // 'line' | 'rectangle' | 'circle' | null
   const [resizeHandlePositions, setResizeHandlePositions] = useState(null); // {x1,y1,x2,y2} in on-screen CSS px
+  // In-progress Select-tool move-drag on the activated shape's body.
+  const movingShapeRef = useRef(null);
 
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -80,10 +85,11 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     updateHistoryState();
   };
 
-  // Clears the post-draw shape selection and its resize handles.
+  // Clears the active shape selection, its marching-ants outline, and its resize handles.
   const deselectShape = () => {
     selectedShapeIdRef.current = null;
     setSelectedShapeId(null);
+    setSelectedShapeTool(null);
     setResizeHandlePositions(null);
   };
 
@@ -212,6 +218,8 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         e.preventDefault();
         e.stopPropagation();
         setEraserSize((prev) => Math.max(ERASER_MIN_SIZE, prev - ERASER_STEP));
+      } else if (keyLower === "v" || code === "KeyV") {
+        setTool("select");
       } else if (keyLower === "e" || code === "KeyE") {
         setTool("eraser");
       } else if (keyLower === "b" || code === "KeyB" || keyLower === "p" || code === "KeyP") {
@@ -524,19 +532,39 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
       deselectShape();
     }
 
-    // While a shape tool is active, clicking an existing Line/Rectangle/
-    // Circle re-selects it for resizing instead of starting a new shape.
+    // Select tool: click an existing Line/Rectangle/Circle to activate it —
+    // and arm a move-drag from this same pointerdown, in case the teacher
+    // drags rather than just clicks. Never starts a new stroke, hit or not.
     // (A click that actually landed on a resize handle never reaches here —
     // the handle is a separate, topmost element with its own pointer
     // handlers — so that priority is already preserved.)
-    if (SELECTABLE_TOOLS.includes(tool)) {
-      const hitStroke = hitTestShapeAt(getCanvasCoords(e));
+    if (tool === "select") {
+      const coords = getCanvasCoords(e);
+      const hitStroke = hitTestShapeAt(coords);
       if (hitStroke) {
         selectedShapeIdRef.current = hitStroke.id;
         setSelectedShapeId(hitStroke.id);
+        setSelectedShapeTool(hitStroke.tool);
         setResizeHandlePositions(computeHandlePositions(hitStroke));
-        return;
+
+        try {
+          canvas.setPointerCapture(e.pointerId);
+        } catch {
+          // Safe fallback for synthetic events or touch emulation
+        }
+
+        movingShapeRef.current = {
+          id: hitStroke.id,
+          startX: coords.x,
+          startY: coords.y,
+          origX1: hitStroke.x1,
+          origY1: hitStroke.y1,
+          origX2: hitStroke.x2,
+          origY2: hitStroke.y2,
+          snapshotPushed: false,
+        };
       }
+      return;
     }
 
     const isPen = e.pointerType === "pen";
@@ -601,6 +629,44 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   };
 
   const handlePointerMove = (e) => {
+    // Select-tool move-drag on the activated shape's body takes priority
+    // over the normal drawing path (which is inert anyway while dragging,
+    // since isDrawingRef is never set true for the Select tool).
+    if (movingShapeRef.current) {
+      if (readOnly) return;
+      const moving = movingShapeRef.current;
+      const stroke = strokesRef.current.find((s) => s.id === moving.id);
+      if (!stroke) {
+        movingShapeRef.current = null;
+        return;
+      }
+
+      // Lazily commit an undo snapshot only once real movement happens, so
+      // a plain click-to-select never pollutes the undo stack.
+      if (!moving.snapshotPushed) {
+        pushSnapshotBeforeChange();
+        moving.snapshotPushed = true;
+      }
+
+      const coords = getCanvasCoords(e);
+      const { scaleX, scaleY } = getStrokeScale(stroke);
+      const dxStroke = (coords.x - moving.startX) / (scaleX || 1);
+      const dyStroke = (coords.y - moving.startY) / (scaleY || 1);
+
+      stroke.x1 = moving.origX1 + dxStroke;
+      stroke.y1 = moving.origY1 + dyStroke;
+      stroke.x2 = moving.origX2 + dxStroke;
+      stroke.y2 = moving.origY2 + dyStroke;
+
+      redrawAll();
+      setResizeHandlePositions(computeHandlePositions(stroke));
+
+      if (onStrokeEmit) {
+        onStrokeEmit({ ...stroke, phase: "draw" });
+      }
+      return;
+    }
+
     if (readOnly || !isDrawingRef.current || !currentStrokeRef.current) return;
     const coords = getCanvasCoords(e);
     const current = currentStrokeRef.current;
@@ -639,6 +705,33 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   };
 
   const handlePointerUp = (e) => {
+    if (movingShapeRef.current) {
+      const canvas = canvasRef.current;
+      if (canvas && e.pointerId !== undefined) {
+        try {
+          canvas.releasePointerCapture(e.pointerId);
+        } catch {
+          // Safe fallback if already released
+        }
+      }
+
+      const moving = movingShapeRef.current;
+      movingShapeRef.current = null;
+      const stroke = strokesRef.current.find((s) => s.id === moving.id);
+      if (!stroke) return;
+
+      // Only redraw/reposition/sync if a real move actually happened —
+      // a plain click-to-select leaves everything exactly as it was.
+      if (moving.snapshotPushed) {
+        redrawAll();
+        setResizeHandlePositions(computeHandlePositions(stroke));
+        if (onStrokeEmit) {
+          onStrokeEmit({ ...stroke, phase: "end" });
+        }
+      }
+      return;
+    }
+
     if (readOnly || !isDrawingRef.current || !currentStrokeRef.current) return;
     const canvas = canvasRef.current;
     if (canvas && e.pointerId !== undefined) {
@@ -667,6 +760,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     if (SELECTABLE_TOOLS.includes(finishedStroke.tool)) {
       selectedShapeIdRef.current = finishedStroke.id;
       setSelectedShapeId(finishedStroke.id);
+      setSelectedShapeTool(finishedStroke.tool);
       setResizeHandlePositions(computeHandlePositions(finishedStroke));
     }
   };
@@ -824,6 +918,18 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
         <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-bg-elevated border-b border-border text-xs flex-wrap z-10 flex-shrink-0">
           {/* Tool selectors */}
           <div className="flex items-center gap-0.5 bg-bg-surface p-1 rounded-[var(--radius-md)] border border-border">
+            <button
+              type="button"
+              onClick={() => setTool("select")}
+              className={`btn-press p-1.5 rounded-[var(--radius-sm)] transition-colors duration-150 ${
+                tool === "select"
+                  ? "bg-accent-info text-white"
+                  : "text-text-muted hover:text-text-primary hover:bg-bg-surface-3"
+              }`}
+              title="Select (V)"
+            >
+              <Pointer className="w-4 h-4" />
+            </button>
             <button
               type="button"
               onClick={() => setTool("pen")}
@@ -1002,7 +1108,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
           onPointerLeave={handlePointerLeave}
           style={{
             touchAction: "none",
-            cursor: readOnly ? "default" : isEraserActive ? "none" : "crosshair",
+            cursor: readOnly ? "default" : isEraserActive ? "none" : tool === "select" ? "default" : "crosshair",
             display: "block",
             width: "100%",
             height: "100%",
@@ -1024,9 +1130,62 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
           />
         )}
 
-        {/* Resize Handles — shown on a just-finished Line/Rectangle/Circle until
-            the teacher switches tool, starts a new stroke, presses Escape, or
-            clicks elsewhere on the canvas. */}
+        {/* Marching-ants outline traced along the activated shape's actual
+            geometry (segment / 4 rect edges / ellipse boundary) — not just a
+            bounding box. Reuses resizeHandlePositions, the same on-screen
+            CSS-px coordinates the resize handles already use. */}
+        {!readOnly && selectedShapeId && selectedShapeTool && resizeHandlePositions && (
+          <svg className="absolute inset-0 pointer-events-none z-[35]" width="100%" height="100%">
+            <style>{`
+              @keyframes eduSyncMarchingAnts {
+                to { stroke-dashoffset: -10; }
+              }
+            `}</style>
+            {selectedShapeTool === "line" && (
+              <line
+                x1={resizeHandlePositions.x1}
+                y1={resizeHandlePositions.y1}
+                x2={resizeHandlePositions.x2}
+                y2={resizeHandlePositions.y2}
+                className="stroke-accent-info"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                style={{ animation: "eduSyncMarchingAnts 0.6s linear infinite" }}
+              />
+            )}
+            {selectedShapeTool === "rectangle" && (
+              <rect
+                x={Math.min(resizeHandlePositions.x1, resizeHandlePositions.x2)}
+                y={Math.min(resizeHandlePositions.y1, resizeHandlePositions.y2)}
+                width={Math.abs(resizeHandlePositions.x2 - resizeHandlePositions.x1)}
+                height={Math.abs(resizeHandlePositions.y2 - resizeHandlePositions.y1)}
+                fill="none"
+                className="stroke-accent-info"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                style={{ animation: "eduSyncMarchingAnts 0.6s linear infinite" }}
+              />
+            )}
+            {selectedShapeTool === "circle" && (
+              <ellipse
+                cx={(resizeHandlePositions.x1 + resizeHandlePositions.x2) / 2}
+                cy={(resizeHandlePositions.y1 + resizeHandlePositions.y2) / 2}
+                rx={Math.abs(resizeHandlePositions.x2 - resizeHandlePositions.x1) / 2}
+                ry={Math.abs(resizeHandlePositions.y2 - resizeHandlePositions.y1) / 2}
+                fill="none"
+                className="stroke-accent-info"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                style={{ animation: "eduSyncMarchingAnts 0.6s linear infinite" }}
+              />
+            )}
+          </svg>
+        )}
+
+        {/* Resize Handles — shown on a just-finished Line/Rectangle/Circle,
+            or a shape re-activated with the Select tool, until the teacher
+            switches tool, starts a new stroke, presses Escape, or clicks
+            elsewhere on the canvas. */}
         {!readOnly && selectedShapeId && resizeHandlePositions && (() => {
           const p1Handlers = makeHandleDragHandlers("p1");
           const p2Handlers = makeHandleDragHandlers("p2");
