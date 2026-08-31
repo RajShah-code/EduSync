@@ -171,12 +171,12 @@ export function CodeOutputPanel({
                   <span className="relative w-4 h-4 shrink-0">
                     <PanelBottom
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "bottom" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                        dockPosition === "bottom" ? "opacity-100" : "opacity-100 group-hover:opacity-0"
                       }`}
                     />
                     <Check
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "bottom" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        dockPosition === "bottom" ? "opacity-0" : "opacity-0 group-hover:opacity-100"
                       }`}
                     />
                   </span>
@@ -195,12 +195,12 @@ export function CodeOutputPanel({
                   <span className="relative w-4 h-4 shrink-0">
                     <PanelTop
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "top" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                        dockPosition === "top" ? "opacity-100" : "opacity-100 group-hover:opacity-0"
                       }`}
                     />
                     <Check
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "top" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        dockPosition === "top" ? "opacity-0" : "opacity-0 group-hover:opacity-100"
                       }`}
                     />
                   </span>
@@ -219,12 +219,12 @@ export function CodeOutputPanel({
                   <span className="relative w-4 h-4 shrink-0">
                     <PanelRight
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "right" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                        dockPosition === "right" ? "opacity-100" : "opacity-100 group-hover:opacity-0"
                       }`}
                     />
                     <Check
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "right" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        dockPosition === "right" ? "opacity-0" : "opacity-0 group-hover:opacity-100"
                       }`}
                     />
                   </span>
@@ -243,12 +243,12 @@ export function CodeOutputPanel({
                   <span className="relative w-4 h-4 shrink-0">
                     <PanelLeft
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "left" ? "opacity-0" : "opacity-100 group-hover:opacity-0"
+                        dockPosition === "left" ? "opacity-100" : "opacity-100 group-hover:opacity-0"
                       }`}
                     />
                     <Check
                       className={`w-4 h-4 absolute inset-0 transition-opacity duration-150 ${
-                        dockPosition === "left" ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        dockPosition === "left" ? "opacity-0" : "opacity-0 group-hover:opacity-100"
                       }`}
                     />
                   </span>
