@@ -233,9 +233,6 @@ export function LiveBroadcast() {
   // button's label so the icon centers, same width-shrink mechanism as the
   // Schedule/Instant pills above, just triggered by hover instead of state.
   const [hoveredControlButton, setHoveredControlButton] = useState(null);
-  // hoveredClassChipId: same icon-centers/text-collapses hover treatment as
-  // the control-bar buttons, applied to the Setup Modal's class chips.
-  const [hoveredClassChipId, setHoveredClassChipId] = useState(null);
   // schedTipOpen: controls the recoloured shadcn tooltip on the Schedule pill —
   // the rich "what's on now" card when a lecture is scheduled, or the plain
   // "No lecture scheduled" line when idle. Kept fully controlled (rather than
@@ -3192,36 +3189,13 @@ export function LiveBroadcast() {
                             setSelectedClassIds([...selectedClassIds, cls.id]);
                           }
                         }}
-                        onMouseEnter={() => setHoveredClassChipId(cls.id)}
-                        onMouseLeave={() => setHoveredClassChipId(null)}
-                        className={`relative px-3 pt-2.5 pb-1.5 rounded-[9px] text-xs font-medium border bg-transparent transition-[border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center justify-center ${
+                        className={`px-3 pt-2.5 pb-1.5 rounded-[9px] text-xs font-medium border bg-transparent transition-[border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center ${
                           isSelected
                             ? "border-accent-info text-accent-info"
                             : "border-border text-text-secondary hover:text-text-primary hover:border-border/80"
                         }`}
                       >
-                        {/* Invisible sizer — always the full expanded content,
-                            so hovering (which collapses the label below)
-                            never changes this button's own width. */}
-                        <span className="invisible flex items-center" aria-hidden="true">
-                          <Chalkboard className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
-                          <span className="pl-1.5 whitespace-nowrap">{cls.name}</span>
-                        </span>
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <Chalkboard className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
-                          <motion.span
-                            className="overflow-hidden whitespace-nowrap"
-                            initial={false}
-                            animate={
-                              hoveredClassChipId === cls.id
-                                ? { width: 0, opacity: 0 }
-                                : { width: "auto", opacity: 1 }
-                            }
-                            transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                          >
-                            <span className="pl-1.5">{cls.name}</span>
-                          </motion.span>
-                        </span>
+                        <span>{cls.name}</span>
                       </button>
                     </div>
                   );
