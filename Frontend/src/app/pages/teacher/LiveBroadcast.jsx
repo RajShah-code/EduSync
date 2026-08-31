@@ -3084,44 +3084,53 @@ export function LiveBroadcast() {
           </DialogHeader>
 
           <div className="flex flex-col gap-4 py-2">
-            {/* Icon sits ON the pill's own border (native fieldset/legend
-                notch — the browser breaks the top border around the legend
-                box automatically), not inside the input area. */}
-            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
-              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+            {/* Icon sits ON the pill's border. Built by hand rather than
+                fieldset/legend's native "notch" (which silently stops
+                working once the fieldset itself is display:flex in some
+                browsers): an icon "patch" is absolutely positioned with its
+                own vertical center pinned exactly to the pill's top border
+                line, painted with the modal's own background color so it
+                visually breaks the border line underneath it, sitting above
+                the pill (z-10) so it's never clipped. */}
+            <div className="relative">
+              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <Books className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-              </legend>
-              <input
-                type="text"
-                placeholder="Lecture Name"
-                value={formData.lectureName}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, lectureName: e.target.value }))
-                }
-                className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
-              />
-            </fieldset>
+              </div>
+              <div className="h-[46px] rounded-[23px] border border-solid border-text-secondary flex items-center">
+                <input
+                  type="text"
+                  placeholder="Lecture Name"
+                  value={formData.lectureName}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, lectureName: e.target.value }))
+                  }
+                  className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
+                />
+              </div>
+            </div>
 
-            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
-              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+            <div className="relative">
+              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <Book2 className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-              </legend>
-              <input
-                type="text"
-                placeholder="Subject Name"
-                value={formData.subject}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, subject: e.target.value }))
-                }
-                className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
-              />
-            </fieldset>
+              </div>
+              <div className="h-[46px] rounded-[23px] border border-solid border-text-secondary flex items-center">
+                <input
+                  type="text"
+                  placeholder="Subject Name"
+                  value={formData.subject}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, subject: e.target.value }))
+                  }
+                  className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
+                />
+              </div>
+            </div>
 
-            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
-              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+            <div className="relative">
+              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <Lock className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-              </legend>
-              <div className="relative flex-1 min-w-0 h-full">
+              </div>
+              <div className="relative h-[46px] rounded-[23px] border border-solid border-text-secondary flex items-center">
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Lecture Password"
@@ -3129,7 +3138,7 @@ export function LiveBroadcast() {
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, password: e.target.value }))
                   }
-                  className="w-full h-full bg-transparent border-0 outline-none px-4 pr-10 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
+                  className="w-full h-full bg-transparent border-0 outline-none px-4 pr-10 text-sm text-text-primary placeholder:text-text-muted"
                 />
                 <button
                   type="button"
@@ -3141,22 +3150,24 @@ export function LiveBroadcast() {
                   {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
                 </button>
               </div>
-            </fieldset>
+            </div>
 
-            <fieldset style={{ borderRadius: '23px' }} className="relative min-w-0 h-[46px] border border-solid border-border p-0 flex items-center">
-              <legend className="ml-3 px-1 flex items-center pointer-events-none">
+            <div className="relative">
+              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
                 <MapPin className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-              </legend>
-              <input
-                type="text"
-                placeholder="Lab Room"
-                value={formData.labRoom}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, labRoom: e.target.value }))
-                }
-                className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted rounded-[23px]"
-              />
-            </fieldset>
+              </div>
+              <div className="h-[46px] rounded-[23px] border border-solid border-text-secondary flex items-center">
+                <input
+                  type="text"
+                  placeholder="Lab Room"
+                  value={formData.labRoom}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, labRoom: e.target.value }))
+                  }
+                  className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
+                />
+              </div>
+            </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
