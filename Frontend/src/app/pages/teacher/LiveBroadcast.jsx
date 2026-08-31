@@ -9,7 +9,7 @@ import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
-import { IconPlayerPause as Pause, IconPlayerPlay as Play, IconDeviceDesktop as Monitor, IconDeviceDesktopOff as MonitorStop, IconScreenShare as ScreenShareOn, IconScreenShareOff as ScreenShareOff, IconLivePhoto as LivePhoto, IconLivePhotoOff as LivePhotoOff, IconEye as Eye, IconEyeOff as EyeOff, IconUsers as Users, IconChalkboard as Chalkboard, IconCopy as Copy, IconCheck as Check, IconMicrophone as Mic, IconMicrophoneOff as MicOff, IconCode as Code2, IconX as X, IconLoader2 as Loader2, IconAlertTriangle as TriangleAlert, IconDownload as Download, IconCalendarStats as CalendarStats, IconMaximize as Maximize, IconMinimize as Minimize, IconInfoCircle as Info, IconBooks as Books, IconBook2 as Book2, IconLock as Lock, IconMapPin as MapPin, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconTypography as Typography, IconSketching as Sketching } from "@tabler/icons-react";
+import { IconPlayerPause as Pause, IconPlayerPlay as Play, IconDeviceDesktop as Monitor, IconDeviceDesktopOff as MonitorStop, IconScreenShare as ScreenShareOn, IconScreenShareOff as ScreenShareOff, IconLivePhoto as LivePhoto, IconLivePhotoOff as LivePhotoOff, IconEye as Eye, IconEyeOff as EyeOff, IconUsers as Users, IconCopy as Copy, IconCheck as Check, IconMicrophone as Mic, IconMicrophoneOff as MicOff, IconCode as Code2, IconX as X, IconLoader2 as Loader2, IconAlertTriangle as TriangleAlert, IconDownload as Download, IconCalendarStats as CalendarStats, IconMaximize as Maximize, IconMinimize as Minimize, IconInfoCircle as Info, IconBooks as Books, IconBook2 as Book2, IconLock as Lock, IconMapPin as MapPin, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconTypography as Typography, IconSketching as Sketching } from "@tabler/icons-react";
 import {
   Dialog,
   DialogContent,
@@ -3170,10 +3170,6 @@ export function LiveBroadcast() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-text-secondary flex items-center gap-1.5">
-                <Chalkboard className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-                Select Classes
-              </label>
               <div className="flex flex-wrap gap-2 mt-1">
                 {classes.map((cls) => {
                   const isSelected = selectedClassIds.includes(cls.id);
