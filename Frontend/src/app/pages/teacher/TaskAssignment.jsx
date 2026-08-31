@@ -722,7 +722,7 @@ export function TaskAssignment() {
               }`}
             >
               <SquarePlus className="w-4 h-4" />
-              Assign Task
+              Create Task
             </button>
             <button
               onClick={() => setActiveTab("list")}
