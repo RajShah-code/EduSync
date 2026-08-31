@@ -593,12 +593,7 @@ export function LiveSession() {
       if (currentSessionId && String(sessionId) !== String(currentSessionId)) return;
 
       if (stroke && stroke.phase === "end") {
-        const idx = studentWhiteboardStrokesRef.current.findIndex((s) => s.id === stroke.id);
-        if (idx !== -1) {
-          studentWhiteboardStrokesRef.current[idx] = stroke;
-        } else {
-          studentWhiteboardStrokesRef.current.push(stroke);
-        }
+        studentWhiteboardStrokesRef.current.push(stroke);
       }
       if (bgColor) {
         studentWhiteboardBgColorRef.current = bgColor;
@@ -606,19 +601,6 @@ export function LiveSession() {
 
       if (studentWhiteboardRef.current) {
         studentWhiteboardRef.current.applyRemoteStroke(stroke);
-      }
-    };
-
-    // ── teacher:whiteboard_stroke_delete ───────────────────────────────────────
-    const handleTeacherWhiteboardStrokeDelete = ({ sessionId, strokeId }) => {
-      const currentSessionId = joinedSession?.id;
-      if (currentSessionId && String(sessionId) !== String(currentSessionId)) return;
-
-      studentWhiteboardStrokesRef.current = studentWhiteboardStrokesRef.current.filter(
-        (s) => s.id !== strokeId
-      );
-      if (studentWhiteboardRef.current) {
-        studentWhiteboardRef.current.applyRemoteStrokeDelete(strokeId);
       }
     };
 
@@ -703,7 +685,6 @@ export function LiveSession() {
     socket.on('teacher:code_changed', handleTeacherCodeChanged);
     socket.on('teacher:code_output', handleTeacherCodeOutput);
     socket.on('teacher:whiteboard_stroke', handleTeacherWhiteboardStroke);
-    socket.on('teacher:whiteboard_stroke_delete', handleTeacherWhiteboardStrokeDelete);
     socket.on('teacher:whiteboard_clear', handleTeacherWhiteboardClear);
     socket.on('teacher:whiteboard_snapshot', handleTeacherWhiteboardSnapshot);
     socket.on('teacher:whiteboard_sync', handleTeacherWhiteboardSnapshot);
@@ -734,7 +715,6 @@ export function LiveSession() {
       socket.off('teacher:code_changed', handleTeacherCodeChanged);
       socket.off('teacher:code_output', handleTeacherCodeOutput);
       socket.off('teacher:whiteboard_stroke', handleTeacherWhiteboardStroke);
-      socket.off('teacher:whiteboard_stroke_delete', handleTeacherWhiteboardStrokeDelete);
       socket.off('teacher:whiteboard_clear', handleTeacherWhiteboardClear);
       socket.off('teacher:whiteboard_snapshot', handleTeacherWhiteboardSnapshot);
       socket.off('teacher:whiteboard_sync', handleTeacherWhiteboardSnapshot);
