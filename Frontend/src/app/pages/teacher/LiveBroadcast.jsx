@@ -229,6 +229,11 @@ export function LiveBroadcast() {
   // side's own active violet pill, the self-hover label retract.
   const [scheduleHover, setScheduleHover] = useState(false);
   const [startHover, setStartHover] = useState(false);
+  // hoveredControlButton: which of the live control-bar buttons (Mic/Screen
+  // Share/Record/End) is currently hovered, if any — collapses that one
+  // button's label so the icon centers, same width-shrink mechanism as the
+  // Schedule/Instant pills above, just triggered by hover instead of state.
+  const [hoveredControlButton, setHoveredControlButton] = useState(null);
   // schedTipOpen: controls the recoloured shadcn tooltip on the Schedule pill —
   // the rich "what's on now" card when a lecture is scheduled, or the plain
   // "No lecture scheduled" line when idle. Kept fully controlled (rather than
@@ -2769,9 +2774,11 @@ export function LiveBroadcast() {
                       permission hasn't been granted (or was denied), clicking
                       (re)prompts the OS/browser permission dialog instead of
                       being disabled, so the teacher always has a way to turn it on. */}
-                  <button
+                  <motion.button
                     type="button"
                     onClick={handleMicToggle}
+                    onMouseEnter={() => setHoveredControlButton("mic")}
+                    onMouseLeave={() => setHoveredControlButton(null)}
                     title={
                       !hasMic
                         ? micWarning
@@ -2783,7 +2790,7 @@ export function LiveBroadcast() {
                     }
                     aria-label={!hasMic ? "Turn on microphone" : micMuted ? "Unmute microphone" : "Mute microphone"}
                     className={cn(
-                      "btn-press relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
                       !hasMic
                         ? micWarning
                           ? "border-accent-warning/40 bg-accent-warning/15 text-accent-warning hover:bg-accent-warning/25"
@@ -2792,56 +2799,114 @@ export function LiveBroadcast() {
                         ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
+                    initial={false}
+                    animate={
+                      hoveredControlButton === "mic"
+                        ? { minWidth: "2.5rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
+                        : { minWidth: "auto", paddingLeft: "1rem", paddingRight: "1rem" }
+                    }
+                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
                     {micWarning && (
                       <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-warning ring-2 ring-bg-elevated" aria-hidden="true" />
                     )}
-                    {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px]" /> : <Mic className="w-[18px] h-[18px]" />}
-                    {!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}
-                  </button>
+                    {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px] shrink-0" /> : <Mic className="w-[18px] h-[18px] shrink-0" />}
+                    <motion.span
+                      className="overflow-hidden whitespace-nowrap"
+                      initial={false}
+                      animate={
+                        hoveredControlButton === "mic"
+                          ? { width: 0, opacity: 0 }
+                          : { width: "auto", opacity: 1 }
+                      }
+                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                    >
+                      <span className="pl-2">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
+                    </motion.span>
+                  </motion.button>
 
                   {/* Screen Share toggle */}
-                  <button
+                  <motion.button
                     data-tour="broadcast-screenshare"
                     type="button"
                     onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
+                    onMouseEnter={() => setHoveredControlButton("screenshare")}
+                    onMouseLeave={() => setHoveredControlButton(null)}
                     title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
                     aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
                     className={cn(
-                      "btn-press h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-colors duration-150",
+                      "btn-press h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
                       isScreenSharing
                         ? "border-accent-700/50 bg-accent-700 text-white hover:bg-accent-700/90"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
+                    initial={false}
+                    animate={
+                      hoveredControlButton === "screenshare"
+                        ? { minWidth: "2.5rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
+                        : { minWidth: "auto", paddingLeft: "1rem", paddingRight: "1rem" }
+                    }
+                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
-                    {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px]" /> : <ScreenShareOn className="w-[18px] h-[18px]" />}
-                    {isScreenSharing ? "Stop Sharing" : "Start Screen Share"}
-                  </button>
+                    {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px] shrink-0" /> : <ScreenShareOn className="w-[18px] h-[18px] shrink-0" />}
+                    <motion.span
+                      className="overflow-hidden whitespace-nowrap"
+                      initial={false}
+                      animate={
+                        hoveredControlButton === "screenshare"
+                          ? { width: 0, opacity: 0 }
+                          : { width: "auto", opacity: 1 }
+                      }
+                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                    >
+                      <span className="pl-2">{isScreenSharing ? "Stop Sharing" : "Start Screen Share"}</span>
+                    </motion.span>
+                  </motion.button>
 
                   {/* Record toggle */}
-                  <button
+                  <motion.button
                     data-tour="broadcast-record"
                     type="button"
                     onClick={handleToggleRecording}
+                    onMouseEnter={() => setHoveredControlButton("record")}
+                    onMouseLeave={() => setHoveredControlButton(null)}
                     title={isRecording ? "Stop recording" : "Start recording"}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
                     className={cn(
-                      "btn-press relative h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-colors duration-150",
                       isRecording
                         ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
                         : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
                     )}
+                    initial={false}
+                    animate={
+                      hoveredControlButton === "record"
+                        ? { minWidth: "2.5rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
+                        : { minWidth: "auto", paddingLeft: "1rem", paddingRight: "1rem" }
+                    }
+                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
                     {isRecording && (
                       <span className="absolute inset-0 rounded-full ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
                     )}
                     {isRecording ? (
-                      <LivePhotoOff className="w-[18px] h-[18px]" />
+                      <LivePhotoOff className="w-[18px] h-[18px] shrink-0" />
                     ) : (
-                      <LivePhoto className="w-[18px] h-[18px]" />
+                      <LivePhoto className="w-[18px] h-[18px] shrink-0" />
                     )}
-                    {isRecording ? "Stop Recording" : "Record"}
-                  </button>
+                    <motion.span
+                      className="overflow-hidden whitespace-nowrap"
+                      initial={false}
+                      animate={
+                        hoveredControlButton === "record"
+                          ? { width: 0, opacity: 0 }
+                          : { width: "auto", opacity: 1 }
+                      }
+                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                    >
+                      <span className="pl-2">{isRecording ? "Stop Recording" : "Record"}</span>
+                    </motion.span>
+                  </motion.button>
 
                   {/* Download Recording — appears only once a finished recording is ready */}
                   {recordingDownloadUrl && recordingState === "off" && (
@@ -2870,16 +2935,36 @@ export function LiveBroadcast() {
                     <Users className="w-4 h-4" />
                     <span className="tnum">{connectedStudents.length}</span>
                   </button>
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => setShowStopConfirm(true)}
+                    onMouseEnter={() => setHoveredControlButton("end")}
+                    onMouseLeave={() => setHoveredControlButton(null)}
                     title="End lecture"
                     aria-label="End lecture"
-                    className="btn-press h-11 px-5 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center gap-2 font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
+                    className="btn-press h-11 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white flex items-center justify-center font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
+                    initial={false}
+                    animate={
+                      hoveredControlButton === "end"
+                        ? { minWidth: "2.75rem", paddingLeft: "0.625rem", paddingRight: "0.625rem" }
+                        : { minWidth: "auto", paddingLeft: "1.25rem", paddingRight: "1.25rem" }
+                    }
+                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                   >
-                    <MonitorStop className="w-[18px] h-[18px]" />
-                    End
-                  </button>
+                    <MonitorStop className="w-[18px] h-[18px] shrink-0" />
+                    <motion.span
+                      className="overflow-hidden whitespace-nowrap"
+                      initial={false}
+                      animate={
+                        hoveredControlButton === "end"
+                          ? { width: 0, opacity: 0 }
+                          : { width: "auto", opacity: 1 }
+                      }
+                      transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                    >
+                      <span className="pl-2">End</span>
+                    </motion.span>
+                  </motion.button>
                 </div>
               </div>
             )}
