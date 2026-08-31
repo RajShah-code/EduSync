@@ -24,6 +24,10 @@ const ERASER_MIN_SIZE = 10;
 const ERASER_MAX_SIZE = 100;
 const ERASER_STEP = 5;
 
+// Shapes that can be selected (immediately after drawing, or by clicking
+// them again later) to bring back resize handles.
+const SELECTABLE_TOOLS = ["line", "rectangle", "circle"];
+
 export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
   {
     readOnly = false,
@@ -344,6 +348,78 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     };
   };
 
+  // ── Shape Hit-Testing (reselect an existing shape to resize it) ───────────
+  // All distance helpers work in on-screen CSS-px space (same as what's
+  // actually rendered), so a click matches what the teacher sees, not the
+  // stroke's original recorded coordinate space.
+  const distToSegment = (px, py, x1, y1, x2, y2) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  };
+
+  const distToRectBorder = (px, py, x1, y1, x2, y2) => {
+    const rx = Math.min(x1, x2);
+    const ry = Math.min(y1, y2);
+    const rw = Math.abs(x2 - x1);
+    const rh = Math.abs(y2 - y1);
+    return Math.min(
+      distToSegment(px, py, rx, ry, rx + rw, ry), // top
+      distToSegment(px, py, rx, ry + rh, rx + rw, ry + rh), // bottom
+      distToSegment(px, py, rx, ry, rx, ry + rh), // left
+      distToSegment(px, py, rx + rw, ry, rx + rw, ry + rh) // right
+    );
+  };
+
+  const distToEllipseBoundary = (px, py, x1, y1, x2, y2) => {
+    const radiusX = Math.abs(x2 - x1) / 2;
+    const radiusY = Math.abs(y2 - y1) / 2;
+    const centerX = Math.min(x1, x2) + radiusX;
+    const centerY = Math.min(y1, y2) + radiusY;
+    if (radiusX < 0.5 || radiusY < 0.5) return Math.hypot(px - centerX, py - centerY);
+    // Approximate closest boundary point: use the click's angle from center
+    // (normalized for the two radii) and project it back onto the ellipse.
+    const angle = Math.atan2((py - centerY) / radiusY, (px - centerX) / radiusX);
+    const boundaryX = centerX + radiusX * Math.cos(angle);
+    const boundaryY = centerY + radiusY * Math.sin(angle);
+    return Math.hypot(px - boundaryX, py - boundaryY);
+  };
+
+  // Iterates strokesRef.current back-to-front (most recently drawn = topmost)
+  // and returns the first selectable shape whose outline passes near coords
+  // (already in on-screen CSS-px, from getCanvasCoords), or null.
+  const hitTestShapeAt = (coords) => {
+    for (let i = strokesRef.current.length - 1; i >= 0; i--) {
+      const stroke = strokesRef.current[i];
+      if (!SELECTABLE_TOOLS.includes(stroke.tool)) continue;
+
+      const { scaleX, scaleY } = getStrokeScale(stroke);
+      const scaleAvg = (scaleX + scaleY) / 2;
+      const sx1 = stroke.x1 * scaleX;
+      const sy1 = stroke.y1 * scaleY;
+      const sx2 = stroke.x2 * scaleX;
+      const sy2 = stroke.y2 * scaleY;
+
+      const tolerance = Math.max(6, (stroke.thickness || 0) * scaleAvg / 2 + 4);
+
+      let dist;
+      if (stroke.tool === "line") {
+        dist = distToSegment(coords.x, coords.y, sx1, sy1, sx2, sy2);
+      } else if (stroke.tool === "rectangle") {
+        dist = distToRectBorder(coords.x, coords.y, sx1, sy1, sx2, sy2);
+      } else {
+        dist = distToEllipseBoundary(coords.x, coords.y, sx1, sy1, sx2, sy2);
+      }
+
+      if (dist <= tolerance) return stroke;
+    }
+    return null;
+  };
+
   const drawSingleStroke = (ctx, stroke) => {
     const { tool, color, thickness, points, x1, y1, x2, y2 } = stroke;
 
@@ -446,6 +522,21 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
     // canvas) — drop any active shape selection/handles.
     if (selectedShapeIdRef.current) {
       deselectShape();
+    }
+
+    // While a shape tool is active, clicking an existing Line/Rectangle/
+    // Circle re-selects it for resizing instead of starting a new shape.
+    // (A click that actually landed on a resize handle never reaches here —
+    // the handle is a separate, topmost element with its own pointer
+    // handlers — so that priority is already preserved.)
+    if (SELECTABLE_TOOLS.includes(tool)) {
+      const hitStroke = hitTestShapeAt(getCanvasCoords(e));
+      if (hitStroke) {
+        selectedShapeIdRef.current = hitStroke.id;
+        setSelectedShapeId(hitStroke.id);
+        setResizeHandlePositions(computeHandlePositions(hitStroke));
+        return;
+      }
     }
 
     const isPen = e.pointerType === "pen";
@@ -573,7 +664,7 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
 
     // Keep a just-finished Line/Rectangle/Circle selected so the teacher can
     // immediately resize it via handles at its two endpoints.
-    if (["line", "rectangle", "circle"].includes(finishedStroke.tool)) {
+    if (SELECTABLE_TOOLS.includes(finishedStroke.tool)) {
       selectedShapeIdRef.current = finishedStroke.id;
       setSelectedShapeId(finishedStroke.id);
       setResizeHandlePositions(computeHandlePositions(finishedStroke));
