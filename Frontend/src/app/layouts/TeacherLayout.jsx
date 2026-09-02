@@ -1,10 +1,16 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { IconLayoutDashboard as LayoutDashboard, IconChalkboardTeacher as ChalkboardTeacher, IconBinoculars as Binoculars, IconClipboard as Clipboard, IconFileCertificate as FileCertificate, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendarWeek as CalendarWeek, IconSettings as Settings, IconLogout as LogOut, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown } from "@tabler/icons-react";
+import { IconLayoutDashboard as LayoutDashboard, IconChalkboardTeacher as ChalkboardTeacher, IconBinoculars as Binoculars, IconClipboard as Clipboard, IconFileCertificate as FileCertificate, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendarWeek as CalendarWeek, IconSettings as Settings, IconLogout as LogOut, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown, IconBell as Bell, IconBellRinging as BellRinging } from "@tabler/icons-react";
 import { cn } from "../components/ui/utils";
 import { initSocket, getSocket, disconnectSocket } from "../store/socket";
 import { Toaster } from "../components/ui/sonner";
+import {
+  getNotifications,
+  addNotification,
+  removeNotification,
+  clearNotifications,
+} from "../utils/lectureNotificationsStore";
 
 const navigation = [
   { name: "Dashboard", href: "/teacher", icon: LayoutDashboard, dataTour: "teacher-dashboard-link" },
@@ -73,6 +79,30 @@ export function TeacherLayout() {
   // regardless of which teacher page is mounted. Deduped by student_id: a
   // repeat request from the same student updates the existing entry.
   const [pendingRejoins, setPendingRejoins] = useState([]);
+
+  // Persistent, cross-page Notification Center — live only while a lecture
+  // is in progress. Backed by lectureNotificationsStore (sessionStorage,
+  // keyed per session_id) so it survives a mid-lecture refresh but never
+  // bleeds into a future lecture. Feeds from teacher:app_violation,
+  // doubt:new, and task:time_expired_summary — additive to those events'
+  // existing toast.* calls in LiveBroadcast.jsx/TaskAssignment.jsx, not a
+  // replacement (toast = transient alert, panel = persistent record).
+  // teacher:rejoin_request is deliberately excluded — that event is fully
+  // owned by the Waiting Room feature above.
+  const [notifications, setNotifications] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifExtMinutes, setNotifExtMinutes] = useState({}); // notification id -> minutes
+  const notifRef = useRef(null);
+  // Tracks the most recent non-null session id so the "clear on session end"
+  // effect can still find it after setSessionInfo(null) has already landed.
+  const notifSessionIdRef = useRef(null);
+  // Mirrors sessionInfo for the socket-listener closures below (registered
+  // once, so they'd otherwise see a stale sessionInfo from mount time).
+  const sessionInfoRef = useRef(sessionInfo);
+  useEffect(() => {
+    sessionInfoRef.current = sessionInfo;
+    if (sessionInfo?.id) notifSessionIdRef.current = sessionInfo.id;
+  }, [sessionInfo]);
 
   // Sidebar sub-nav (Monitor + Tasks) — only surfaced while a lecture is
   // live. Auto-expands each time a session goes live; the chevron on the
@@ -190,6 +220,123 @@ export function TeacherLayout() {
       if (cleanup) cleanup();
     };
   }, []);
+
+  // Hydrate the Notification Center from sessionStorage whenever the active
+  // session changes — covers both a fresh lecture start (empty list) and a
+  // mid-lecture refresh (rehydrated sessionInfo.id below restores the list
+  // that was already written for that session_id).
+  useEffect(() => {
+    setNotifications(sessionInfo?.id ? getNotifications(sessionInfo.id) : []);
+  }, [sessionInfo?.id]);
+
+  // Listen for teacher:app_violation, doubt:new, and task:time_expired_summary
+  // — feeds the persistent Notification Center. Additive to the existing
+  // toast.* calls already fired for these events inside
+  // LiveBroadcast.jsx/TaskAssignment.jsx; this listener does not replace or
+  // interfere with those, it just also records a durable entry so a teacher
+  // who isn't on that specific page doesn't miss the event entirely.
+  useEffect(() => {
+    let socket = getSocket();
+    let cleanup = null;
+
+    const pushNotification = (entry) => {
+      const sessionId = sessionInfoRef.current?.id;
+      if (!sessionId) return;
+      addNotification(sessionId, entry);
+      setNotifications((prev) => [entry, ...prev]);
+    };
+
+    const setupListener = (s) => {
+      const handleAppViolation = ({ student_id, process_name, timestamp }) => {
+        pushNotification({
+          id: `av_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          category: "monitor",
+          message: `Student ${student_id} — ${process_name} was closed automatically`,
+          timestamp: timestamp || Date.now(),
+          read: false,
+          actionable: false,
+          meta: { kind: "app_violation", student_id, process_name },
+        });
+      };
+
+      const handleDoubtNew = ({ doubt_id, task_id, student_id, student_name, question_text, raised_at }) => {
+        const trimmed = (question_text || "").trim();
+        const preview = trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
+        pushNotification({
+          id: `doubt_${doubt_id}`,
+          category: "task",
+          message: preview ? `${student_name} raised a doubt: "${preview}"` : `${student_name} raised a doubt`,
+          timestamp: raised_at || Date.now(),
+          read: false,
+          actionable: true,
+          meta: { kind: "doubt", doubt_id, task_id, student_id },
+        });
+      };
+
+      const handleTimeExpiredSummary = ({ task_id, title, incomplete_count }) => {
+        // Same dedup rule as TaskAssignment's own expiredAlerts — one entry
+        // per task, never re-added while it's still pending a decision.
+        const sessionId = sessionInfoRef.current?.id;
+        if (sessionId && getNotifications(sessionId).some((n) => n.meta?.kind === "time_expired" && n.meta?.task_id === task_id)) {
+          return;
+        }
+        pushNotification({
+          id: `texp_${task_id}`,
+          category: "task",
+          message: `Time expired: "${title}" — ${incomplete_count} student${incomplete_count !== 1 ? "s" : ""} incomplete`,
+          timestamp: Date.now(),
+          read: false,
+          actionable: true,
+          meta: { kind: "time_expired", task_id, title, incomplete_count },
+        });
+      };
+
+      s.on("teacher:app_violation", handleAppViolation);
+      s.on("doubt:new", handleDoubtNew);
+      s.on("task:time_expired_summary", handleTimeExpiredSummary);
+      return () => {
+        s.off("teacher:app_violation", handleAppViolation);
+        s.off("doubt:new", handleDoubtNew);
+        s.off("task:time_expired_summary", handleTimeExpiredSummary);
+      };
+    };
+
+    if (socket) {
+      cleanup = setupListener(socket);
+    } else {
+      const interval = setInterval(() => {
+        const s = getSocket();
+        if (s) {
+          clearInterval(interval);
+          cleanup = setupListener(s);
+        }
+      }, 500);
+      return () => {
+        clearInterval(interval);
+        if (cleanup) cleanup();
+      };
+    }
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
+
+  // Clear the Notification Center the moment a lecture stops being live —
+  // never carry entries into the next lecture. notifSessionIdRef (not
+  // sessionInfo.id) is used here since setSessionInfo(null) and
+  // setBroadcastState("idle") land in the same batched update out of
+  // LiveBroadcast's stop-session handler.
+  const prevBroadcastStateRef = useRef(broadcastState);
+  useEffect(() => {
+    const wasLive = prevBroadcastStateRef.current === "live";
+    prevBroadcastStateRef.current = broadcastState;
+    if (wasLive && broadcastState !== "live") {
+      if (notifSessionIdRef.current) clearNotifications(notifSessionIdRef.current);
+      setNotifications([]);
+      setNotifOpen(false);
+    }
+  }, [broadcastState]);
 
   // Active broadcast content mode:
   //   'screen'  — students see the teacher's WebRTC screen share
@@ -343,6 +490,86 @@ export function TeacherLayout() {
     setPendingRejoins((prev) => prev.filter((r) => r.student_id !== student_id));
   };
 
+  const dismissNotification = (notifId) => {
+    const sessionId = sessionInfo?.id;
+    if (sessionId) removeNotification(sessionId, notifId);
+    setNotifications((prev) => prev.filter((n) => n.id !== notifId));
+  };
+
+  // Extend / Move On for a time-expired notification — same two endpoints
+  // TaskAssignment's own expiredAlerts card calls, self-removing the
+  // notification on a real 200 response exactly like that card does.
+  const handleExtendNotifTask = async (notif) => {
+    const taskId = notif.meta?.task_id;
+    if (!taskId) return;
+    const minutes = notifExtMinutes[notif.id] || 5;
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/extend`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ additional_seconds: minutes * 60 }),
+      });
+      if (res.ok) {
+        dismissNotification(notif.id);
+      }
+    } catch (err) {
+      console.error("[TeacherLayout] Notification extend-task failed:", err);
+    }
+  };
+
+  const handleMoveOnNotifTask = async (notif) => {
+    const taskId = notif.meta?.task_id;
+    if (!taskId) return;
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/move_on`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        dismissNotification(notif.id);
+      }
+    } catch (err) {
+      console.error("[TeacherLayout] Notification move-on-task failed:", err);
+    }
+  };
+
+  const notifCategoryColor = {
+    lecture: "bg-accent-success",
+    task: "bg-accent-info",
+    monitor: "bg-accent-warning",
+  };
+
+  const unreadNotifCount = notifications.filter((n) => !n.read).length;
+
+  const handleToggleNotifPanel = () => {
+    setNotifOpen((prev) => {
+      const next = !prev;
+      if (next && notifications.some((n) => !n.read)) {
+        const sessionId = sessionInfo?.id;
+        setNotifications((current) => {
+          const updated = current.map((n) => ({ ...n, read: true }));
+          if (sessionId) {
+            // Persist read-state alongside the rest of the entry — cheapest
+            // way to do this with the store's add/remove-only surface is a
+            // clear + re-add pass, since the list is small (per-lecture).
+            clearNotifications(sessionId);
+            [...updated].reverse().forEach((n) => addNotification(sessionId, n));
+          }
+          return updated;
+        });
+      }
+      return next;
+    });
+  };
+
   const formatDuration = (secs) => {
     if (secs < 60) return `${secs}s`;
     const mins = Math.floor(secs / 60);
@@ -353,6 +580,19 @@ export function TeacherLayout() {
   const formatTime = (ts) => {
     return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
+
+  // Close the notification dropdown on an outside click — same pattern as
+  // the app's shared Dropdown.jsx.
+  useEffect(() => {
+    if (!notifOpen) return;
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifOpen]);
 
   const teacherInitials = (displayUser.name || "Teacher")
     .trim()
@@ -379,6 +619,116 @@ export function TeacherLayout() {
             EduSync
           </span>
         </div>
+
+        {/* Notification Center — bell only appears while a lecture is
+            live; the panel is entirely local to this layout (no page needs
+            it via Outlet context), so it isn't threaded through there. */}
+        {broadcastState === "live" && (
+          <div className="relative rounded-[var(--radius-lg)] border border-border bg-bg-surface px-3 md:px-4 py-2 md:py-2.5 shrink-0" ref={notifRef}>
+            <button
+              type="button"
+              onClick={handleToggleNotifPanel}
+              aria-haspopup="true"
+              aria-expanded={notifOpen}
+              aria-label="Lecture notifications"
+              title="Lecture notifications"
+              className="btn-press relative w-full flex items-center gap-2.5 justify-center md:justify-start text-text-secondary hover:text-text-primary transition-std"
+            >
+              <span className="relative shrink-0">
+                {unreadNotifCount > 0 ? (
+                  <BellRinging className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                ) : (
+                  <Bell className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                )}
+                {unreadNotifCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-[3px] rounded-full bg-accent-critical text-white text-[10px] font-bold leading-none flex items-center justify-center">
+                    {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
+                  </span>
+                )}
+              </span>
+              <span className="hidden md:inline text-[13px] flex-1 text-left truncate">
+                Notifications
+              </span>
+            </button>
+
+            {notifOpen && (
+              <div className="absolute left-0 top-full mt-2 w-80 max-h-[26rem] overflow-y-auto bg-bg-elevated border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-dropdown)] z-[150] p-2 space-y-1.5">
+                {notifications.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-text-muted">
+                    No notifications yet this lecture.
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className="p-2.5 bg-bg-base border border-border rounded-[var(--radius-md)] flex gap-2.5"
+                    >
+                      <span
+                        className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", notifCategoryColor[n.category] || "bg-text-muted")}
+                        aria-hidden="true"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-text-primary leading-snug">{n.message}</p>
+                        <p className="text-[10px] text-text-muted mt-0.5">
+                          {formatTime(n.timestamp)}
+                        </p>
+
+                        {n.meta?.kind === "time_expired" && (
+                          <div className="flex items-center gap-2 flex-wrap mt-2">
+                            <input
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={notifExtMinutes[n.id] || 5}
+                              onChange={(e) =>
+                                setNotifExtMinutes({
+                                  ...notifExtMinutes,
+                                  [n.id]: parseInt(e.target.value) || 5,
+                                })
+                              }
+                              className="w-12 h-6 text-[11px] tnum text-center bg-bg-surface border border-border rounded-[var(--radius-sm)] text-text-primary"
+                            />
+                            <button
+                              onClick={() => handleExtendNotifTask(n)}
+                              className="px-2 py-1 bg-accent-warning/15 hover:bg-accent-warning/25 text-accent-warning border border-accent-warning/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
+                            >
+                              Extend
+                            </button>
+                            <button
+                              onClick={() => handleMoveOnNotifTask(n)}
+                              className="px-2 py-1 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
+                            >
+                              Move On
+                            </button>
+                          </div>
+                        )}
+
+                        {n.meta?.kind === "doubt" && (
+                          <Link
+                            to="/teacher/task/assign"
+                            onClick={() => dismissNotification(n.id)}
+                            className="inline-block mt-1.5 text-[11px] font-semibold text-accent-info hover:underline"
+                          >
+                            View →
+                          </Link>
+                        )}
+                      </div>
+                      {n.meta?.kind !== "time_expired" && (
+                        <button
+                          onClick={() => dismissNotification(n.id)}
+                          className="self-start p-0.5 text-text-muted hover:text-text-primary transition-colors"
+                          title="Dismiss"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 min-h-0 rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 space-y-0.5 overflow-y-auto">
