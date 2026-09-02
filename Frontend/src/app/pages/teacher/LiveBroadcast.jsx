@@ -956,32 +956,6 @@ export function LiveBroadcast() {
         );
       };
 
-      const handleRejoinRequest = ({ session_id, student_id, student_name, rejoin_count }) => {
-        console.log(`[DEBUG] [teacher handleRejoinRequest] FIRED teacher:rejoin_request — session_id=${session_id} student_id=${student_id} student_name=${student_name} rejoin_count=${rejoin_count} ts=${Date.now()}`);
-        toast(`${student_name} wants to rejoin`, {
-          description: `Attempt #${rejoin_count ?? '?'} — this student was previously in your session.`,
-          duration: Infinity,
-          action: {
-            label: "Allow",
-            onClick: () => {
-              const s = getSocket();
-              if (s) {
-                s.emit("teacher:approve_rejoin", { session_id, student_id });
-              }
-            },
-          },
-          cancel: {
-            label: "Deny",
-            onClick: () => {
-              const s = getSocket();
-              if (s) {
-                s.emit("teacher:deny_rejoin", { session_id, student_id });
-              }
-            },
-          },
-        });
-      };
-
       // handler for teacher:app_violation — Electron's app-guard on a
       // student's machine force-closed a process not on this class's
       // allow-list. Live-only notification, not persisted (see
@@ -1062,7 +1036,6 @@ export function LiveBroadcast() {
       socket.on("webrtc:ice-candidate", handleWebRTCIceCandidate);
       socket.on("student:left", handleStudentLeft);
       socket.on("teacher:student_status_update", handleStudentStatusUpdate);
-      socket.on("teacher:rejoin_request", handleRejoinRequest);
       socket.on("teacher:resend_offer_to_student", handleResendOfferToStudent);
       socket.on("teacher:app_violation", handleAppViolation);
 
@@ -1073,7 +1046,6 @@ export function LiveBroadcast() {
         socket.off("webrtc:ice-candidate", handleWebRTCIceCandidate);
         socket.off("student:left", handleStudentLeft);
         socket.off("teacher:student_status_update", handleStudentStatusUpdate);
-        socket.off("teacher:rejoin_request", handleRejoinRequest);
         socket.off("teacher:resend_offer_to_student", handleResendOfferToStudent);
         socket.off("teacher:app_violation", handleAppViolation);
       };

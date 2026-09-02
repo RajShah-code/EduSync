@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { StudentTile } from "../../components/StudentTile";
 import { StatusBadge } from "../../components/StatusBadge";
-import { IconFilter as Filter, IconGrid3x3 as Grid3x3, IconLayoutGrid as Grid2x2, IconBinoculars as Monitor, IconEyeCheck as EyeCheck, IconEyeX as EyeX } from "@tabler/icons-react";
+import { IconFilter as Filter, IconGrid3x3 as Grid3x3, IconLayoutGrid as Grid2x2, IconBinoculars as Monitor, IconEyeCheck as EyeCheck, IconEyeX as EyeX, IconCheck as Check, IconX as X, IconHourglass as Hourglass } from "@tabler/icons-react";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
@@ -17,7 +17,7 @@ import {
 } from "../../components/ui/dialog";
 
 export function StudentMonitor() {
-  const { sessionInfo } = useOutletContext();
+  const { sessionInfo, pendingRejoins, handleApproveRejoin, handleDenyRejoin } = useOutletContext();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -118,8 +118,61 @@ export function StudentMonitor() {
     );
   }
 
+  const waitingStudents = (pendingRejoins || []).filter(
+    (r) => r.session_id === sessionInfo.id
+  );
+
   return (
     <div className="h-full flex flex-col bg-bg-base">
+      {/* Waiting Room — rejoin requests pending approval for this session.
+          Renders nothing when empty, no empty box. */}
+      {waitingStudents.length > 0 && (
+        <div className="px-6 py-4 border-b border-border bg-bg-surface">
+          <div className="flex items-center gap-2 mb-3">
+            <Hourglass className="w-[18px] h-[18px] text-accent-warning" />
+            <h2 className="text-sm font-semibold text-text-primary">
+              Waiting Room
+            </h2>
+            <span className="text-xs text-text-secondary">
+              {waitingStudents.length} student{waitingStudents.length !== 1 ? "s" : ""} waiting to rejoin
+            </span>
+          </div>
+          <div className="space-y-2">
+            {waitingStudents.map((r) => (
+              <div
+                key={r.student_id}
+                className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <span className="text-sm font-semibold text-text-primary truncate">
+                    {r.student_name}
+                  </span>
+                  <span className="block text-xs text-text-secondary">
+                    Rejoin attempt #{r.rejoin_count ?? "?"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleApproveRejoin(r.student_id, r.session_id)}
+                    className="p-1.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 rounded-[var(--radius-md)] text-xs font-semibold flex items-center justify-center transition-colors"
+                    title="Approve Rejoin"
+                  >
+                    <Check className="w-[18px] h-[18px]" />
+                  </button>
+                  <button
+                    onClick={() => handleDenyRejoin(r.student_id, r.session_id)}
+                    className="p-1.5 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-md)] text-xs font-semibold flex items-center justify-center transition-colors"
+                    title="Reject Rejoin"
+                  >
+                    <X className="w-[18px] h-[18px]" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Top Bar */}
       <div className="px-6 py-4 border-b border-border bg-bg-surface flex items-center justify-between">
         <div>

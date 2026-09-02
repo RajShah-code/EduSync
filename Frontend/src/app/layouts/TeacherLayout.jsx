@@ -68,6 +68,11 @@ export function TeacherLayout() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [attendanceExceptions, setAttendanceExceptions] = useState(null);
   const [expandedAttendanceId, setExpandedAttendanceId] = useState(null);
+  // Rejoin requests pending teacher approval — surfaced as a persistent
+  // Waiting Room on the Monitor page (not a toast) so they're visible
+  // regardless of which teacher page is mounted. Deduped by student_id: a
+  // repeat request from the same student updates the existing entry.
+  const [pendingRejoins, setPendingRejoins] = useState([]);
 
   // Sidebar sub-nav (Monitor + Tasks) — only surfaced while a lecture is
   // live. Auto-expands each time a session goes live; the chevron on the
@@ -117,6 +122,51 @@ export function TeacherLayout() {
       s.on("teacher:attendance_exceptions", handleExceptions);
       return () => {
         s.off("teacher:attendance_exceptions", handleExceptions);
+      };
+    };
+
+    if (socket) {
+      cleanup = setupListener(socket);
+    } else {
+      const interval = setInterval(() => {
+        const s = getSocket();
+        if (s) {
+          clearInterval(interval);
+          cleanup = setupListener(s);
+        }
+      }, 500);
+      return () => {
+        clearInterval(interval);
+        if (cleanup) cleanup();
+      };
+    }
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []);
+
+  // Listen for rejoin requests — surfaced in the Monitor page's Waiting
+  // Room, not a toast. Lifted here (mirroring the attendance-exceptions
+  // listener above) so it fires regardless of which teacher page is mounted.
+  useEffect(() => {
+    let socket = getSocket();
+    let cleanup = null;
+
+    const setupListener = (s) => {
+      const handleRejoinRequest = ({ session_id, student_id, student_name, rejoin_count }) => {
+        setPendingRejoins((prev) => {
+          const existing = prev.findIndex((r) => r.student_id === student_id);
+          const entry = { session_id, student_id, student_name, rejoin_count };
+          if (existing === -1) return [...prev, entry];
+          const updated = [...prev];
+          updated[existing] = entry;
+          return updated;
+        });
+      };
+      s.on("teacher:rejoin_request", handleRejoinRequest);
+      return () => {
+        s.off("teacher:rejoin_request", handleRejoinRequest);
       };
     };
 
@@ -279,6 +329,18 @@ export function TeacherLayout() {
     if (!attendanceExceptions?.exceptions?.length) return;
     const ids = attendanceExceptions.exceptions.map((e) => e.attendance_id);
     await Promise.all(ids.map((id) => handleDecideException(id, decision)));
+  };
+
+  const handleApproveRejoin = (student_id, session_id) => {
+    const s = getSocket();
+    if (s) s.emit("teacher:approve_rejoin", { session_id, student_id });
+    setPendingRejoins((prev) => prev.filter((r) => r.student_id !== student_id));
+  };
+
+  const handleDenyRejoin = (student_id, session_id) => {
+    const s = getSocket();
+    if (s) s.emit("teacher:deny_rejoin", { session_id, student_id });
+    setPendingRejoins((prev) => prev.filter((r) => r.student_id !== student_id));
   };
 
   const formatDuration = (secs) => {
@@ -455,6 +517,9 @@ export function TeacherLayout() {
             setActiveMode,
             editorLiveStatus,
             setEditorLiveStatus,
+            pendingRejoins,
+            handleApproveRejoin,
+            handleDenyRejoin,
           }} />
         </main>
         <Toaster position="top-right" richColors />
