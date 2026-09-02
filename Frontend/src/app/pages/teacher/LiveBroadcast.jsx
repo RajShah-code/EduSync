@@ -48,11 +48,11 @@ const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.45 };
 
 // ─── Language definitions ──────────────────────────────────────────────────────
 const LANGUAGES = [
-  { id: "javascript", label: "JavaScript", icon: BrandJavascript },
-  { id: "python", label: "Python", icon: BrandPython },
-  { id: "html", label: "HTML", icon: BrandHtml5 },
-  { id: "plaintext", label: "Plain Text", icon: Typography },
-  { id: "whiteboard", label: "Whiteboard", icon: Sketching },
+  { id: "javascript", label: "JavaScript", icon: BrandJavascript, dot: "#E8C547" },
+  { id: "python", label: "Python", icon: BrandPython, dot: "#4B8BBE" },
+  { id: "html", label: "HTML", icon: BrandHtml5, dot: "#E0723C" },
+  { id: "plaintext", label: "Plain Text", icon: Typography, dot: "#9A9AA2" },
+  { id: "whiteboard", label: "Whiteboard", icon: Sketching, dot: "#8B5CF6" },
 ];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -2351,7 +2351,7 @@ export function LiveBroadcast() {
                           const current = LANGUAGES.find((l) => l.id === editorLanguage);
                           return current ? (
                             <span className="flex items-center gap-1.5">
-                              <current.icon className="w-3.5 h-3.5 shrink-0" />
+                              <current.icon className="w-3.5 h-3.5 shrink-0" style={{ color: current.dot }} />
                               {current.label}
                             </span>
                           ) : null;
@@ -2382,6 +2382,7 @@ export function LiveBroadcast() {
                                     "w-3.5 h-3.5 absolute inset-0 transition-opacity duration-150",
                                     isSelected ? "opacity-100" : "opacity-100 group-hover:opacity-0"
                                   )}
+                                  style={{ color: l.dot }}
                                 />
                                 <Check
                                   className={cn(
