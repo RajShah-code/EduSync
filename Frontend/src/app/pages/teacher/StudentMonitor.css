@@ -34,8 +34,8 @@
   color: #f1f2f5;
 }
 .sm-title svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   color: #af74e5;
 }
 
@@ -65,6 +65,25 @@
   font-variant-numeric: tabular-nums;
 }
 .sm-chip svg {
+  width: 15px;
+  height: 15px;
+  color: #af74e5;
+}
+
+/* Waiting Room badge — shared component; override its trigger so it reads
+   as one of the header chips (same fill / height / radius / icon size)
+   instead of the lighter default pill it ships with. */
+.sm-waitroom > button {
+  height: 29px;
+  padding: 0 12px;
+  gap: 6px;
+  border-radius: 999px;
+  background: #17171a;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f1f2f5;
+}
+.sm-waitroom > button svg {
   width: 15px;
   height: 15px;
   color: #af74e5;

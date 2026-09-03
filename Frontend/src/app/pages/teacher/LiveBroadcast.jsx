@@ -2753,7 +2753,7 @@ export function LiveBroadcast() {
                       className="flex items-center gap-1.5 h-[29px] px-2.5 bg-bg-surface rounded-full text-xs text-text-secondary font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
                     >
                       <Users className="w-4 h-4 text-accent-500" />
-                      <span className="tnum">{connectedStudents.length}</span>
+                      <span className="tnum">{String(connectedStudents.length).padStart(2, "0")}</span>
                     </button>
                   </div>
                 </div>
