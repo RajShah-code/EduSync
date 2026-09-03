@@ -2823,7 +2823,7 @@ export function LiveBroadcast() {
                     ) : (
                       <LivePhoto className="w-[18px] h-[18px] shrink-0 text-accent-500" />
                     )}
-                    <span className="whitespace-nowrap">{isRecording ? "Stop Recording" : "Screen Record"}</span>
+                    <span className="whitespace-nowrap">{isRecording ? "Stop Recording" : "Start Recording"}</span>
                   </button>
 
                   {/* Screen Share toggle */}
@@ -2877,7 +2877,7 @@ export function LiveBroadcast() {
                   >
                     <span className="invisible flex items-center px-5" aria-hidden="true">
                       <MonitorStop className="w-[18px] h-[18px] shrink-0" />
-                      <span className="pl-2 whitespace-nowrap">End</span>
+                      <span className="pl-2 whitespace-nowrap">End Lecture</span>
                     </span>
                     <span className="absolute inset-0 flex items-center justify-center px-5">
                       <MonitorStop className="w-[18px] h-[18px] shrink-0" />
@@ -2891,7 +2891,7 @@ export function LiveBroadcast() {
                         }
                         transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
                       >
-                        <span className="pl-2">End</span>
+                        <span className="pl-2">End Lecture</span>
                       </motion.span>
                     </span>
                   </button>
@@ -3107,13 +3107,14 @@ export function LiveBroadcast() {
             </div>
 
             <div className="relative group">
-              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
+              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
                 <MapPin className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
+                <span className="text-[11px] leading-none text-text-muted">(optional)</span>
               </div>
               <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
                   type="text"
-                  placeholder="Lab Room"
+                  placeholder="Lab/Room"
                   value={formData.labRoom}
                   onChange={(e) =>
                     setFormData((p) => ({ ...p, labRoom: e.target.value }))
