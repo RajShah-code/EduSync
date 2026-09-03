@@ -54,3 +54,6 @@ Backend/scripts/verify*.js
 Backend/scripts/check_chrome.js
 Backend/scripts/test_launch*.js
 Backend/scripts/test_*.js
+
+# Design reference assets (Illustrator exports — SVGs/CSS, not app source)
+Frontend/assests/
