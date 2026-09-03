@@ -23,6 +23,7 @@ import {
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
 import { cn } from "../../components/ui/utils";
+import { formatTimeOfDay } from "../../utils/timeFormat";
 import { IconClock as Clock, IconShieldCheck as ShieldCheck, IconChevronLeft as ChevronLeft, IconChevronRight as ChevronRight, IconChevronDown as ChevronDown, IconLoader2 as Loader2, IconFileText as FileText, IconPlayerPlay as Play, IconLayoutSidebarRight as PanelRight, IconLayoutSidebar as PanelLeft, IconLayoutNavbar as PanelTop, IconLayoutBottombar as PanelBottom, IconX as X } from "@tabler/icons-react";
 
 // Dock options for the code-question console panel — a manually-built
@@ -601,7 +602,7 @@ export function ExamScreen() {
             <div className="flex justify-between">
               <span className="text-text-secondary">Submitted At</span>
               <span className="tnum text-text-primary">
-                {new Date().toLocaleTimeString()}
+                {formatTimeOfDay(new Date(), { seconds: true })}
               </span>
             </div>
           </div>

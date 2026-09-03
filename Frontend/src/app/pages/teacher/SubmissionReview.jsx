@@ -6,6 +6,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
+import { formatDateTime } from "../../utils/timeFormat";
 import { IconChevronLeft as ChevronLeft, IconCode as Code, IconFileCode as FileCode, IconCircleCheck as CheckCircle, IconAward as Award, IconClock as Clock, IconRefresh as RefreshCw } from "@tabler/icons-react";
 import { toast } from "sonner";
 import Editor from "@monaco-editor/react";
@@ -265,7 +266,7 @@ export function SubmissionReview() {
                       {selectedSubmission.submitted_at && (
                         <span className="flex items-center gap-1">
                           <Clock className="w-4 h-4 text-text-muted" />
-                          Finalized: {new Date(selectedSubmission.submitted_at).toLocaleString()}
+                          Finalized: {formatDateTime(selectedSubmission.submitted_at)}
                         </span>
                       )}
                     </div>

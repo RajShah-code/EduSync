@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
+import { formatClockString } from "../../utils/timeFormat";
 import { IconPlayerPause as Pause, IconPlayerPlay as Play, IconDeviceDesktop as Monitor, IconDeviceDesktopOff as MonitorStop, IconScreenShare as ScreenShareOn, IconScreenShareOff as ScreenShareOff, IconLivePhoto as LivePhoto, IconLivePhotoOff as LivePhotoOff, IconEye as Eye, IconEyeOff as EyeOff, IconUsers as Users, IconCopy as Copy, IconCheck as Check, IconMicrophone as Mic, IconMicrophoneOff as MicOff, IconCode as Code2, IconX as X, IconLoader2 as Loader2, IconAlertTriangle as TriangleAlert, IconDownload as Download, IconCalendarStats as CalendarStats, IconMaximize as Maximize, IconMinimize as Minimize, IconInfoCircle as Info, IconBooks as Books, IconBook2 as Book2, IconLock as Lock, IconMapPin as MapPin, IconChalkboard as Chalkboard, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconTypography as Typography, IconSketching as Sketching } from "@tabler/icons-react";
 import {
   Dialog,
@@ -65,9 +66,10 @@ const formatTime = (totalSeconds) => {
   return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
 };
 
-// Trim a "HH:MM:SS" (or already-"HH:MM") clock string down to "HH:MM" —
-// timetable rows come back with seconds the teacher never needs to read.
-const toHHMM = (t) => (typeof t === "string" ? t.slice(0, 5) : t);
+// Trim a "HH:MM:SS" (or already-"HH:MM") clock string down for display,
+// honouring the user's 24h / 12h preference — timetable rows come back with
+// seconds the teacher never needs to read.
+const toHHMM = (t) => (typeof t === "string" ? formatClockString(t) : t);
 
 // LiveDot — the "this session is live" indicator that sits in front of the
 // timer. Deliberately subtle: a slow dim→glow→dim cycle (opacity + a soft
@@ -3027,9 +3029,9 @@ export function LiveBroadcast() {
           <DialogHeader>
             <DialogTitle className="text-text-primary flex items-center gap-2">
               {setupModalMode === "scheduled" ? (
-                <CalendarStats className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                <CalendarStats className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
               ) : (
-                <Monitor className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                <Monitor className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
               )}
               {setupModalMode === "scheduled" ? "Start Scheduled Lecture" : "Start Instant Lecture"}
             </DialogTitle>
@@ -3122,14 +3124,17 @@ export function LiveBroadcast() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <div className="flex flex-wrap gap-2 mt-1">
+              {/* ml-1 nudges the chip row right by the selected-chip icon's
+                  left overhang, so the row's optical starting line matches
+                  the input fields above. */}
+              <div className="flex flex-wrap gap-2 mt-1 ml-1">
                 {classes.map((cls) => {
                   const isSelected = selectedClassIds.includes(cls.id);
                   return (
                     <div key={cls.id} className="relative">
                       {isSelected && (
-                        <div className="absolute left-2.5 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                          <Chalkboard className="w-3.5 h-3.5 text-accent-info" strokeWidth={1.75} />
+                        <div className="absolute left-0 top-0 -translate-x-1/5 -translate-y-[45%] z-10 flex items-center justify-center p-0.5 rounded-full bg-bg-surface">
+                          <Chalkboard className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
                         </div>
                       )}
                       <button
@@ -3173,13 +3178,13 @@ export function LiveBroadcast() {
                 // Live/running → high-vis broadcast green; not-yet-started → teacher violet
                 isBroadcasting
                   ? "bg-accent-live hover:bg-accent-live/90"
-                  : "bg-accent-info hover:bg-accent-info/90",
+                  : "bg-[#611d9f] hover:bg-[#611d9f]/90",
                 // Required fields incomplete → dimmed + not-allowed cursor on hover
                 // (aria-disabled, not disabled, so the cursor still shows; the
                 //  handler already no-ops via `if (!isFormValid) return`).
                 isFormValid
                   ? "cursor-pointer"
-                  : "opacity-40 cursor-not-allowed hover:bg-accent-info"
+                  : "opacity-40 cursor-not-allowed hover:bg-[#611d9f]"
               )}
             >
               {/* Invisible sizer — always the full expanded content, so

@@ -9,6 +9,7 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { useNavigate } from "react-router";
 import { IconUser as User, IconKey as Key, IconHelpCircle as HelpCircle, IconLogout as LogOut } from "@tabler/icons-react";
 import PageShell from "../../components/PageShell";
+import { TimeFormatSetting } from "../../components/TimeFormatSetting";
 import { disconnectSocket } from "../../store/socket";
 
 export function TeacherSettings() {
@@ -333,6 +334,14 @@ export function TeacherSettings() {
             </CardContent>
           </Card>
         </div>
+      </section>
+
+      {/* Preferences — display-only, per-device settings. */}
+      <section className="space-y-3">
+        <h2 className="text-[length:var(--text-xs)] font-semibold uppercase tracking-[0.08em] text-text-secondary">
+          Preferences
+        </h2>
+        <TimeFormatSetting />
       </section>
 
       {/* App Tour — deliberately a lighter, compact row rather than a third
