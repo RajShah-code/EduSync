@@ -9,7 +9,7 @@ import {
   IconBinoculars as Monitor,
   IconEyeCheck as EyeCheck,
   IconEyeX as EyeX,
-  IconUser as User,
+  IconUsers as Users,
 } from "@tabler/icons-react";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
@@ -153,7 +153,7 @@ export function StudentMonitor() {
 
           <div className="sm-counts">
             <span className="sm-chip" title="Not viewing">
-              <User />
+              <Users />
               {String(stats.idle).padStart(2, "0")}
             </span>
           </div>

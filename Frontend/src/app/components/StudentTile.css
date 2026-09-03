@@ -69,7 +69,6 @@ button.st-card--flagged:hover {
 .st-card--clean {
   background-color: #121212;
   border-color: #1f162b;
-  justify-content: center;
 }
 button.st-card--clean:hover {
   border-color: #33264a;
