@@ -9,6 +9,7 @@ import { teacherTourSteps } from "../../tours/teacherTourSteps";
 import { getSocket } from "../../store/socket";
 import { toast } from "sonner";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
+import { useTimeFormat } from "../../utils/timeFormat";
 import { ElapsedTimer } from "../../components/Timer";
 import PageShell from "../../components/PageShell";
 
@@ -51,6 +52,7 @@ function getLectureStatus(startTimeStr, endTimeStr) {
 export function TeacherDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { formatClockString } = useTimeFormat();
   const [runTour, setRunTour] = useState(false);
   const [isManualReplay, setIsManualReplay] = useState(false);
 
@@ -430,11 +432,13 @@ export function TeacherDashboard() {
             <p className="text-xs text-text-muted">Enjoy your break or review upcoming classes for tomorrow.</p>
           </div>
         ) : (
-          /* LECTURE SCHEDULE LIST — left border-rail signals status, no
-             filled-background wash or glow (matches the student dashboard's
-             hero card language). */
-          <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] divide-y divide-border overflow-hidden">
-            {todayLectures.map((entry) => {
+          (() => {
+            const isPast = (e) =>
+              getLectureStatus(e.start_time, e.end_time) === "PAST";
+            const activeLectures = todayLectures.filter((e) => !isPast(e));
+            const completedLectures = todayLectures.filter(isPast);
+
+            const renderRow = (entry) => {
               const status = getLectureStatus(entry.start_time, entry.end_time);
 
               return (
@@ -442,7 +446,7 @@ export function TeacherDashboard() {
                   key={entry.id}
                   className={`pl-4 pr-4 py-3.5 border-l-2 transition-colors flex items-center justify-between gap-4 ${
                     status === "ACTIVE"
-                      ? "border-l-accent-live bg-bg-elevated"
+                      ? "border-l-[#621e9e] bg-bg-elevated"
                       : status === "UPCOMING"
                       ? "border-l-border"
                       : "border-l-border opacity-50"
@@ -452,10 +456,10 @@ export function TeacherDashboard() {
                     {/* Time Badge */}
                     <div className="flex flex-col items-center justify-center px-3 py-2 rounded-[var(--radius-md)] bg-bg-base border border-border min-w-[100px] shrink-0">
                       <span className="text-xs tnum font-semibold text-text-primary">
-                        {entry.start_time.slice(0, 5)}
+                        {formatClockString(entry.start_time)}
                       </span>
                       <span className="text-[10px] text-text-muted tnum mt-0.5">
-                        to {entry.end_time.slice(0, 5)}
+                        to {formatClockString(entry.end_time)}
                       </span>
                     </div>
 
@@ -498,7 +502,7 @@ export function TeacherDashboard() {
                     {status === "ACTIVE" ? (
                       <Button
                         onClick={() => handleStartActiveLecture(entry)}
-                        className="bg-accent-success hover:bg-accent-success/90 text-white font-medium text-xs cursor-pointer flex items-center gap-1.5"
+                        className="bg-[#621e9e] hover:bg-[#621e9e]/90 text-white font-medium text-xs cursor-pointer flex items-center gap-1.5"
                       >
                         <Play className="w-4 h-4 fill-current" /> Start Now
                       </Button>
@@ -510,14 +514,35 @@ export function TeacherDashboard() {
                       >
                         Not yet time
                       </Button>
-                    ) : (
-                      <span className="text-xs text-text-muted italic px-2">Completed</span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               );
-            })}
-          </div>
+            };
+
+            return (
+              /* LECTURE SCHEDULE LIST — left border-rail signals status;
+                 finished lectures collapse into a quiet "Completed" group at
+                 the bottom of the same card, not a separate panel. */
+              <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] divide-y divide-border overflow-hidden">
+                {activeLectures.map(renderRow)}
+
+                {completedLectures.length > 0 && (
+                  <>
+                    <div className="px-4 py-2 bg-bg-base/40 flex items-baseline gap-2">
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-text-muted">
+                        Completed
+                      </span>
+                      <span className="text-[11px] tnum text-text-muted/70">
+                        {completedLectures.length}
+                      </span>
+                    </div>
+                    {completedLectures.map(renderRow)}
+                  </>
+                )}
+              </div>
+            );
+          })()
         )}
       </div>
 

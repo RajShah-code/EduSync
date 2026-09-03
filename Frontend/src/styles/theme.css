@@ -466,6 +466,23 @@
   transform: scale(0.97);
 }
 
+/* Invalid-selection feedback (e.g. clicking a disabled past calendar day) —
+   a slower, decaying-amplitude wobble rather than a sharp rattle: each leg
+   eases in/out instead of snapping, and the swing settles down toward zero
+   rather than holding a constant amplitude. Hardware-accelerated (transform
+   only). Applied as a one-shot class toggled briefly from JS, not a hover
+   state. */
+@keyframes shake-error {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(1.5px); }
+}
+.shake-error {
+  animation: shake-error 600ms ease-in-out both;
+}
+
 /* Glow animation for critical timers — restrained, no bloom */
 @keyframes glow {
   0%, 100% {
@@ -568,7 +585,8 @@
   .pulse-dot,
   .glow-critical,
   .card-hover,
-  .btn-press {
+  .btn-press,
+  .shake-error {
     animation: none;
     transform: none;
   }

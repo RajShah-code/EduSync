@@ -12,6 +12,7 @@ import { Button } from "../../components/ui/button";
 import { IconDownload as Download, IconCalendarCheck as CalendarCheck, IconAlertTriangle as AlertTriangle, IconCheck as Check, IconX as X, IconLoader2 as Loader2 } from "@tabler/icons-react";
 import { Skeleton } from "../../components/ui/skeleton";
 import PageShell from "../../components/PageShell";
+import { formatTimeOfDay } from "../../utils/timeFormat";
 
 const formatDuration = (secs) => {
   if (secs < 60) return `${secs}s`;
@@ -22,7 +23,7 @@ const formatDuration = (secs) => {
 
 const formatTime = (ts) => {
   if (!ts) return "—";
-  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return formatTimeOfDay(ts);
 };
 
 export function Attendance() {

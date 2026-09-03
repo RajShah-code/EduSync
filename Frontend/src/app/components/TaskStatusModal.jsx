@@ -9,6 +9,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Skeleton } from "./ui/skeleton";
 import { cn } from "./ui/utils";
+import { formatTimeOfDay, formatDateTime } from "../utils/timeFormat";
 
 const READONLY_EDITOR_OPTIONS = {
   readOnly: true,
@@ -181,7 +182,7 @@ function InProgressBody({ student, submission }) {
           </div>
           <div className="text-xs text-text-primary tnum">
             {submission?.updated_at
-              ? new Date(submission.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              ? formatTimeOfDay(submission.updated_at)
               : "Not yet saved"}
           </div>
         </div>
@@ -259,7 +260,7 @@ function DoubtBody({ doubt, onResolveDoubt, resolving }) {
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] text-text-muted flex items-center gap-1.5">
           <HelpCircle className="w-4 h-4 text-accent-warning flex-shrink-0" />
-          Raised {doubt.raised_at ? new Date(doubt.raised_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+          Raised {doubt.raised_at ? formatTimeOfDay(doubt.raised_at) : "—"}
         </p>
       </div>
 
@@ -386,7 +387,7 @@ function SubmittedBody({ submission, onSaveScore, savingScore }) {
         {submission?.submitted_at && (
           <span className="flex items-center gap-1 tnum">
             <Clock className="w-4 h-4 text-text-muted" />
-            {new Date(submission.submitted_at).toLocaleString()}
+            {formatDateTime(submission.submitted_at)}
           </span>
         )}
       </div>

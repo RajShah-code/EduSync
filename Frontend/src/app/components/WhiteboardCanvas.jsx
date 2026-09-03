@@ -669,11 +669,12 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
           )}
 
           {/* Requirement 2: Dedicated Size selector — binds dynamically to tool === 'eraser' ? eraserSize : thickness */}
-          <div className="flex items-center gap-1 bg-bg-surface px-2 py-1 rounded-[var(--radius-md)] border border-border">
-            <Ruler2 className="w-3.5 h-3.5 text-text-muted mr-0.5 shrink-0" />
-            <span className="text-[10px] text-text-muted mr-1 font-mono">
-              {isEraserActive ? "Eraser Size:" : "Pen Size:"}
-            </span>
+          <div
+            className="flex items-center gap-1 bg-bg-surface px-2 py-1 rounded-[var(--radius-md)] border border-border"
+            title={isEraserActive ? "Eraser Size" : "Pen Size"}
+            aria-label={isEraserActive ? "Eraser Size" : "Pen Size"}
+          >
+            <Ruler2 className="w-3.5 h-3.5 text-text-muted mr-1 shrink-0" />
             {(isEraserActive ? ERASER_SIZES : PEN_SIZES).map((sz) => (
               <button
                 key={sz}
@@ -723,27 +724,25 @@ export const WhiteboardCanvas = forwardRef(function WhiteboardCanvas(
             <button
               type="button"
               onClick={handleBgToggle}
-              className="btn-press px-2.5 py-1 text-xs font-medium border border-border rounded-[var(--radius-md)] text-text-secondary hover:text-text-primary hover:bg-bg-surface-3 transition-colors duration-150 flex items-center gap-1.5"
+              className="btn-press p-1.5 border border-border rounded-[var(--radius-md)] text-text-secondary hover:text-text-primary hover:bg-bg-surface-3 transition-colors duration-150 flex items-center justify-center"
               title="Toggle Board Background"
+              aria-label="Toggle Board Background"
             >
               {bgColor === "#17171A" ? (
-                <>
-                  <Sun className="w-4 h-4 text-accent-warning" /> Light Board
-                </>
+                <Sun className="w-4 h-4 text-accent-warning" />
               ) : (
-                <>
-                  <Moon className="w-4 h-4 text-accent-info" /> Dark Board
-                </>
+                <Moon className="w-4 h-4 text-accent-info" />
               )}
             </button>
 
             <button
               type="button"
               onClick={handleClearAllInternal}
-              className="btn-press px-2.5 py-1 text-xs font-medium border border-accent-critical/30 bg-accent-critical/10 text-accent-critical hover:bg-accent-critical/20 rounded-[var(--radius-md)] transition-colors duration-150 flex items-center gap-1.5"
+              className="btn-press p-1.5 border border-accent-critical/30 bg-accent-critical/10 text-accent-critical hover:bg-accent-critical/20 rounded-[var(--radius-md)] transition-colors duration-150 flex items-center justify-center"
               title="Wipe Canvas"
+              aria-label="Wipe Canvas"
             >
-              <Trash2 className="w-4 h-4" /> Clear All
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>

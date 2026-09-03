@@ -4,6 +4,7 @@ import { IconPlus as Plus, IconPencil as Edit2, IconX as X, IconCheck as Check, 
 import { toast } from "sonner";
 import { Button } from "../../components/ui/button";
 import PageShell from "../../components/PageShell";
+import { formatTimeOfDay } from "../../utils/timeFormat";
 
 export function AdminClasses() {
   const [classes, setClasses] = useState([]);
@@ -107,13 +108,12 @@ export function AdminClasses() {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString([], {
+    const datePart = new Date(dateString).toLocaleDateString([], {
       year: "numeric",
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
     });
+    return `${datePart}, ${formatTimeOfDay(dateString)}`;
   };
 
   return (

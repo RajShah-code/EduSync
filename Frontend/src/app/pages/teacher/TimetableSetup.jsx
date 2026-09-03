@@ -8,7 +8,10 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { Skeleton } from "../../components/ui/skeleton";
+import { DateMultiPicker } from "../../components/ui/date-range-picker";
+import { cn } from "../../components/ui/utils";
 import PageShell from "../../components/PageShell";
+import { formatClockString } from "../../utils/timeFormat";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -19,6 +22,9 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
+
+// Late-warning delay presets — the "Custom" chip covers everything else.
+const DELAY_PRESETS = [5, 10, 20];
 
 // Monday through Saturday (day_of_week 0–5)
 const DAYS = [
@@ -102,7 +108,19 @@ export function TimetableSetup() {
   // Global Timetable Options State (Teacher-level single setting)
   const [defaultDelayMinutes, setDefaultDelayMinutes] = useState(5);
   const [updatingDelay, setUpdatingDelay] = useState(false);
-  const [newExceptionDate, setNewExceptionDate] = useState("");
+  // Late-warning delay is a preset chip (5/10/20) unless the loaded/entered
+  // value doesn't match one — then it's "Custom" with its own inline field.
+  // customDelayMode is a UI-only flag: it opens on an explicit "Custom"
+  // click or a non-preset value, and only closes when a preset is clicked
+  // directly (never auto-closes mid-edit just because a typed value happens
+  // to pass through a preset number).
+  const [customDelayMode, setCustomDelayMode] = useState(false);
+  const [customDelayDraft, setCustomDelayDraft] = useState("");
+  const customDelayInputRef = useRef(null);
+  // A flexible, possibly-scattered set of ISO dates — the picker itself
+  // handles both drag-a-range and click-a-single-day, already expanded to
+  // exact dates by the time onChange fires here.
+  const [selectedExceptionDates, setSelectedExceptionDates] = useState([]);
   const [addingException, setAddingException] = useState(false);
 
   // Modal State for Add / Edit Entry
@@ -245,6 +263,36 @@ export function TimetableSetup() {
     } finally {
       setUpdatingDelay(false);
     }
+  };
+
+  // Keep the "Custom" chip in sync with a loaded/committed value that isn't
+  // one of the presets — deliberately one-directional (only ever turns
+  // custom mode ON here); turning it back off only happens when a preset
+  // chip is clicked directly (see handleSelectDelayPreset), never as a side
+  // effect of a value passing through a preset number mid-edit.
+  useEffect(() => {
+    if (!DELAY_PRESETS.includes(defaultDelayMinutes)) {
+      setCustomDelayMode(true);
+      setCustomDelayDraft(String(defaultDelayMinutes));
+    }
+  }, [defaultDelayMinutes]);
+
+  const handleSelectDelayPreset = (mins) => {
+    setCustomDelayMode(false);
+    handleUpdateGlobalDelay(mins);
+  };
+
+  const handleOpenCustomDelay = () => {
+    setCustomDelayDraft(String(defaultDelayMinutes));
+    setCustomDelayMode(true);
+    requestAnimationFrame(() => customDelayInputRef.current?.focus());
+  };
+
+  const commitCustomDelay = () => {
+    const parsed = parseInt(customDelayDraft, 10);
+    const clamped = Number.isFinite(parsed) ? Math.min(180, Math.max(0, parsed)) : defaultDelayMinutes;
+    setCustomDelayDraft(String(clamped));
+    if (clamped !== defaultDelayMinutes) handleUpdateGlobalDelay(clamped);
   };
 
   // Organize entries per day (sorted by start_time ascending)
@@ -443,38 +491,69 @@ export function TimetableSetup() {
     }
   };
 
-  // Add Date Exception (Reminder Suppression)
+  // Add Date Exception(s) (Reminder Suppression) — selectedExceptionDates is
+  // already an exact, deduplicated array of ISO dates by the time it gets
+  // here (the picker itself expands any dragged ranges), so this is just a
+  // straight submit. The backend only has a single-date endpoint, so
+  // multiple dates are a sequential loop over it rather than a bulk route —
+  // sequential (not Promise.all) so a slow/rate-limited backend isn't hit
+  // with a burst.
   const handleAddException = async () => {
-    if (!newExceptionDate) {
-      toast.error("Please select a date first");
+    const dates = selectedExceptionDates;
+    if (dates.length === 0) {
+      toast.error("Please select at least one date first");
       return;
     }
 
     setAddingException(true);
     const token = localStorage.getItem("edusync_token");
-    try {
-      const res = await fetch(`${API_BASE_URL}/timetable/exceptions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ exception_date: newExceptionDate }),
-      });
+    let added = 0;
+    let alreadyMarked = 0;
+    let failed = 0;
 
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.message || "Failed to add date exception");
-      } else {
-        toast.success("Reminder suppression date added");
-        setNewExceptionDate("");
-        fetchInitialData();
+    for (const dateStr of dates) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/timetable/exceptions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ exception_date: dateStr }),
+        });
+        if (res.ok) {
+          added += 1;
+        } else {
+          const data = await res.json().catch(() => ({}));
+          if (data.message === "Exception date already marked") {
+            alreadyMarked += 1;
+          } else {
+            failed += 1;
+          }
+        }
+      } catch (err) {
+        failed += 1;
       }
-    } catch (err) {
-      toast.error("Network error adding exception date");
-    } finally {
-      setAddingException(false);
     }
+
+    if (added > 0) {
+      const parts = [`${added} date${added === 1 ? "" : "s"} marked`];
+      if (alreadyMarked > 0) parts.push(`${alreadyMarked} already marked`);
+      if (failed > 0) parts.push(`${failed} failed`);
+      toast.success(parts.join(" · "));
+      setSelectedExceptionDates([]);
+      fetchInitialData();
+    } else if (alreadyMarked > 0 && failed === 0) {
+      toast.error(
+        dates.length === 1
+          ? "That date is already marked"
+          : "Every one of those dates is already marked"
+      );
+    } else {
+      toast.error("Failed to add date exception");
+    }
+
+    setAddingException(false);
   };
 
   // Remove Date Exception
@@ -820,7 +899,7 @@ export function TimetableSetup() {
 
                           {/* 2nd line: time range */}
                           <div className="tnum text-[length:var(--text-xs)] font-medium text-text-secondary">
-                            {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
+                            {formatClockString(entry.start_time)} - {formatClockString(entry.end_time)}
                           </div>
 
                           {/* 3rd line: class / room & reminder indicator */}
@@ -833,20 +912,12 @@ export function TimetableSetup() {
                               </span>
                             </div>
 
-                            {entry.reminder_enabled ? (
+                            {entry.reminder_enabled && (
                               <span
                                 className="flex items-center gap-1 text-accent-warning shrink-0"
                                 title="Reminder enabled"
                               >
                                 <BellRinging className="w-4 h-4" />
-                              </span>
-                            ) : (
-                              <span
-                                className="relative inline-flex items-center justify-center shrink-0"
-                                title="Reminder disabled"
-                              >
-                                <Bell className="w-4 h-4 text-text-muted" />
-                                <X className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-text-muted stroke-[3]" />
                               </span>
                             )}
                           </div>
@@ -867,10 +938,10 @@ export function TimetableSetup() {
       {/* C. LATE WARNING DELAY & REMINDER SUPPRESSION DATES PANEL */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Late Warning Delay Card (Teacher setting) */}
-        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4 flex flex-col justify-between">
+        <div className="card-hover bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4 flex flex-col justify-between">
           <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-              <Sliders className="w-[18px] h-[18px] text-accent-warning" />
+              <Sliders className="w-[18px] h-[18px] text-accent-info" />
               Late Warning Delay
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
@@ -878,30 +949,73 @@ export function TimetableSetup() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-bg-base border border-border px-4 py-3 rounded-[var(--radius-md)]">
-            <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5 whitespace-nowrap">
-              <Bell className="w-4 h-4 text-accent-warning" />
+          <div className="space-y-2">
+            <label className="text-[length:var(--text-sm)] font-medium text-text-secondary flex items-center gap-1.5">
+              <Bell className="w-4 h-4 text-accent-info" />
               Warn at
             </label>
-            <input
-              type="range"
-              min="0"
-              max="30"
-              value={defaultDelayMinutes}
-              onChange={(e) => handleUpdateGlobalDelay(Number(e.target.value))}
-              className="w-full accent-accent-warning cursor-pointer"
-            />
-            <span className="text-[length:var(--text-xs)] tnum font-semibold text-accent-warning bg-accent-warning/10 border border-accent-warning/20 px-2 py-1 rounded-[var(--radius-sm)] shrink-0">
-              {defaultDelayMinutes} min
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {DELAY_PRESETS.map((mins) => {
+                const isActive = !customDelayMode && defaultDelayMinutes === mins;
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => handleSelectDelayPreset(mins)}
+                    aria-pressed={isActive}
+                    className={cn(
+                      "px-3 py-1.5 rounded-[var(--radius-pill)] text-[length:var(--text-xs)] font-semibold border cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96]",
+                      isActive
+                        ? "bg-accent-info border-accent-info text-white"
+                        : "bg-bg-base border-border text-text-secondary hover:border-border-hover hover:text-text-primary"
+                    )}
+                  >
+                    {mins} min
+                  </button>
+                );
+              })}
+
+              <button
+                type="button"
+                onClick={handleOpenCustomDelay}
+                aria-pressed={customDelayMode}
+                className={cn(
+                  "px-3 py-1.5 rounded-[var(--radius-pill)] text-[length:var(--text-xs)] font-semibold border cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96]",
+                  customDelayMode
+                    ? "bg-accent-info border-accent-info text-white"
+                    : "bg-bg-base border-border text-text-secondary hover:border-border-hover hover:text-text-primary"
+                )}
+              >
+                Custom
+              </button>
+
+              {customDelayMode && (
+                <div className="flex items-center gap-1 bg-bg-base border border-border rounded-[var(--radius-pill)] pl-3 pr-1.5 py-1 transition-colors duration-200 focus-within:border-accent-info/50 focus-within:ring-1 focus-within:ring-accent-info/20 animate-in fade-in zoom-in-95 duration-150">
+                  <input
+                    ref={customDelayInputRef}
+                    type="number"
+                    min={0}
+                    max={180}
+                    value={customDelayDraft}
+                    onChange={(e) => setCustomDelayDraft(e.target.value)}
+                    onBlur={commitCustomDelay}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                    className="w-8 bg-transparent border-0 outline-none text-text-primary text-[length:var(--text-xs)] font-semibold tnum text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <span className="text-[length:var(--text-xs)] text-text-muted pr-1">min</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Reminder Suppression Dates Card */}
-        <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4">
+        <div className="card-hover bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5 space-y-4">
           <div className="space-y-1">
             <h3 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-              <CalendarSmile className="w-[18px] h-[18px] text-accent-warning" />
+              <CalendarSmile className="w-[18px] h-[18px] text-accent-info" />
               Reminder Suppression Dates
             </h3>
             <p className="text-[length:var(--text-sm)] text-text-secondary">
@@ -909,24 +1023,26 @@ export function TimetableSetup() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Input
-              type="date"
-              value={newExceptionDate}
-              onChange={(e) => setNewExceptionDate(e.target.value)}
-              className="bg-bg-base border-border text-text-primary text-[length:var(--text-sm)] h-9 w-44"
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <DateMultiPicker
+              value={selectedExceptionDates}
+              onChange={setSelectedExceptionDates}
+              disabled={addingException}
+              className="flex-1 min-w-0"
             />
             <Button
               onClick={handleAddException}
-              disabled={addingException}
-              className="bg-accent-warning hover:bg-accent-warning/90 text-bg-base font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              disabled={addingException || selectedExceptionDates.length === 0}
+              className="bg-accent-info hover:bg-accent-info/90 text-white font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {addingException ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              Mark Date
+              {selectedExceptionDates.length > 1
+                ? `Mark ${selectedExceptionDates.length} Dates`
+                : "Mark Date"}
             </Button>
           </div>
 
@@ -938,14 +1054,14 @@ export function TimetableSetup() {
               {exceptions.map((ex) => (
                 <div
                   key={ex.id}
-                  className="flex items-center gap-2 px-2.5 py-1 rounded-[var(--radius-md)] bg-accent-warning/10 border border-accent-warning/30 text-accent-warning text-[length:var(--text-xs)] tnum"
+                  className="badge-enter flex items-center gap-2 px-2.5 py-1 rounded-[var(--radius-md)] bg-accent-info/10 border border-accent-info/30 text-accent-info text-[length:var(--text-xs)] tnum transition-colors duration-150 hover:border-accent-info/50"
                 >
                   <span>{ex.exception_date}</span>
                   <button
                     onClick={() => handleDeleteException(ex.id)}
-                    className="hover:text-accent-critical text-accent-warning transition-colors cursor-pointer rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+                    className="hover:text-accent-critical hover:bg-accent-critical/10 text-accent-info transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-90 cursor-pointer p-0.5 rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-1 focus-visible:ring-offset-bg-surface"
                     title="Remove suppression date"
-                    aria-label="Remove suppression date"
+                    aria-label={`Remove suppression date ${ex.exception_date}`}
                   >
                     <X className="w-4 h-4" />
                   </button>

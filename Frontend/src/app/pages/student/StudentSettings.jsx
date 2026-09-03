@@ -12,6 +12,7 @@ import { AppTour } from "../../components/AppTour";
 import { settingsPageTourSteps } from "../../tours/studentTourSteps";
 import { hasSeenPageTour, markPageTourSeen } from "../../tours/pageTours";
 import PageShell from "../../components/PageShell";
+import { TimeFormatSetting } from "../../components/TimeFormatSetting";
 
 export function StudentSettings() {
   const navigate = useNavigate();
@@ -301,6 +302,9 @@ export function StudentSettings() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Preferences */}
+      <TimeFormatSetting />
 
       {/* Section 3: App Tour */}
       <Card className="bg-bg-surface border-border" data-tour="settings-tour-replay">

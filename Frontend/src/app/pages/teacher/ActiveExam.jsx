@@ -7,6 +7,7 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { Timer } from "../../components/Timer";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
+import { formatTimeOfDay } from "../../utils/timeFormat";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -184,7 +185,7 @@ function AttemptDetailModal({ attempt, violationLimit, onClose }) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-secondary">Started</span>
                   <span className="tnum text-sm text-text-primary">
-                    {new Date(attempt.started_at).toLocaleTimeString()}
+                    {formatTimeOfDay(attempt.started_at, { seconds: true })}
                   </span>
                 </div>
               )}
@@ -192,7 +193,7 @@ function AttemptDetailModal({ attempt, violationLimit, onClose }) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-secondary">Submitted</span>
                   <span className="tnum text-sm text-text-primary">
-                    {new Date(attempt.submitted_at).toLocaleTimeString()}
+                    {formatTimeOfDay(attempt.submitted_at, { seconds: true })}
                   </span>
                 </div>
               )}

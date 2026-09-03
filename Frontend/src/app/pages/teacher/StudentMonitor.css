@@ -1,0 +1,231 @@
+/* Student Monitor page — rebuilt in plain CSS from the Figma
+   "Teacher | Monitor" frame (EduSync -v01). Sidebar is out of scope
+   (owned by TeacherLayout); this styles the main page only:
+   a header row (title + count chips + filter segments), a hairline
+   divider, and a fixed-width card grid. */
+
+.sm-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  font-family: "Manrope", system-ui, -apple-system, sans-serif;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────
+   Measurements taken off the EduSync -v01 "Student Monitor" frame:
+   chips 50 x 28.7 / r14 / #111113 fill, segments 32.1 tall / 12px pad /
+   r-pill, active segment #673fa6, ~40px gap between the chip group and the
+   filter group. */
+.sm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px 24px;
+  border-bottom: 1px solid #1f1f22;
+}
+
+.sm-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: #f4f4f6;
+}
+.sm-title svg {
+  width: 22px;
+  height: 22px;
+  color: #af74e5;
+}
+
+.sm-controls {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+/* Count chips + Waiting Room — one tight group */
+.sm-counts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sm-chip,
+.sm-waitroom > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 50px;
+  height: 28.7px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: #111113;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e1e1e2;
+  font-variant-numeric: tabular-nums;
+}
+.sm-chip svg,
+.sm-waitroom > button svg {
+  width: 14px;
+  height: 14px;
+  color: #af74e5;
+}
+
+/* Filter segments — three standalone pills; the active one is filled */
+.sm-filters {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.sm-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid #282828;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: #919191;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+.sm-seg svg {
+  width: 15px;
+  height: 15px;
+}
+.sm-seg:hover {
+  color: #c7c9d1;
+  border-color: #3a3a40;
+}
+.sm-seg__div {
+  opacity: 0.35;
+  font-weight: 400;
+}
+.sm-seg__count {
+  font-variant-numeric: tabular-nums;
+}
+.sm-seg.is-active {
+  background: #673fa6;
+  border-color: #8f5ce1;
+  color: #fff;
+}
+.sm-seg.is-active:hover {
+  background: #714aad;
+  border-color: #9a6fd8;
+  color: #fff;
+}
+.sm-seg.is-active:hover {
+  background: #8455d3;
+  border-color: #8455d3;
+  color: #fff;
+}
+
+/* ── Grid ─────────────────────────────────────────────────────────────── */
+.sm-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+.sm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 276.7928px);
+  column-gap: 39px;
+  row-gap: 27px;
+  justify-content: start;
+}
+
+/* ── States ───────────────────────────────────────────────────────────── */
+.sm-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 16px;
+  text-align: center;
+}
+.sm-state--fill {
+  height: 100%;
+}
+.sm-state svg {
+  width: 56px;
+  height: 56px;
+  color: #585c68;
+}
+.sm-state__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #f1f2f5;
+}
+.sm-state__text {
+  margin: 0;
+  font-size: 13px;
+  color: #585c68;
+  max-width: 360px;
+}
+
+.sm-retry {
+  margin-top: 4px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #6b1fad;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, transform 120ms ease;
+}
+.sm-retry:hover {
+  background: #7a2bc0;
+}
+.sm-retry:active {
+  transform: scale(0.97);
+}
+
+.sm-empty-filter {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 256px;
+  color: #585c68;
+  font-size: 14px;
+}
+
+/* ── Loading skeletons ────────────────────────────────────────────────── */
+.sm-skeleton {
+  width: 276.7928px;
+  height: 80.6809px;
+  border-radius: 19.745px;
+  background: linear-gradient(90deg, #141416 25%, #1c1c1f 37%, #141416 63%);
+  background-size: 400% 100%;
+  animation: sm-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes sm-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sm-skeleton {
+    animation: none;
+  }
+}
