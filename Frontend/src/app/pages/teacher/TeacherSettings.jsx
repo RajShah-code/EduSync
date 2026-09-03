@@ -7,11 +7,22 @@ import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useNavigate } from "react-router";
-import { IconUser as User, IconKey as Key, IconHelpCircle as HelpCircle } from "@tabler/icons-react";
+import { IconUser as User, IconKey as Key, IconHelpCircle as HelpCircle, IconLogout as LogOut } from "@tabler/icons-react";
 import PageShell from "../../components/PageShell";
+import { disconnectSocket } from "../../store/socket";
 
 export function TeacherSettings() {
   const navigate = useNavigate();
+
+  // Moved here from the sidebar — that slot now holds the Notification
+  // Center trigger instead.
+  const handleLogout = () => {
+    localStorage.removeItem("edusync_token");
+    localStorage.removeItem("edusync_user");
+    disconnectSocket();
+    navigate("/");
+  };
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(true);
@@ -348,6 +359,30 @@ export function TeacherSettings() {
         >
           <HelpCircle className="h-4 w-4 text-accent-500" strokeWidth={1.75} />
           Restart tour
+        </Button>
+      </div>
+
+      {/* Sign Out — moved here from the sidebar, which now shows the
+          Notification Center trigger in that slot instead. */}
+      <div className="flex items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] px-5 py-4">
+        <div className="flex items-start gap-3">
+          <LogOut className="h-[18px] w-[18px] text-accent-critical mt-0.5 shrink-0" strokeWidth={1.75} />
+          <div>
+            <p className="text-sm font-medium text-text-primary">Sign out</p>
+            <p className="text-xs text-text-secondary mt-0.5">
+              End your session on this device.
+            </p>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleLogout}
+          className="text-xs shrink-0 border-accent-critical text-accent-critical hover:bg-accent-critical/10"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={1.75} />
+          Sign out
         </Button>
       </div>
     </PageShell>

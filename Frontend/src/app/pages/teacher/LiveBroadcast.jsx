@@ -4,6 +4,7 @@ import { useOutletContext, useLocation, useNavigate } from "react-router";
 import { motion, useReducedMotion } from "motion/react";
 import Editor from "@monaco-editor/react";
 import { WhiteboardCanvas } from "../../components/WhiteboardCanvas";
+import { WaitingRoomBadge } from "../../components/WaitingRoomBadge";
 import { CodeOutputPanel } from "../../components/CodeOutputPanel";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
@@ -195,6 +196,9 @@ export function LiveBroadcast() {
     setActiveMode,
     editorLiveStatus,
     setEditorLiveStatus,
+    pendingRejoins,
+    handleApproveRejoin,
+    handleDenyRejoin,
   } = useOutletContext();
 
   const prefersReducedMotion = useReducedMotion();
@@ -2229,6 +2233,9 @@ export function LiveBroadcast() {
     (selectedClassIds || []).length > 0;
   const viewerCount = connectedStudents.length;
   const hasMic = !!micStreamRef.current;
+  const liveWaitingStudents = (pendingRejoins || []).filter(
+    (r) => r.session_id === sessionInfo?.id
+  );
 
   // ─── JSX ────────────────────────────────────────────────────────────────────
 
@@ -2243,7 +2250,7 @@ export function LiveBroadcast() {
             className={`flex-1 bg-bg-surface flex flex-col relative overflow-hidden transition-[background-color,border-color,border-radius] duration-150 ${
               isFullScreen
                 ? "fixed top-0 left-0 right-0 bottom-0 z-[99999] w-full h-full max-w-full max-h-full bg-bg-base border-none rounded-none overflow-hidden"
-                : "border border-border rounded-[var(--radius-lg)]"
+                : "border border-border rounded-[22px]"
             }`}
           >
             {/* ── SCREEN SHARE MODE ────────────────────────────────────────── */}
@@ -2312,7 +2319,7 @@ export function LiveBroadcast() {
                       data-tour="broadcast-languages"
                       size="sm"
                       onMouseEnter={openLangMenu}
-                      className="rounded-[var(--radius-md)] bg-bg-elevated hover:bg-bg-surface-3"
+                      className="!h-[31px] min-w-[111px] rounded-[11px] border-0 bg-bg-surface hover:bg-bg-surface hover:border-0"
                     >
                       {/* Explicit children, not the default value-mirroring —
                           the closed trigger always shows the plain language
@@ -2390,11 +2397,11 @@ export function LiveBroadcast() {
                     </button>
                   )}
 
-                  {/* Run / Save button — solid primary blue */}
+                  {/* Run / Save button — solid primary green */}
                   {editorLanguage === "whiteboard" ? (
                     <button
                       onClick={handleSaveWhiteboard}
-                      className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded-[var(--radius-sm)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] flex items-center gap-1.5"
+                      className="h-[31px] min-w-[65px] px-3 text-xs font-medium bg-accent-success text-white rounded-[9px] flex items-center justify-center gap-1.5"
                     >
                       <Download className="w-4 h-4" />
                       Save
@@ -2404,7 +2411,7 @@ export function LiveBroadcast() {
                       <button
                         onClick={handleRunCode}
                         disabled={pyodideLoading}
-                        className="h-7 px-3 text-xs font-medium bg-accent-success hover:bg-accent-success/90 text-white rounded-[var(--radius-sm)] transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] disabled:opacity-50 disabled:cursor-wait flex items-center gap-1.5"
+                        className="h-[31px] min-w-[65px] px-3 text-xs font-medium bg-accent-success text-white rounded-[9px] disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-1.5"
                       >
                         {pyodideLoading ? (
                           <>
@@ -2425,7 +2432,7 @@ export function LiveBroadcast() {
                   <button
                     type="button"
                     onClick={handleToggleFullScreen}
-                    className="h-7 px-2.5 text-xs font-medium rounded-[var(--radius-sm)] border border-border bg-bg-surface hover:bg-bg-elevated text-text-secondary hover:text-text-primary transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] flex items-center gap-1.5 ml-1"
+                    className="h-[31px] w-[31px] text-xs font-medium rounded-[9px] bg-bg-surface text-text-secondary flex items-center justify-center ml-1"
                     title={isFullScreen ? "Exit Fullscreen (Esc)" : "Full Screen"}
                     aria-label={isFullScreen ? "Exit fullscreen" : "Enter fullscreen"}
                   >
@@ -2702,27 +2709,57 @@ export function LiveBroadcast() {
                 </div>
               )
             ) : (
-              <div className="w-full flex items-center justify-between gap-4 flex-wrap">
-                {/* 1. Status cluster — live dot, timer, info (read-only, own pill) */}
-                <div className="flex items-center gap-2 bg-bg-elevated/90 backdrop-blur border border-border rounded-full pl-3.5 pr-2 py-2 shadow-[var(--shadow-modal)] shrink-0">
-                  <LiveDot />
-                  <span className="tnum font-semibold text-sm text-text-primary" title="Session duration">
-                    {formatTime(sessionSeconds)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowSessionInfoDialog(true)}
-                    title="Session info — lecture, subject, password"
-                    aria-label="Session info"
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-3 transition-[background-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
-                  >
-                    <Info className="w-4 h-4" />
-                  </button>
+              <div className="w-full flex items-center gap-4 flex-wrap">
+                {/* Left group — status timer + Waiting Room / total-students
+                    badges, kept as one tight cluster (no big justify-between
+                    gap between them) rather than spread across the row. */}
+                <div className="flex items-center gap-3 shrink-0">
+                  {/* 1. Status cluster — live dot, timer, info (read-only pill).
+                      No border/blur, no hover — matches the reference exactly:
+                      solid fill, 14px corner radius (not a full pill). */}
+                  <div className="flex items-center gap-2 bg-bg-surface rounded-[14px] pl-3.5 pr-2 h-[35px] shrink-0">
+                    <LiveDot />
+                    <span className="tnum font-semibold text-sm text-text-primary" title="Session duration">
+                      {formatTime(sessionSeconds)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSessionInfoDialog(true)}
+                      title="Session info — lecture, subject, password"
+                      aria-label="Session info"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-text-muted"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Waiting Room + total-students badges — small window
+                      popovers, same pair on the Monitor page's top bar. Full
+                      pills (radius = height/2), no border, no hover. */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <WaitingRoomBadge
+                      pendingRejoins={liveWaitingStudents}
+                      onApprove={handleApproveRejoin}
+                      onDeny={handleDenyRejoin}
+                      direction="up"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => navigate("/teacher/monitor")}
+                      title={`${connectedStudents.length} ${connectedStudents.length === 1 ? "student" : "students"} connected — open Student Monitor`}
+                      aria-label="Open Student Monitor"
+                      className="flex items-center gap-1.5 h-[29px] px-2.5 bg-bg-surface rounded-full text-xs text-text-secondary font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+                    >
+                      <Users className="w-4 h-4 text-accent-500" />
+                      <span className="tnum">{connectedStudents.length}</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 2. Primary session actions — Mute / Screen Share / Record, as
-                    real labeled buttons so each is identifiable at a glance. */}
-                <div className="flex items-center gap-2.5 flex-wrap justify-center">
+                {/* 2. Primary session actions — Mute / Screen Share / Record.
+                    Static pills, no hover, no label-collapse animation —
+                    fixed size matching the reference exactly. */}
+                <div className="flex-1 flex items-center gap-2.5 flex-wrap justify-center">
                   {/* Mic toggle — always shown while live. Muted by default; if
                       permission hasn't been granted (or was denied), clicking
                       (re)prompts the OS/browser permission dialog instead of
@@ -2730,8 +2767,6 @@ export function LiveBroadcast() {
                   <button
                     type="button"
                     onClick={handleMicToggle}
-                    onMouseEnter={() => setHoveredControlButton("mic")}
-                    onMouseLeave={() => setHoveredControlButton(null)}
                     title={
                       !hasMic
                         ? micWarning
@@ -2743,79 +2778,25 @@ export function LiveBroadcast() {
                     }
                     aria-label={!hasMic ? "Turn on microphone" : micMuted ? "Unmute microphone" : "Mute microphone"}
                     className={cn(
-                      "btn-press relative h-10 rounded-full text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative flex items-center justify-center gap-2 h-[35px] min-w-[81px] px-4 rounded-[13px] text-sm font-medium",
                       !hasMic
                         ? micWarning
-                          ? "border-accent-warning/40 bg-accent-warning/15 text-accent-warning hover:bg-accent-warning/25"
-                          : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                          ? "bg-accent-warning/15 text-accent-warning"
+                          : "bg-bg-surface text-text-primary"
                         : micMuted
-                        ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
-                        : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                        ? "bg-accent-critical/90 text-white"
+                        : "bg-bg-surface text-text-primary"
                     )}
                   >
                     {micWarning && (
                       <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent-warning ring-2 ring-bg-elevated" aria-hidden="true" />
                     )}
-                    {/* Invisible sizer — always the full expanded content, so the
-                        button's own box (driven by this normal-flow child) never
-                        changes size. The real, animated content is the absolutely
-                        positioned layer below, which can't affect this size. */}
-                    <span className="invisible flex items-center px-4" aria-hidden="true">
-                      {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px] shrink-0" /> : <Mic className="w-[18px] h-[18px] shrink-0" />}
-                      <span className="pl-2 whitespace-nowrap">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
-                    </span>
-                    <span className="absolute inset-0 flex items-center justify-center px-4">
-                      {micMuted || !hasMic ? <MicOff className="w-[18px] h-[18px] shrink-0" /> : <Mic className="w-[18px] h-[18px] shrink-0" />}
-                      <motion.span
-                        className="overflow-hidden whitespace-nowrap"
-                        initial={false}
-                        animate={
-                          hoveredControlButton === "mic"
-                            ? { width: 0, opacity: 0 }
-                            : { width: "auto", opacity: 1 }
-                        }
-                        transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                      >
-                        <span className="pl-2">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
-                      </motion.span>
-                    </span>
-                  </button>
-
-                  {/* Screen Share toggle */}
-                  <button
-                    data-tour="broadcast-screenshare"
-                    type="button"
-                    onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
-                    onMouseEnter={() => setHoveredControlButton("screenshare")}
-                    onMouseLeave={() => setHoveredControlButton(null)}
-                    title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
-                    aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
-                    className={cn(
-                      "btn-press relative h-10 rounded-full text-sm font-medium border transition-colors duration-150",
-                      isScreenSharing
-                        ? "border-accent-700/50 bg-accent-700 text-white hover:bg-accent-700/90"
-                        : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                    {micMuted || !hasMic ? (
+                      <MicOff className="w-[18px] h-[18px] shrink-0" />
+                    ) : (
+                      <Mic className="w-[18px] h-[18px] shrink-0 text-accent-500" />
                     )}
-                  >
-                    <span className="invisible flex items-center px-4" aria-hidden="true">
-                      {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px] shrink-0" /> : <ScreenShareOn className="w-[18px] h-[18px] shrink-0" />}
-                      <span className="pl-2 whitespace-nowrap">{isScreenSharing ? "Stop Sharing" : "Start Screen Share"}</span>
-                    </span>
-                    <span className="absolute inset-0 flex items-center justify-center px-4">
-                      {isScreenSharing ? <ScreenShareOff className="w-[18px] h-[18px] shrink-0" /> : <ScreenShareOn className="w-[18px] h-[18px] shrink-0" />}
-                      <motion.span
-                        className="overflow-hidden whitespace-nowrap"
-                        initial={false}
-                        animate={
-                          hoveredControlButton === "screenshare"
-                            ? { width: 0, opacity: 0 }
-                            : { width: "auto", opacity: 1 }
-                        }
-                        transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                      >
-                        <span className="pl-2">{isScreenSharing ? "Stop Sharing" : "Start Screen Share"}</span>
-                      </motion.span>
-                    </span>
+                    <span className="whitespace-nowrap">{!hasMic ? "Turn On Mic" : micMuted ? "Unmute" : "Mute"}</span>
                   </button>
 
                   {/* Record toggle */}
@@ -2823,43 +2804,46 @@ export function LiveBroadcast() {
                     data-tour="broadcast-record"
                     type="button"
                     onClick={handleToggleRecording}
-                    onMouseEnter={() => setHoveredControlButton("record")}
-                    onMouseLeave={() => setHoveredControlButton(null)}
-                    title={isRecording ? "Stop recording" : "Start recording"}
-                    aria-label={isRecording ? "Stop recording" : "Start recording"}
+                    title={isRecording ? "Stop recording" : "Screen Record"}
+                    aria-label={isRecording ? "Stop recording" : "Screen Record"}
                     className={cn(
-                      "btn-press relative h-10 rounded-full text-sm font-medium border transition-colors duration-150",
+                      "btn-press relative flex items-center justify-center gap-2 h-[35px] min-w-[150px] px-4 rounded-[13px] text-sm font-medium",
                       isRecording
-                        ? "border-accent-critical/50 bg-accent-critical/90 text-white hover:bg-accent-critical"
-                        : "border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3"
+                        ? "bg-accent-critical/90 text-white"
+                        : "bg-bg-surface text-text-primary"
                     )}
                   >
                     {isRecording && (
-                      <span className="absolute inset-0 rounded-full ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
+                      <span className="absolute inset-0 rounded-[13px] ring-2 ring-accent-critical/50 pulse-dot" aria-hidden="true" />
                     )}
-                    <span className="invisible flex items-center px-4" aria-hidden="true">
-                      {isRecording ? <LivePhotoOff className="w-[18px] h-[18px] shrink-0" /> : <LivePhoto className="w-[18px] h-[18px] shrink-0" />}
-                      <span className="pl-2 whitespace-nowrap">{isRecording ? "Stop Recording" : "Record"}</span>
-                    </span>
-                    <span className="absolute inset-0 flex items-center justify-center px-4">
-                      {isRecording ? (
-                        <LivePhotoOff className="w-[18px] h-[18px] shrink-0" />
-                      ) : (
-                        <LivePhoto className="w-[18px] h-[18px] shrink-0" />
-                      )}
-                      <motion.span
-                        className="overflow-hidden whitespace-nowrap"
-                        initial={false}
-                        animate={
-                          hoveredControlButton === "record"
-                            ? { width: 0, opacity: 0 }
-                            : { width: "auto", opacity: 1 }
-                        }
-                        transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                      >
-                        <span className="pl-2">{isRecording ? "Stop Recording" : "Record"}</span>
-                      </motion.span>
-                    </span>
+                    {isRecording ? (
+                      <LivePhotoOff className="w-[18px] h-[18px] shrink-0" />
+                    ) : (
+                      <LivePhoto className="w-[18px] h-[18px] shrink-0 text-accent-500" />
+                    )}
+                    <span className="whitespace-nowrap">{isRecording ? "Stop Recording" : "Screen Record"}</span>
+                  </button>
+
+                  {/* Screen Share toggle */}
+                  <button
+                    data-tour="broadcast-screenshare"
+                    type="button"
+                    onClick={isScreenSharing ? handleStopScreenShareInternal : handleStartScreenShare}
+                    title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
+                    aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
+                    className={cn(
+                      "btn-press flex items-center justify-center gap-2 h-[35px] min-w-[132px] px-4 rounded-[13px] text-sm font-medium",
+                      isScreenSharing
+                        ? "bg-accent-700 text-white"
+                        : "bg-bg-surface text-text-primary"
+                    )}
+                  >
+                    {isScreenSharing ? (
+                      <ScreenShareOff className="w-[18px] h-[18px] shrink-0" />
+                    ) : (
+                      <ScreenShareOn className="w-[18px] h-[18px] shrink-0 text-accent-500" />
+                    )}
+                    <span className="whitespace-nowrap">{isScreenSharing ? "Stop Sharing" : "Screen Share"}</span>
                   </button>
 
                   {/* Download Recording — appears only once a finished recording is ready */}
@@ -2869,7 +2853,7 @@ export function LiveBroadcast() {
                       download="session-recording.webm"
                       title="Download Recording"
                       aria-label="Download Recording"
-                      className="h-10 px-4 rounded-full flex items-center gap-2 text-sm font-medium border border-border bg-bg-surface-3/60 text-text-primary hover:bg-bg-surface-3 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]"
+                      className="flex items-center justify-center gap-2 h-[35px] px-4 rounded-[13px] text-sm font-medium bg-bg-surface text-text-primary"
                     >
                       <Download className="w-[18px] h-[18px]" />
                       Download
@@ -2877,18 +2861,9 @@ export function LiveBroadcast() {
                   )}
                 </div>
 
-                {/* 3. Participant count + End — right edge, kept close together */}
+                {/* 3. End — right edge, isolated so it's never in the
+                    accidental-click path of the mic/screen/record cluster. */}
                 <div className="flex items-center gap-2.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/teacher/monitor")}
-                    title={`${connectedStudents.length} ${connectedStudents.length === 1 ? "student" : "students"} connected — open Student Monitor`}
-                    aria-label="Open Student Monitor"
-                    className="flex items-center gap-1.5 px-3 py-2 bg-bg-elevated/90 backdrop-blur border border-border rounded-full text-xs text-text-secondary font-medium hover:text-text-primary hover:border-border-hover transition-[color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
-                  >
-                    <Users className="w-4 h-4" />
-                    <span className="tnum">{connectedStudents.length}</span>
-                  </button>
                   <button
                     type="button"
                     onClick={() => setShowStopConfirm(true)}
@@ -2896,7 +2871,7 @@ export function LiveBroadcast() {
                     onMouseLeave={() => setHoveredControlButton(null)}
                     title="End lecture"
                     aria-label="End lecture"
-                    className="btn-press relative h-11 rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
+                    className="btn-press relative h-[35px] rounded-full bg-accent-critical hover:bg-accent-critical/90 text-white font-medium text-sm shadow-[var(--shadow-modal)] transition-colors duration-150"
                   >
                     <span className="invisible flex items-center px-5" aria-hidden="true">
                       <MonitorStop className="w-[18px] h-[18px] shrink-0" />
@@ -3048,7 +3023,7 @@ export function LiveBroadcast() {
           }
         }}
       >
-        <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-md">
+        <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-md rounded-[27px]">
           <DialogHeader>
             <DialogTitle className="text-text-primary flex items-center gap-2">
               {setupModalMode === "scheduled" ? (
@@ -3166,10 +3141,10 @@ export function LiveBroadcast() {
                             setSelectedClassIds([...selectedClassIds, cls.id]);
                           }
                         }}
-                        className={`px-3 pt-2.5 pb-1.5 rounded-[9px] text-xs font-medium border bg-transparent transition-[border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center ${
+                        className={`min-w-[64px] h-7 px-3 rounded-[10px] text-xs font-medium border bg-transparent transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center justify-center ${
                           isSelected
                             ? "border-accent-info text-accent-info"
-                            : "border-border text-text-secondary hover:text-text-primary hover:border-border/80"
+                            : "border-border text-text-secondary"
                         }`}
                       >
                         <span>{cls.name}</span>
@@ -3194,7 +3169,7 @@ export function LiveBroadcast() {
               onMouseEnter={() => setStartLectureButtonHovered(true)}
               onMouseLeave={() => setStartLectureButtonHovered(false)}
               className={cn(
-                "btn-press relative inline-flex items-center justify-center h-9 px-4 rounded-md text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150",
+                "btn-press relative inline-flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150",
                 // Live/running → high-vis broadcast green; not-yet-started → teacher violet
                 isBroadcasting
                   ? "bg-accent-live hover:bg-accent-live/90"
