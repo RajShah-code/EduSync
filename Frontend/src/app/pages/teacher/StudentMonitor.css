@@ -12,80 +12,69 @@
   font-family: "Manrope", system-ui, -apple-system, sans-serif;
 }
 
-/* ── Header ───────────────────────────────────────────────────────────── */
+/* ── Header ───────────────────────────────────────────────────────────────
+   Measurements taken off the EduSync -v01 "Student Monitor" frame:
+   chips 50 x 28.7 / r14 / #111113 fill, segments 32.1 tall / 12px pad /
+   r-pill, active segment #673fa6, ~40px gap between the chip group and the
+   filter group. */
 .sm-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 18px 24px;
+  padding: 20px 24px;
   border-bottom: 1px solid #1f1f22;
 }
 
 .sm-title {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
   margin: 0;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
-  color: #f1f2f5;
+  color: #f4f4f6;
 }
 .sm-title svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   color: #af74e5;
 }
 
 .sm-controls {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 40px;
 }
 
-/* Count chips — icon + number, dark pill */
+/* Count chips + Waiting Room — one tight group */
 .sm-counts {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.sm-chip {
+.sm-chip,
+.sm-waitroom > button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 29px;
-  padding: 0 12px;
-  border-radius: 999px;
-  background: #17171a;
-  font-size: 12px;
+  justify-content: center;
+  gap: 5px;
+  min-width: 50px;
+  height: 28.7px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: #111113;
+  font-size: 13px;
   font-weight: 500;
-  color: #f1f2f5;
+  color: #e1e1e2;
   font-variant-numeric: tabular-nums;
 }
-.sm-chip svg {
-  width: 15px;
-  height: 15px;
-  color: #af74e5;
-}
-
-/* Waiting Room badge — shared component; override its trigger so it reads
-   as one of the header chips (same fill / height / radius / icon size)
-   instead of the lighter default pill it ships with. */
-.sm-waitroom > button {
-  height: 29px;
-  padding: 0 12px;
-  gap: 6px;
-  border-radius: 999px;
-  background: #17171a;
-  font-size: 12px;
-  font-weight: 500;
-  color: #f1f2f5;
-}
+.sm-chip svg,
 .sm-waitroom > button svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   color: #af74e5;
 }
 
@@ -93,21 +82,21 @@
 .sm-filters {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
 }
 .sm-seg {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 34px;
-  padding: 0 16px;
+  height: 32px;
+  padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid #2b2b2f;
+  border: 1px solid #282828;
   background: transparent;
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: #8a8d95;
+  font-size: 14px;
+  font-weight: 500;
+  color: #919191;
   cursor: pointer;
   transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }
@@ -120,15 +109,20 @@
   border-color: #3a3a40;
 }
 .sm-seg__div {
-  opacity: 0.4;
+  opacity: 0.35;
   font-weight: 400;
 }
 .sm-seg__count {
   font-variant-numeric: tabular-nums;
 }
 .sm-seg.is-active {
-  background: #8f5ce1;
+  background: #673fa6;
   border-color: #8f5ce1;
+  color: #fff;
+}
+.sm-seg.is-active:hover {
+  background: #714aad;
+  border-color: #9a6fd8;
   color: #fff;
 }
 .sm-seg.is-active:hover {
