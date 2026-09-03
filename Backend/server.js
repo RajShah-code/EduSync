@@ -148,6 +148,7 @@ const getConnectedStudentsStatus = (sessionId) => {
       list.push({
         student_id: student.student_id,
         student_name: student.student_name,
+        roll_no: student.roll_no || null,
         joined_at: student.joined_at,
         is_fullscreen: student.last_fullscreen_exit === null,
         fullscreen_exit_count: student.fullscreen_exit_count,
@@ -169,7 +170,7 @@ const emitStudentStatusUpdate = (sessionId) => {
 
 // ── Socket.io Connection Handler ───────────────────────────────────────────
 io.on('connection', (socket) => {
-  const { id: userId, role, name: userName, class_id: classId } = socket.user;
+  const { id: userId, role, name: userName, class_id: classId, roll_no: userRollNo } = socket.user;
 
   // Join student to class room
   if (role === 'student' && classId) {
@@ -552,6 +553,7 @@ io.on('connection', (socket) => {
           studentsMap.set(userId, {
             student_id: userId,
             student_name: userName || `Student ${userId}`,
+            roll_no: userRollNo || null,
             joined_at: new Date(),
             left_at: null,
             fullscreen_exit_count: 0,
@@ -598,6 +600,7 @@ io.on('connection', (socket) => {
       studentsMap.set(userId, {
         student_id: userId,
         student_name: userName || `Student ${userId}`,
+        roll_no: userRollNo || null,
         joined_at: new Date(),
         left_at: null,
         fullscreen_exit_count: 0,
