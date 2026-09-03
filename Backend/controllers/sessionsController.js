@@ -314,6 +314,7 @@ const getSessionStudents = async (req, res) => {
       list.push({
         student_id: student.student_id,
         student_name: student.student_name,
+        roll_no: student.roll_no || null,
         joined_at: student.joined_at,
         is_fullscreen: student.last_fullscreen_exit === null,
         fullscreen_exit_count: student.fullscreen_exit_count,
