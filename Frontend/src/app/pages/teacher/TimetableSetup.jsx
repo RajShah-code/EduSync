@@ -11,6 +11,7 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { DateMultiPicker } from "../../components/ui/date-range-picker";
 import { cn } from "../../components/ui/utils";
 import PageShell from "../../components/PageShell";
+import { formatClockString } from "../../utils/timeFormat";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -898,7 +899,7 @@ export function TimetableSetup() {
 
                           {/* 2nd line: time range */}
                           <div className="tnum text-[length:var(--text-xs)] font-medium text-text-secondary">
-                            {formatTimeHHMM(entry.start_time)} - {formatTimeHHMM(entry.end_time)}
+                            {formatClockString(entry.start_time)} - {formatClockString(entry.end_time)}
                           </div>
 
                           {/* 3rd line: class / room & reminder indicator */}

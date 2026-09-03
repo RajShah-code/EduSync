@@ -9,6 +9,7 @@ import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
+import { useTimeFormat } from "../../utils/timeFormat";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import {
 
 export function StudentMonitor() {
   const { sessionInfo, pendingRejoins, handleApproveRejoin, handleDenyRejoin } = useOutletContext();
+  const { formatTimeOfDay } = useTimeFormat();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -131,7 +133,7 @@ export function StudentMonitor() {
       <div className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-lg font-semibold text-text-primary flex items-center gap-2">
           <Monitor className="w-5 h-5 text-accent-500" />
-          Student monitor
+          Student Monitor
         </h1>
 
         <div className="flex items-center gap-2.5">
@@ -196,9 +198,9 @@ export function StudentMonitor() {
       {/* Student Grid — fixed 4 columns, matching the design. */}
       <div className="flex-1 overflow-auto p-6">
         {loading ? (
-          <div className="grid gap-4 grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-[88px] w-full rounded-[var(--radius-lg)]" />
+          <div className="grid gap-3 justify-start [grid-template-columns:repeat(auto-fill,276.7928px)]">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-[80.6809px] w-[276.7928px] rounded-[19.745px]" />
             ))}
           </div>
         ) : error ? (
@@ -223,7 +225,7 @@ export function StudentMonitor() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-3 grid-cols-4">
+          <div className="grid gap-3 justify-start [grid-template-columns:repeat(auto-fill,276.7928px)]">
             {filteredStudents.map((student) => {
               const tileStudent = {
                 id: student.student_id,
@@ -288,11 +290,7 @@ export function StudentMonitor() {
                 <div className="flex justify-between items-center">
                   <span className="text-text-secondary font-medium">Joined:</span>
                   <span className="tnum text-text-primary text-xs">
-                    {new Date(selectedStudent.joined_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })}{" "}
+                    {formatTimeOfDay(selectedStudent.joined_at, { seconds: true })}{" "}
                     ({Math.max(
                       0,
                       Math.round(
@@ -318,11 +316,7 @@ export function StudentMonitor() {
                   </span>
                   <span className="tnum text-text-primary text-xs">
                     {selectedStudent.last_exit_at
-                      ? new Date(selectedStudent.last_exit_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                        })
+                      ? formatTimeOfDay(selectedStudent.last_exit_at, { seconds: true })
                       : "Never"}
                   </span>
                 </div>

@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import { IconLayoutDashboard as LayoutDashboard, IconChalkboardTeacher as ChalkboardTeacher, IconBinoculars as Binoculars, IconClipboard as Clipboard, IconFileCertificate as FileCertificate, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendarWeek as CalendarWeek, IconSettings as Settings, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown, IconBell as Bell, IconBellRinging as BellRinging } from "@tabler/icons-react";
 import { cn } from "../components/ui/utils";
+import { useTimeFormat } from "../utils/timeFormat";
 import { initSocket, getSocket } from "../store/socket";
 import { Toaster } from "../components/ui/sonner";
 import {
@@ -570,9 +571,8 @@ export function TeacherLayout() {
     return remainingSecs > 0 ? `${mins}m ${remainingSecs}s` : `${mins}m`;
   };
 
-  const formatTime = (ts) => {
-    return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
+  const { formatTimeOfDay } = useTimeFormat();
+  const formatTime = (ts) => formatTimeOfDay(ts);
 
   // Close the notification dropdown on an outside click — same pattern as
   // the app's shared Dropdown.jsx.
@@ -697,10 +697,108 @@ export function TeacherLayout() {
           })()}
         </nav>
 
-        {/* User info & Notifications — Logout has moved to Settings; this
-            slot now holds the Notification Center trigger, icon-only (no
-            label), matching the design's sidebar treatment. */}
-        <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 shrink-0">
+        {/* Notifications + User — the Notification Center opens as a layer
+            that grows UPWARD from the user card, over the empty tail of the
+            nav list (never shrinking it, never reaching the main page since
+            it's bounded to the sidebar width). max-h keeps its top edge
+            clear of the Settings row. */}
+        <div ref={notifRef} className="relative shrink-0">
+          {notifOpen && (
+            <div className="hidden md:flex flex-col absolute bottom-full inset-x-0 mb-2 max-h-[40vh] rounded-[var(--radius-lg)] border border-border bg-bg-surface shadow-[var(--shadow-dropdown)] overflow-hidden z-40 animate-in slide-in-from-bottom-2 fade-in duration-200">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border">
+                <span className="text-[12px] font-semibold text-text-primary">
+                  Notifications
+                  {notifications.length > 0 && (
+                    <span className="ml-1.5 font-normal text-text-muted tnum">{notifications.length}</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setNotifOpen(false)}
+                  aria-label="Close notifications"
+                  className="btn-press p-0.5 text-text-muted hover:text-text-primary transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5">
+                {notifications.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-text-muted">
+                    {broadcastState === "live" ? "No notifications yet this lecture." : "No active lecture."}
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className="p-2.5 bg-bg-base border border-border rounded-[var(--radius-md)] flex gap-2.5"
+                    >
+                      <span
+                        className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", notifCategoryColor[n.category] || "bg-text-muted")}
+                        aria-hidden="true"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-text-primary leading-snug">{n.message}</p>
+                        <p className="text-[10px] text-text-muted mt-0.5">
+                          {formatTime(n.timestamp)}
+                        </p>
+
+                        {n.meta?.kind === "time_expired" && (
+                          <div className="flex items-center gap-2 flex-wrap mt-2">
+                            <input
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={notifExtMinutes[n.id] || 5}
+                              onChange={(e) =>
+                                setNotifExtMinutes({
+                                  ...notifExtMinutes,
+                                  [n.id]: parseInt(e.target.value) || 5,
+                                })
+                              }
+                              className="w-12 h-6 text-[11px] tnum text-center bg-bg-surface border border-border rounded-[var(--radius-sm)] text-text-primary"
+                            />
+                            <button
+                              onClick={() => handleExtendNotifTask(n)}
+                              className="px-2 py-1 bg-accent-warning/15 hover:bg-accent-warning/25 text-accent-warning border border-accent-warning/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
+                            >
+                              Extend
+                            </button>
+                            <button
+                              onClick={() => handleMoveOnNotifTask(n)}
+                              className="px-2 py-1 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
+                            >
+                              Move On
+                            </button>
+                          </div>
+                        )}
+
+                        {n.meta?.kind === "doubt" && (
+                          <Link
+                            to="/teacher/task/assign"
+                            onClick={() => dismissNotification(n.id)}
+                            className="inline-block mt-1.5 text-[11px] font-semibold text-accent-info hover:underline"
+                          >
+                            View →
+                          </Link>
+                        )}
+                      </div>
+                      {n.meta?.kind !== "time_expired" && (
+                        <button
+                          onClick={() => dismissNotification(n.id)}
+                          className="self-start p-0.5 text-text-muted hover:text-text-primary transition-colors"
+                          title="Dismiss"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5">
           <div className="flex items-center gap-2.5 px-1 py-1">
             <div className="w-7 h-7 rounded-full bg-bg-surface-3 border border-border flex items-center justify-center text-[10.5px] font-semibold text-text-secondary shrink-0">
               {teacherInitials}
@@ -713,7 +811,7 @@ export function TeacherLayout() {
                 {displayUser.email || "Teacher"}
               </div>
             </div>
-            <div className="relative md:ml-auto shrink-0" ref={notifRef}>
+            <div className="relative md:ml-auto shrink-0">
               <button
                 type="button"
                 onClick={handleToggleNotifPanel}
@@ -734,84 +832,8 @@ export function TeacherLayout() {
                   </span>
                 )}
               </button>
-
-              {notifOpen && (
-                <div className="absolute right-0 md:left-0 md:right-auto bottom-full mb-2 w-80 max-h-[26rem] overflow-y-auto bg-bg-elevated border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-dropdown)] z-[150] p-2 space-y-1.5">
-                  {notifications.length === 0 ? (
-                    <div className="py-6 text-center text-xs text-text-muted">
-                      {broadcastState === "live" ? "No notifications yet this lecture." : "No active lecture."}
-                    </div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className="p-2.5 bg-bg-base border border-border rounded-[var(--radius-md)] flex gap-2.5"
-                      >
-                        <span
-                          className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", notifCategoryColor[n.category] || "bg-text-muted")}
-                          aria-hidden="true"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-text-primary leading-snug">{n.message}</p>
-                          <p className="text-[10px] text-text-muted mt-0.5">
-                            {formatTime(n.timestamp)}
-                          </p>
-
-                          {n.meta?.kind === "time_expired" && (
-                            <div className="flex items-center gap-2 flex-wrap mt-2">
-                              <input
-                                type="number"
-                                min="1"
-                                max="30"
-                                value={notifExtMinutes[n.id] || 5}
-                                onChange={(e) =>
-                                  setNotifExtMinutes({
-                                    ...notifExtMinutes,
-                                    [n.id]: parseInt(e.target.value) || 5,
-                                  })
-                                }
-                                className="w-12 h-6 text-[11px] tnum text-center bg-bg-surface border border-border rounded-[var(--radius-sm)] text-text-primary"
-                              />
-                              <button
-                                onClick={() => handleExtendNotifTask(n)}
-                                className="px-2 py-1 bg-accent-warning/15 hover:bg-accent-warning/25 text-accent-warning border border-accent-warning/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
-                              >
-                                Extend
-                              </button>
-                              <button
-                                onClick={() => handleMoveOnNotifTask(n)}
-                                className="px-2 py-1 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
-                              >
-                                Move On
-                              </button>
-                            </div>
-                          )}
-
-                          {n.meta?.kind === "doubt" && (
-                            <Link
-                              to="/teacher/task/assign"
-                              onClick={() => dismissNotification(n.id)}
-                              className="inline-block mt-1.5 text-[11px] font-semibold text-accent-info hover:underline"
-                            >
-                              View →
-                            </Link>
-                          )}
-                        </div>
-                        {n.meta?.kind !== "time_expired" && (
-                          <button
-                            onClick={() => dismissNotification(n.id)}
-                            className="self-start p-0.5 text-text-muted hover:text-text-primary transition-colors"
-                            title="Dismiss"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
             </div>
+          </div>
           </div>
         </div>
       </aside>

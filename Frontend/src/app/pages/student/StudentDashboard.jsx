@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { AppTour } from "../../components/AppTour";
 import { studentTourSteps } from "../../tours/studentTourSteps";
 import PageShell from "../../components/PageShell";
+import { formatClockString } from "../../utils/timeFormat";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -49,16 +50,13 @@ function getLectureStatus(startTimeStr, endTimeStr) {
 }
 
 /**
- * Formats 24h time string "HH:MM:SS" or "HH:MM" into 12-hour "H:MM AM/PM"
+ * Formats a "HH:MM:SS" / "HH:MM" clock string for display, following the
+ * user's Time format setting — 24-hour "HH:MM" (default) or 12-hour
+ * "H:MM AM/PM". Name/signature kept; it no longer hard-forces AM/PM.
  */
 function formatTime12h(timeStr) {
   if (!timeStr) return "";
-  const [hStr, mStr] = timeStr.split(":");
-  let h = parseInt(hStr, 10);
-  const m = mStr ? mStr.slice(0, 2) : "00";
-  const ampm = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
-  return `${h}:${m} ${ampm}`;
+  return formatClockString(timeStr);
 }
 
 /**

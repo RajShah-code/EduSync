@@ -1,5 +1,6 @@
 import { IconShieldOff as ShieldOff } from "@tabler/icons-react";
 import { StatusBadge } from "../../components/StatusBadge";
+import { formatTimeOfDay } from "../../utils/timeFormat";
 
 const REASON_LABELS = {
   violation_limit_reached: "Access revoked — violation limit exceeded",
@@ -31,7 +32,7 @@ export function ExamLocked({
 }) {
   const reasonLabel = REASON_LABELS[reason] ?? "Exam closed";
   const lockedTime = submittedAt
-    ? new Date(submittedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    ? formatTimeOfDay(submittedAt, { seconds: true })
     : "—";
 
   return (

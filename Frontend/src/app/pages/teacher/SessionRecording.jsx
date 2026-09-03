@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import PageShell from "../../components/PageShell";
 import { getRecordings, deleteRecording } from "../../utils/recordingsStore";
 import { getHandle, deleteHandle } from "../../utils/recordingHandles";
+import { formatTimeOfDay } from "../../utils/timeFormat";
 
 const PAGE_SIZE = 10;
 
@@ -212,10 +213,11 @@ export function SessionRecording() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-text-secondary tnum whitespace-nowrap">
-                      {new Date(rec.startedAt).toLocaleString(undefined, {
+                      {new Date(rec.startedAt).toLocaleDateString(undefined, {
                         dateStyle: "medium",
-                        timeStyle: "short",
                       })}
+                      {", "}
+                      {formatTimeOfDay(rec.startedAt)}
                     </td>
                     <td className="px-4 py-3 text-sm text-text-secondary tnum text-right">
                       {formatDuration(rec.durationSeconds)}
