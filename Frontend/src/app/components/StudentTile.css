@@ -1,0 +1,189 @@
+/* StudentTile — the monitor roster card, rebuilt in plain CSS from the
+   Figma "Teacher | Monitor" frame (EduSync -v01). Three visual states:
+
+     .st-card--violating  student is out of the lecture right now
+                          #1e1e1e fill, bright #996ed7 border, countdown pill
+     .st-card--flagged    back in the lecture but has a violation history
+                          #171717 fill, dim #503970 border, no pill
+     .st-card--clean      viewing, no violations (also offline/left fallback)
+                          #121212 fill, near-black #1f162b border, dimmed name
+
+   Fixed 276.7928 x 80.6809, 19.745px radius, 1px border. Type is Manrope;
+   sizes are the values read off the Figma frame. */
+
+.st-card {
+  position: relative;
+  box-sizing: border-box;
+  width: 276.7928px;
+  height: 80.6809px;
+  padding: 18px 24px 14px;
+  border-radius: 19.745px;
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  font-family: "Manrope", system-ui, -apple-system, sans-serif;
+  color: #d4d4d4;
+  overflow: visible;
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+button.st-card {
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.st-card:focus-visible {
+  outline: 2px solid #af74e5;
+  outline-offset: 2px;
+}
+
+button.st-card:active {
+  transform: scale(0.985);
+}
+
+/* ── State: violating ─────────────────────────────────────────────────── */
+.st-card--violating {
+  background-color: #1e1e1e;
+  border-color: #996ed7;
+}
+button.st-card--violating:hover {
+  border-color: #b28fe0;
+}
+
+/* ── State: flagged (violated, now viewing) ───────────────────────────── */
+.st-card--flagged {
+  background-color: #171717;
+  border-color: #503970;
+}
+button.st-card--flagged:hover {
+  border-color: #6a4d94;
+}
+
+/* ── State: clean ─────────────────────────────────────────────────────── */
+.st-card--clean {
+  background-color: #121212;
+  border-color: #1f162b;
+  justify-content: center;
+}
+button.st-card--clean:hover {
+  border-color: #33264a;
+}
+
+/* ── Countdown pill — straddles the top-right corner ──────────────────── */
+.st-card__pill {
+  position: absolute;
+  top: -15px;
+  right: 19px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  height: 27px;
+  border-radius: 12px;
+  background-color: #2b2b2b;
+  color: #a98ce8;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Primary line: name + roll ────────────────────────────────────────── */
+.st-card__name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.st-card__name-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 24.21px;
+  letter-spacing: -0.01em;
+}
+.st-card--violating .st-card__name-text {
+  color: #d4d4d4;
+}
+.st-card--flagged .st-card__name-text {
+  color: #b4b4b4;
+}
+.st-card--clean .st-card__name-text {
+  color: #949494;
+}
+
+.st-card__sep {
+  flex: none;
+  width: 0;
+  height: 12.0411px;
+  border-left: 0.6658px solid #6b6b78;
+}
+.st-card--flagged .st-card__sep,
+.st-card--clean .st-card__sep {
+  border-left-color: rgba(107, 107, 120, 0.6);
+}
+
+.st-card__roll {
+  flex: none;
+  font-size: 19.67px;
+  font-weight: 500;
+  line-height: 1;
+  color: #909090;
+  font-variant-numeric: tabular-nums;
+}
+.st-card--flagged .st-card__roll,
+.st-card--clean .st-card__roll {
+  color: #585c68;
+}
+
+/* ── Violations line ──────────────────────────────────────────────────── */
+.st-card__violations {
+  font-size: 14.77px;
+  font-weight: 500;
+  line-height: 1;
+  color: #5e5e5e;
+}
+.st-card__violations span {
+  font-size: 12.45px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Last-seen time — pinned bottom-right ─────────────────────────────── */
+.st-card__time {
+  position: absolute;
+  right: 24px;
+  bottom: 12px;
+  font-size: 11.17px;
+  font-weight: 400;
+  line-height: 1;
+  color: #595959;
+  font-variant-numeric: tabular-nums;
+}
+
+.st-card__disconnected {
+  font-size: 11.17px;
+  font-weight: 400;
+  color: #595959;
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-card {
+    transition: none;
+  }
+  button.st-card:active {
+    transform: none;
+  }
+}
