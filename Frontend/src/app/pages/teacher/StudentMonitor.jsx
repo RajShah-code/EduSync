@@ -145,6 +145,7 @@ export function StudentMonitor() {
 
         <div className="sm-controls">
           <WaitingRoomBadge
+            className="sm-waitroom"
             pendingRejoins={waitingStudents}
             onApprove={handleApproveRejoin}
             onDeny={handleDenyRejoin}
@@ -170,7 +171,7 @@ export function StudentMonitor() {
                 <Icon />
                 {label}
                 <span className="sm-seg__div">|</span>
-                <span className="sm-seg__count">{count}</span>
+                <span className="sm-seg__count">{String(count).padStart(2, "0")}</span>
               </button>
             ))}
           </div>
