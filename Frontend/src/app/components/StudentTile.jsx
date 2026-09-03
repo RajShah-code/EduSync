@@ -1,105 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "../components/ui/utils";
-import { StatusBadge } from "./StatusBadge";
-import { IconUser as User, IconEyeX as EyeX } from "@tabler/icons-react";
 
+// Compact text-only card — matches the design (EduSync_Monitor v03.svg):
+// name | roll, a live mm:ss "connected for" pill + a Violations line on
+// viewing/active students only, dimmed to a plain border with just the
+// name and last-seen time once a student drops to idle/offline.
+//
+// Note: the design shows a roll number next to the name (e.g. "Mrugank
+// Darji | 09"). The live roster endpoint (GET /sessions/:id/students)
+// doesn't currently return roll_no, so `rollNo` renders only when present
+// — ask before wiring that through on the backend.
 export function StudentTile({ student, onClick, className, children }) {
-  const [previewFailed, setPreviewFailed] = useState(false);
   const displayName = student.name?.trim() || "Unnamed student";
-  const showPreview = student.screenPreview && !previewFailed;
+  const isActive = student.status === "active";
 
-  const getTileStyle = () => {
-    switch (student.status) {
-      case "idle":
-        return {
-          border: "1.5px solid color-mix(in srgb, var(--accent-warning) 35%, transparent)",
-          background: "color-mix(in srgb, var(--accent-warning) 3%, transparent)",
-        };
-      case "offline":
-        return { border: "1px solid var(--border)" };
-      case "submitted":
-        return { border: "1px solid color-mix(in srgb, var(--accent-success) 25%, transparent)" };
-      default:
-        return { border: "1px solid var(--border)" };
-    }
-  };
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isActive || !student.joinedAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isActive, student.joinedAt]);
 
-  const getOverlay = () => {
-    if (student.status === "offline") {
-      return "bg-bg-base/80";
-    }
-    if (student.status === "idle") {
-      return "bg-accent-warning/5";
-    }
-    return "";
-  };
+  const connectedFor = (() => {
+    if (!isActive || !student.joinedAt) return null;
+    const secs = Math.max(0, Math.floor((now - new Date(student.joinedAt).getTime()) / 1000));
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  })();
+
+  const lastSeenTime = student.status === "idle" && student.lastExitAt
+    ? student.lastExitAt
+    : student.joinedAt;
 
   const Container = onClick ? "button" : "div";
 
   return (
     <Container
-      {...(onClick && { type: "button", onClick, "aria-label": `View ${displayName}'s screen — ${student.status || "unknown"}` })}
+      {...(onClick && { type: "button", onClick, "aria-label": `View ${displayName} — ${student.status || "unknown"}` })}
       className={cn(
-        "relative flex flex-col text-left bg-bg-surface overflow-hidden group card-hover rounded-[var(--radius-lg)]",
-        onClick && "cursor-pointer w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface",
+        "relative text-left p-3.5 rounded-[var(--radius-lg)] bg-bg-surface border transition-colors duration-150",
+        isActive ? "border-accent-500" : "border-border",
+        onClick && "cursor-pointer w-full hover:border-border-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface",
         className
       )}
-      style={getTileStyle()}
     >
-      {/* Screen Preview */}
-      <div className="relative h-24 bg-bg-base flex items-center justify-center rounded-t-[var(--radius-lg)]">
-        {showPreview ? (
-          <img
-            src={student.screenPreview}
-            alt={`${displayName}'s screen`}
-            className="w-full h-full object-cover"
-            onError={() => setPreviewFailed(true)}
-          />
-        ) : (
-          <User className="w-9 h-9 text-text-muted" aria-hidden="true" />
-        )}
-        {getOverlay() && (
-          <div className={cn("absolute inset-0", getOverlay())} />
-        )}
-
-        {/* Status Badge - Top Right. Icon/dot suppressed here so the monitor
-            grid reads as clean text pills (badge label only). */}
-        <div className="absolute top-2 right-2">
-          <StatusBadge status={student.status} className="[&>span:first-child]:hidden" />
-        </div>
-      </div>
-
-      {/* Student Info */}
-      <div className="p-3 space-y-1">
-        <div className="font-medium text-sm text-text-primary truncate" title={displayName}>
-          {displayName}
-        </div>
-        {student.joinedAt && (
-          <div className="text-xs text-text-muted tnum">
-            Joined: {new Date(student.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
-        )}
-        {student.status === "idle" && student.lastExitAt && (
-          <div className="text-xs text-accent-warning tnum">
-            Away since: {new Date(student.lastExitAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </div>
-        )}
-        {student.status === "idle" && student.idleTime !== undefined && (
-          <div className="text-xs text-accent-warning tnum flex items-center gap-1">
-            <EyeX className="w-3 h-3 shrink-0" />
-            Not Viewing: {Math.floor(student.idleTime / 60)}m {student.idleTime % 60}s
-          </div>
-        )}
-        {student.status === "offline" && (
-          <div className="text-xs text-text-muted">Disconnected</div>
-        )}
-        {children}
-      </div>
-
-      {/* Hover Effect */}
-      {onClick && (
-        <div className="absolute inset-0 bg-accent-info/0 group-hover:bg-accent-info/5 transition-colors pointer-events-none" />
+      {connectedFor && (
+        <span className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-bg-elevated text-accent-500 text-[11px] font-bold tnum">
+          {connectedFor}
+        </span>
       )}
+
+      <div className={cn("text-sm font-medium truncate", isActive ? "text-text-primary" : "text-text-secondary")} title={displayName}>
+        {displayName}
+        {student.rollNo && (
+          <>
+            <span className="mx-1.5 text-text-muted">|</span>
+            <span className="tnum">{student.rollNo}</span>
+          </>
+        )}
+      </div>
+
+      <div className="flex items-end justify-between mt-1.5 min-h-[16px]">
+        {isActive && student.violations !== undefined ? (
+          <span className="text-xs text-text-muted">
+            Violations: <span className="tnum">{String(student.violations).padStart(2, "0")}</span>
+          </span>
+        ) : (
+          <span />
+        )}
+        {lastSeenTime && (
+          <span className="text-xs text-text-muted tnum">
+            {new Date(lastSeenTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        )}
+      </div>
+
+      {student.status === "offline" && (
+        <div className="text-xs text-text-muted mt-1">Disconnected</div>
+      )}
+
+      {children}
     </Container>
   );
 }

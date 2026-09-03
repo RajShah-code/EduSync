@@ -1,9 +1,9 @@
 import { API_BASE_URL } from "../config/api.js";
 import { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { IconLayoutDashboard as LayoutDashboard, IconChalkboardTeacher as ChalkboardTeacher, IconBinoculars as Binoculars, IconClipboard as Clipboard, IconFileCertificate as FileCertificate, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendarWeek as CalendarWeek, IconSettings as Settings, IconLogout as LogOut, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown, IconBell as Bell, IconBellRinging as BellRinging } from "@tabler/icons-react";
+import { IconLayoutDashboard as LayoutDashboard, IconChalkboardTeacher as ChalkboardTeacher, IconBinoculars as Binoculars, IconClipboard as Clipboard, IconFileCertificate as FileCertificate, IconCalendarCheck as CalendarCheck, IconChartBar as BarChart3, IconVideo as Video, IconCalendarWeek as CalendarWeek, IconSettings as Settings, IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconSchool as GraduationCap, IconChevronDown as ChevronDown, IconBell as Bell, IconBellRinging as BellRinging } from "@tabler/icons-react";
 import { cn } from "../components/ui/utils";
-import { initSocket, getSocket, disconnectSocket } from "../store/socket";
+import { initSocket, getSocket } from "../store/socket";
 import { Toaster } from "../components/ui/sonner";
 import {
   getNotifications,
@@ -48,13 +48,6 @@ export function TeacherLayout() {
     document.body.setAttribute("data-role", "teacher");
     return () => document.body.removeAttribute("data-role");
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("edusync_token");
-    localStorage.removeItem("edusync_user");
-    disconnectSocket();
-    navigate("/");
-  };
 
   const [displayUser, setDisplayUser] = useState(() =>
     JSON.parse(localStorage.getItem("edusync_user") || "{}")
@@ -620,116 +613,6 @@ export function TeacherLayout() {
           </span>
         </div>
 
-        {/* Notification Center — bell only appears while a lecture is
-            live; the panel is entirely local to this layout (no page needs
-            it via Outlet context), so it isn't threaded through there. */}
-        {broadcastState === "live" && (
-          <div className="relative rounded-[var(--radius-lg)] border border-border bg-bg-surface px-3 md:px-4 py-2 md:py-2.5 shrink-0" ref={notifRef}>
-            <button
-              type="button"
-              onClick={handleToggleNotifPanel}
-              aria-haspopup="true"
-              aria-expanded={notifOpen}
-              aria-label="Lecture notifications"
-              title="Lecture notifications"
-              className="btn-press relative w-full flex items-center gap-2.5 justify-center md:justify-start text-text-secondary hover:text-text-primary transition-std"
-            >
-              <span className="relative shrink-0">
-                {unreadNotifCount > 0 ? (
-                  <BellRinging className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                ) : (
-                  <Bell className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                )}
-                {unreadNotifCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-[3px] rounded-full bg-accent-critical text-white text-[10px] font-bold leading-none flex items-center justify-center">
-                    {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
-                  </span>
-                )}
-              </span>
-              <span className="hidden md:inline text-[13px] flex-1 text-left truncate">
-                Notifications
-              </span>
-            </button>
-
-            {notifOpen && (
-              <div className="absolute left-0 top-full mt-2 w-80 max-h-[26rem] overflow-y-auto bg-bg-elevated border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-dropdown)] z-[150] p-2 space-y-1.5">
-                {notifications.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-text-muted">
-                    No notifications yet this lecture.
-                  </div>
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className="p-2.5 bg-bg-base border border-border rounded-[var(--radius-md)] flex gap-2.5"
-                    >
-                      <span
-                        className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", notifCategoryColor[n.category] || "bg-text-muted")}
-                        aria-hidden="true"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs text-text-primary leading-snug">{n.message}</p>
-                        <p className="text-[10px] text-text-muted mt-0.5">
-                          {formatTime(n.timestamp)}
-                        </p>
-
-                        {n.meta?.kind === "time_expired" && (
-                          <div className="flex items-center gap-2 flex-wrap mt-2">
-                            <input
-                              type="number"
-                              min="1"
-                              max="30"
-                              value={notifExtMinutes[n.id] || 5}
-                              onChange={(e) =>
-                                setNotifExtMinutes({
-                                  ...notifExtMinutes,
-                                  [n.id]: parseInt(e.target.value) || 5,
-                                })
-                              }
-                              className="w-12 h-6 text-[11px] tnum text-center bg-bg-surface border border-border rounded-[var(--radius-sm)] text-text-primary"
-                            />
-                            <button
-                              onClick={() => handleExtendNotifTask(n)}
-                              className="px-2 py-1 bg-accent-warning/15 hover:bg-accent-warning/25 text-accent-warning border border-accent-warning/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
-                            >
-                              Extend
-                            </button>
-                            <button
-                              onClick={() => handleMoveOnNotifTask(n)}
-                              className="px-2 py-1 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
-                            >
-                              Move On
-                            </button>
-                          </div>
-                        )}
-
-                        {n.meta?.kind === "doubt" && (
-                          <Link
-                            to="/teacher/task/assign"
-                            onClick={() => dismissNotification(n.id)}
-                            className="inline-block mt-1.5 text-[11px] font-semibold text-accent-info hover:underline"
-                          >
-                            View →
-                          </Link>
-                        )}
-                      </div>
-                      {n.meta?.kind !== "time_expired" && (
-                        <button
-                          onClick={() => dismissNotification(n.id)}
-                          className="self-start p-0.5 text-text-muted hover:text-text-primary transition-colors"
-                          title="Dismiss"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Navigation */}
         <nav className="flex-1 min-h-0 rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 space-y-0.5 overflow-y-auto">
           {(() => {
@@ -814,13 +697,15 @@ export function TeacherLayout() {
           })()}
         </nav>
 
-        {/* User info & Actions */}
+        {/* User info & Notifications — Logout has moved to Settings; this
+            slot now holds the Notification Center trigger, icon-only (no
+            label), matching the design's sidebar treatment. */}
         <div className="rounded-[var(--radius-lg)] border border-border bg-bg-surface p-2 md:p-2.5 shrink-0">
-          <div className="hidden md:flex items-center gap-2.5 px-1 py-1">
+          <div className="flex items-center gap-2.5 px-1 py-1">
             <div className="w-7 h-7 rounded-full bg-bg-surface-3 border border-border flex items-center justify-center text-[10.5px] font-semibold text-text-secondary shrink-0">
               {teacherInitials}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="hidden md:block flex-1 min-w-0">
               <div className="text-[12.5px] font-medium text-text-primary truncate">
                 {displayUser.name || "Teacher"}
               </div>
@@ -828,23 +713,106 @@ export function TeacherLayout() {
                 {displayUser.email || "Teacher"}
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              className="btn-press w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-accent-critical hover:bg-accent-critical/10 transition-std shrink-0"
-            >
-              <LogOut className="w-4 h-4" strokeWidth={1.75} />
-            </button>
-          </div>
+            <div className="relative md:ml-auto shrink-0" ref={notifRef}>
+              <button
+                type="button"
+                onClick={handleToggleNotifPanel}
+                aria-haspopup="true"
+                aria-expanded={notifOpen}
+                aria-label="Notifications"
+                title="Notifications"
+                className="btn-press relative w-7 h-7 rounded-md flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-surface-3 transition-std"
+              >
+                {unreadNotifCount > 0 ? (
+                  <BellRinging className="w-4 h-4" strokeWidth={1.75} />
+                ) : (
+                  <Bell className="w-4 h-4" strokeWidth={1.75} />
+                )}
+                {unreadNotifCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-[3px] rounded-full bg-accent-critical text-white text-[10px] font-bold leading-none flex items-center justify-center">
+                    {unreadNotifCount > 9 ? "9+" : unreadNotifCount}
+                  </span>
+                )}
+              </button>
 
-          {/* Collapsed (mobile) — icon-only logout, name/avatar hidden */}
-          <button
-            onClick={handleLogout}
-            title="Logout"
-            className="btn-press md:hidden w-full flex items-center justify-center py-2 text-text-secondary hover:text-accent-critical hover:bg-accent-critical/10 rounded-lg transition-std"
-          >
-            <LogOut className="w-[18px] h-[18px]" strokeWidth={1.75} />
-          </button>
+              {notifOpen && (
+                <div className="absolute right-0 md:left-0 md:right-auto bottom-full mb-2 w-80 max-h-[26rem] overflow-y-auto bg-bg-elevated border border-border rounded-[var(--radius-md)] shadow-[var(--shadow-dropdown)] z-[150] p-2 space-y-1.5">
+                  {notifications.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-text-muted">
+                      {broadcastState === "live" ? "No notifications yet this lecture." : "No active lecture."}
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className="p-2.5 bg-bg-base border border-border rounded-[var(--radius-md)] flex gap-2.5"
+                      >
+                        <span
+                          className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", notifCategoryColor[n.category] || "bg-text-muted")}
+                          aria-hidden="true"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-text-primary leading-snug">{n.message}</p>
+                          <p className="text-[10px] text-text-muted mt-0.5">
+                            {formatTime(n.timestamp)}
+                          </p>
+
+                          {n.meta?.kind === "time_expired" && (
+                            <div className="flex items-center gap-2 flex-wrap mt-2">
+                              <input
+                                type="number"
+                                min="1"
+                                max="30"
+                                value={notifExtMinutes[n.id] || 5}
+                                onChange={(e) =>
+                                  setNotifExtMinutes({
+                                    ...notifExtMinutes,
+                                    [n.id]: parseInt(e.target.value) || 5,
+                                  })
+                                }
+                                className="w-12 h-6 text-[11px] tnum text-center bg-bg-surface border border-border rounded-[var(--radius-sm)] text-text-primary"
+                              />
+                              <button
+                                onClick={() => handleExtendNotifTask(n)}
+                                className="px-2 py-1 bg-accent-warning/15 hover:bg-accent-warning/25 text-accent-warning border border-accent-warning/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
+                              >
+                                Extend
+                              </button>
+                              <button
+                                onClick={() => handleMoveOnNotifTask(n)}
+                                className="px-2 py-1 bg-accent-critical/15 hover:bg-accent-critical/25 text-accent-critical border border-accent-critical/30 rounded-[var(--radius-sm)] text-[11px] font-semibold transition-colors"
+                              >
+                                Move On
+                              </button>
+                            </div>
+                          )}
+
+                          {n.meta?.kind === "doubt" && (
+                            <Link
+                              to="/teacher/task/assign"
+                              onClick={() => dismissNotification(n.id)}
+                              className="inline-block mt-1.5 text-[11px] font-semibold text-accent-info hover:underline"
+                            >
+                              View →
+                            </Link>
+                          )}
+                        </div>
+                        {n.meta?.kind !== "time_expired" && (
+                          <button
+                            onClick={() => dismissNotification(n.id)}
+                            className="self-start p-0.5 text-text-muted hover:text-text-primary transition-colors"
+                            title="Dismiss"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </aside>
 

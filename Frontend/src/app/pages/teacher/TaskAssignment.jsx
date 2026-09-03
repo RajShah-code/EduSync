@@ -10,7 +10,7 @@ import { Skeleton } from "../../components/ui/skeleton";
 import { StatusBadge } from "../../components/StatusBadge";
 import { TaskStatusModal } from "../../components/TaskStatusModal";
 import { cn } from "../../components/ui/utils";
-import { IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography, IconAlarm as Alarm, IconSquarePlus as SquarePlus, IconMenu2 as Menu2 } from "@tabler/icons-react";
+import { IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconClipboardCopy as ClipboardCopy, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconFilePlus as FilePlus, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography, IconAlarm as Alarm } from "@tabler/icons-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
@@ -721,7 +721,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <SquarePlus className="w-4 h-4" />
+              <FilePlus className="w-4 h-4" />
               Create Task
             </button>
             <button
@@ -733,7 +733,7 @@ export function TaskAssignment() {
                   : "text-text-secondary hover:text-text-primary"
               }`}
             >
-              <Menu2 className="w-4 h-4" />
+              <ClipboardCopy className="w-4 h-4" />
               Active Tasks ({tasks.length})
             </button>
           </div>
