@@ -140,22 +140,21 @@ export function StudentMonitor() {
       <header className="sm-header">
         <h1 className="sm-title">
           <Monitor />
-          Student monitor
+          Student Monitor
         </h1>
 
         <div className="sm-controls">
-          <WaitingRoomBadge
-            className="sm-waitroom"
-            pendingRejoins={waitingStudents}
-            onApprove={handleApproveRejoin}
-            onDeny={handleDenyRejoin}
-            align="right"
-          />
-
           <div className="sm-counts">
-            <span className="sm-chip" title="Not viewing">
+            <WaitingRoomBadge
+              className="sm-waitroom"
+              pendingRejoins={waitingStudents}
+              onApprove={handleApproveRejoin}
+              onDeny={handleDenyRejoin}
+              align="right"
+            />
+            <span className="sm-chip" title="Total students">
               <Users />
-              {String(stats.idle).padStart(2, "0")}
+              {String(students.length).padStart(2, "0")}
             </span>
           </div>
 
