@@ -4,10 +4,15 @@ import { useOutletContext } from "react-router";
 import { StudentTile } from "../../components/StudentTile";
 import { StatusBadge } from "../../components/StatusBadge";
 import { WaitingRoomBadge } from "../../components/WaitingRoomBadge";
-import { IconLayoutGrid as LayoutGrid, IconBinoculars as Monitor, IconEyeCheck as EyeCheck, IconEyeX as EyeX, IconUsers as Users } from "@tabler/icons-react";
+import {
+  IconLayoutGrid as LayoutGrid,
+  IconBinoculars as Monitor,
+  IconEyeCheck as EyeCheck,
+  IconEyeX as EyeX,
+  IconUser as User,
+} from "@tabler/icons-react";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
-import { Skeleton } from "../../components/ui/skeleton";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
 import { useTimeFormat } from "../../utils/timeFormat";
 import {
@@ -17,6 +22,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../components/ui/dialog";
+import "./StudentMonitor.css";
 
 export function StudentMonitor() {
   const { sessionInfo, pendingRejoins, handleApproveRejoin, handleDenyRejoin } = useOutletContext();
@@ -101,18 +107,15 @@ export function StudentMonitor() {
     all: students.length,
     active: students.filter((s) => deriveConnectionStatus(s, { useActive: true }) === "active").length,
     idle: students.filter((s) => deriveConnectionStatus(s, { useActive: true }) === "idle").length,
-    offline: 0,
   };
 
   if (!sessionInfo) {
     return (
-      <div className="h-full flex items-center justify-center bg-bg-base">
-        <div className="text-center p-8">
-          <Monitor className="w-[72px] h-[72px] text-text-muted mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-text-primary mb-1">
-            No Active Session
-          </h2>
-          <p className="text-sm text-text-muted max-w-sm mx-auto">
+      <div className="sm-page">
+        <div className="sm-state sm-state--fill">
+          <Monitor />
+          <h2 className="sm-state__title">No active session</h2>
+          <p className="sm-state__text">
             Start a broadcast session first to monitor student activity.
           </p>
         </div>
@@ -124,108 +127,80 @@ export function StudentMonitor() {
     (r) => r.session_id === sessionInfo.id
   );
 
+  const segments = [
+    { key: "all", label: "All", count: stats.all, Icon: LayoutGrid },
+    { key: "active", label: "Viewing", count: stats.active, Icon: EyeCheck },
+    { key: "idle", label: "Not Viewing", count: stats.idle, Icon: EyeX },
+  ];
+
   return (
-    <div className="h-full flex flex-col bg-bg-base">
-      {/* Top Bar — binoculars + title on the left; Waiting Room / total
-          students / filter pills on the right. No panel background of its
-          own — a floating <hr> below it is the only separator, instead of a
-          filled/bordered box. */}
-      <div className="px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-          <Monitor className="w-5 h-5 text-accent-500" />
-          Student Monitor
+    <div className="sm-page">
+      {/* Header — title on the left; count chips + filter segments on the
+          right, over a single hairline divider (no panel of its own). */}
+      <header className="sm-header">
+        <h1 className="sm-title">
+          <Monitor />
+          Student monitor
         </h1>
 
-        <div className="flex items-center gap-2.5">
+        <div className="sm-controls">
           <WaitingRoomBadge
             pendingRejoins={waitingStudents}
             onApprove={handleApproveRejoin}
             onDeny={handleDenyRejoin}
             align="right"
           />
-          <div className="flex items-center gap-1.5 h-[29px] px-2.5 bg-bg-surface rounded-full text-xs text-text-secondary font-medium">
-            <Users className="w-4 h-4 text-accent-500" />
-            <span className="tnum">{students.length}</span>
+
+          <div className="sm-counts">
+            <span className="sm-chip" title="Not viewing">
+              <User />
+              {String(stats.idle).padStart(2, "0")}
+            </span>
           </div>
 
-          {/* Filter segmented control — bordered outline (no fill), 47px
-              tall, 16px radius. Only the ACTIVE segment gets its own solid
-              highlight pill (#8f5ce1, 30px tall, 9px radius); inactive
-              segments sit directly on the transparent strip with no box of
-              their own. */}
-          <div className="flex items-center gap-1 h-[47px] px-2 rounded-[16px] border border-border">
-            <button
-              onClick={() => setFilter("all")}
-              aria-pressed={filter === "all"}
-              className={`flex items-center gap-1.5 h-[30px] px-3 rounded-[9px] text-sm font-semibold transition-colors duration-150 ${
-                filter === "all"
-                  ? "bg-[#8f5ce1] text-white"
-                  : "text-text-secondary"
-              }`}
-            >
-              <LayoutGrid className="w-4 h-4" />
-              All <span className="opacity-60">|</span> <span className="tnum">{stats.all}</span>
-            </button>
-            <button
-              onClick={() => setFilter("active")}
-              aria-pressed={filter === "active"}
-              className={`flex items-center gap-1.5 h-[30px] px-3 rounded-[9px] text-sm font-medium transition-colors duration-150 ${
-                filter === "active"
-                  ? "bg-[#8f5ce1] text-white"
-                  : "text-text-secondary"
-              }`}
-            >
-              <EyeCheck className="w-4 h-4" />
-              Viewing <span className="opacity-60">|</span> <span className="tnum">{stats.active}</span>
-            </button>
-            <button
-              onClick={() => setFilter("idle")}
-              aria-pressed={filter === "idle"}
-              className={`flex items-center gap-1.5 h-[30px] px-3 rounded-[9px] text-sm font-medium transition-colors duration-150 ${
-                filter === "idle"
-                  ? "bg-[#8f5ce1] text-white"
-                  : "text-text-secondary"
-              }`}
-            >
-              <EyeX className="w-4 h-4" />
-              Not Viewing <span className="opacity-60">|</span> <span className="tnum">{stats.idle}</span>
-            </button>
+          <div className="sm-filters" role="group" aria-label="Filter students">
+            {segments.map(({ key, label, count, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFilter(key)}
+                aria-pressed={filter === key}
+                className={`sm-seg${filter === key ? " is-active" : ""}`}
+              >
+                <Icon />
+                {label}
+                <span className="sm-seg__div">|</span>
+                <span className="sm-seg__count">{count}</span>
+              </button>
+            ))}
           </div>
         </div>
-      </div>
-      <hr className="mx-6 border-t border-border" />
+      </header>
 
-      {/* Student Grid — fixed 4 columns, matching the design. */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="sm-scroll">
         {loading ? (
-          <div className="grid gap-3 justify-start [grid-template-columns:repeat(auto-fill,276.7928px)]">
+          <div className="sm-grid">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-[80.6809px] w-[276.7928px] rounded-[19.745px]" />
+              <div key={i} className="sm-skeleton" />
             ))}
           </div>
         ) : error ? (
-          <div className="p-8 bg-bg-surface border border-accent-critical/25 rounded-lg flex flex-col items-center justify-center gap-3 py-16">
-            <p className="text-sm text-text-secondary">Couldn't load the student roster.</p>
-            <button
-              type="button"
-              onClick={fetchStudents}
-              className="px-4 py-2 bg-accent-700 hover:bg-accent-700/90 text-white text-sm font-medium rounded-[var(--radius-md)] transition-[transform,background-color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-            >
+          <div className="sm-state">
+            <p className="sm-state__text">Couldn&apos;t load the student roster.</p>
+            <button type="button" onClick={fetchStudents} className="sm-retry">
               Try again
             </button>
           </div>
         ) : students.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 py-16">
-            <Monitor className="w-14 h-14 text-text-muted" />
-            <p className="text-base font-medium text-text-primary">
-              No students connected yet
-            </p>
-            <p className="text-sm text-text-muted">
+          <div className="sm-state sm-state--fill">
+            <Monitor />
+            <p className="sm-state__title">No students connected yet</p>
+            <p className="sm-state__text">
               Students will appear here once they join your session.
             </p>
           </div>
         ) : (
-          <div className="grid gap-3 justify-start [grid-template-columns:repeat(auto-fill,276.7928px)]">
+          <div className="sm-grid">
             {filteredStudents.map((student) => {
               const tileStudent = {
                 id: student.student_id,
@@ -246,13 +221,7 @@ export function StudentMonitor() {
             })}
 
             {filteredStudents.length === 0 && students.length > 0 && (
-              <div className="col-span-full flex items-center justify-center h-64">
-                <div className="text-center">
-                  <p className="text-text-muted">
-                    No students match the active filter
-                  </p>
-                </div>
-              </div>
+              <div className="sm-empty-filter">No students match the active filter</div>
             )}
           </div>
         )}
