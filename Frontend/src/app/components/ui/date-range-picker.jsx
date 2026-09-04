@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   IconCalendarEvent as CalendarIcon,
   IconChevronDown as ChevronDown,
   IconChevronLeft as ChevronLeft,
   IconChevronRight as ChevronRight,
+  IconChevronUp as ChevronUp,
+  IconClock as ClockIcon,
 } from "@tabler/icons-react";
 import { cn } from "./utils";
 import { Button } from "./button";
@@ -478,6 +481,385 @@ export function DateMultiPicker({ value, onChange, disabled = false, className }
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── Single date + time picker ────────────────────────────────────────────
+// Same trigger/popover chrome as DateMultiPicker above (this file's one
+// calendar language), but single-day selection plus an HH:MM stepper
+// instead of a native <input type="datetime-local"> — this app doesn't use
+// any browser-default calendar/time chrome anywhere else, so this one
+// shouldn't either.
+
+function toLocalDateTimeValue(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+function parseLocalDateTimeValue(v) {
+  if (!v) return null;
+  const [datePart, timePart] = v.split("T");
+  if (!datePart) return null;
+  const [y, m, d] = datePart.split("-").map(Number);
+  const [hh, mm] = (timePart || "00:00").split(":").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, hh || 0, mm || 0);
+}
+function formatDateTimeLabel(date) {
+  return date.toLocaleString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+function buildDateTimePresets() {
+  const now = new Date();
+  const inOneHour = new Date(now.getTime() + 60 * 60 * 1000);
+  const tomorrow9am = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0);
+  const tomorrowSameTime = new Date(
+    now.getFullYear(), now.getMonth(), now.getDate() + 1, now.getHours(), now.getMinutes()
+  );
+  return [
+    { label: "In 1 hour", date: inOneHour },
+    { label: "Tomorrow, 9:00 AM", date: tomorrow9am },
+    { label: "Tomorrow, this time", date: tomorrowSameTime },
+  ];
+}
+
+// A compact HH / MM stepper — the digits are directly editable, the
+// chevrons nudge by 1. Deliberately not a native <input type="number">, so
+// there's no browser spinner chrome to fight.
+function TimeUnitStepper({ label, value, max, onChange }) {
+  const commit = (raw) => {
+    const n = parseInt(String(raw).replace(/\D/g, ""), 10);
+    if (Number.isNaN(n)) return;
+    onChange(Math.min(max, Math.max(0, n)));
+  };
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em]">{label}</span>
+      <div className="flex items-center gap-1">
+        <input
+          type="text"
+          inputMode="numeric"
+          value={pad2(value)}
+          onChange={(e) => commit(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          className="w-9 h-8 text-center rounded-[var(--radius-sm)] bg-bg-base border border-border text-text-primary text-sm tnum font-semibold focus:outline-none focus:border-accent-info"
+        />
+        <div className="flex flex-col">
+          <button
+            type="button"
+            onClick={() => onChange(value + 1 > max ? 0 : value + 1)}
+            aria-label={`Increase ${label.toLowerCase()}`}
+            className="w-5 h-4 flex items-center justify-center rounded-t-[3px] border border-b-0 border-border text-text-muted hover:text-text-primary hover:bg-bg-surface-3 transition-colors duration-150 cursor-pointer"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(value - 1 < 0 ? max : value - 1)}
+            aria-label={`Decrease ${label.toLowerCase()}`}
+            className="w-5 h-4 flex items-center justify-center rounded-b-[3px] border border-border text-text-muted hover:text-text-primary hover:bg-bg-surface-3 transition-colors duration-150 cursor-pointer"
+          >
+            <ChevronDown className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A single date + time trigger opening the same two-pane popover as
+ * DateMultiPicker (quick presets left, a real calendar right) plus an
+ * HH:MM stepper under the grid. `value`/`onChange` use the same local
+ * "YYYY-MM-DDTHH:mm" string an <input type="datetime-local"> produces, so
+ * it drops in without touching how the caller stores or validates it.
+ */
+export function DateTimePicker({
+  value,
+  onChange,
+  min,
+  disabled = false,
+  className,
+  placeholder = "Pick a date & time",
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = useMemo(() => parseLocalDateTimeValue(value), [value]);
+  const minDate = useMemo(() => parseLocalDateTimeValue(min), [min]);
+  const minISO = minDate ? toISO(minDate) : null;
+
+  const [viewMonth, setViewMonth] = useState(() => {
+    const base = selected || minDate || new Date();
+    return new Date(base.getFullYear(), base.getMonth(), 1);
+  });
+  const [draftDateISO, setDraftDateISO] = useState(() => (selected ? toISO(selected) : null));
+  const [draftHour, setDraftHour] = useState(() => (selected ? selected.getHours() : minDate ? minDate.getHours() : 9));
+  const [draftMinute, setDraftMinute] = useState(() => (selected ? selected.getMinutes() : 0));
+  // Rendered in a portal (see below) so a scroll-clipping ancestor — this
+  // trigger commonly sits inside a rounded, overflow-hidden card — can't cut
+  // the popover off. Position is computed from the trigger's own rect.
+  const [popoverPos, setPopoverPos] = useState(null); // { top, left, width } in fixed viewport coords
+
+  const [shakeISO, setShakeISO] = useState(null);
+  const shakeTimeoutRef = useRef(null);
+  const triggerShake = (iso) => {
+    if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+    setShakeISO(iso);
+    shakeTimeoutRef.current = setTimeout(() => setShakeISO(null), 600);
+  };
+  useEffect(() => () => clearTimeout(shakeTimeoutRef.current), []);
+
+  const containerRef = useRef(null);
+  const popoverRef = useRef(null);
+  const presets = useMemo(() => buildDateTimePresets(), [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointer = (e) => {
+      if (
+        containerRef.current && !containerRef.current.contains(e.target) &&
+        popoverRef.current && !popoverRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    const handleKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    // The popover is fixed-positioned from a one-time measurement — if the
+    // page scrolls underneath it, close rather than let it drift off-trigger.
+    const handleScroll = (e) => {
+      if (popoverRef.current && popoverRef.current.contains(e.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointer);
+    document.addEventListener("keydown", handleKey);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      document.removeEventListener("keydown", handleKey);
+      window.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [open]);
+
+  const openPicker = () => {
+    if (disabled) return;
+    const base = selected || minDate || new Date();
+    setDraftDateISO(selected ? toISO(selected) : null);
+    setDraftHour(selected ? selected.getHours() : minDate ? minDate.getHours() : 9);
+    setDraftMinute(selected ? selected.getMinutes() : 0);
+    setViewMonth(new Date(base.getFullYear(), base.getMonth(), 1));
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const width = Math.min(440, window.innerWidth * 0.92);
+      let left = rect.left;
+      if (left + width > window.innerWidth - 8) left = window.innerWidth - 8 - width;
+      if (left < 8) left = 8;
+      let top = rect.bottom + 8;
+      const estHeight = 420;
+      if (top + estHeight > window.innerHeight - 8) top = Math.max(8, rect.top - estHeight - 8);
+      setPopoverPos({ top, left, width });
+    }
+    setOpen(true);
+  };
+
+  const cells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
+
+  const applyPreset = (preset) => {
+    setDraftDateISO(toISO(preset.date));
+    setDraftHour(preset.date.getHours());
+    setDraftMinute(preset.date.getMinutes());
+    setViewMonth(new Date(preset.date.getFullYear(), preset.date.getMonth(), 1));
+  };
+
+  const handleApply = () => {
+    if (!draftDateISO) return;
+    const [y, m, d] = draftDateISO.split("-").map(Number);
+    onChange(toLocalDateTimeValue(new Date(y, m - 1, d, draftHour, draftMinute)));
+    setOpen(false);
+  };
+  const handleCancel = () => setOpen(false);
+  const handleClear = () => {
+    onChange("");
+    setOpen(false);
+  };
+
+  const label = selected ? formatDateTimeLabel(selected) : placeholder;
+
+  return (
+    <div ref={containerRef} className={cn("relative", className)}>
+      <button
+        type="button"
+        onClick={() => (open ? setOpen(false) : openPicker())}
+        disabled={disabled}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className={cn(
+          "flex items-center gap-2 h-9 w-full px-3 rounded-[var(--radius-md)] border bg-bg-base text-left transition-colors duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+          open
+            ? "border-accent-info/60 ring-1 ring-accent-info/25"
+            : "border-border hover:border-border-hover hover:bg-bg-surface-3",
+          "focus-visible:outline-none focus-visible:border-accent-info focus-visible:ring-2 focus-visible:ring-accent-info/30"
+        )}
+      >
+        <CalendarIcon className="w-4 h-4 text-accent-info shrink-0" />
+        <span
+          className={cn(
+            "text-[length:var(--text-sm)] tnum truncate",
+            selected ? "text-text-primary font-medium" : "text-text-muted"
+          )}
+        >
+          {label}
+        </span>
+        <ChevronDown
+          className={cn(
+            "w-3.5 h-3.5 text-text-muted ml-auto shrink-0 transition-transform duration-200",
+            open && "rotate-180"
+          )}
+        />
+      </button>
+
+      {open && popoverPos && createPortal(
+        <div
+          ref={popoverRef}
+          role="dialog"
+          aria-label="Pick a date and time"
+          className="fixed z-50 flex flex-col sm:flex-row bg-bg-elevated border border-border rounded-[var(--radius-lg)] shadow-[var(--shadow-dropdown)] overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top select-none"
+          style={{ top: popoverPos.top, left: popoverPos.left, width: popoverPos.width }}
+        >
+          <div className="flex sm:flex-col gap-1 p-2 sm:w-[128px] sm:shrink-0 border-b sm:border-b-0 sm:border-r border-border overflow-x-auto sm:overflow-visible">
+            {presets.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => applyPreset(p)}
+                className="btn-press shrink-0 whitespace-nowrap text-left px-2.5 py-1.5 rounded-[var(--radius-sm)] text-[length:var(--text-xs)] font-medium text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary transition-colors duration-150 cursor-pointer"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 p-3 min-w-0">
+            <div className="flex items-center justify-between mb-1 px-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                aria-label="Previous month"
+                className="btn-press w-7 h-7 flex items-center justify-center rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-surface-3 transition-colors duration-150 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-[length:var(--text-sm)] font-semibold text-text-primary tnum">
+                {viewMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                aria-label="Next month"
+                className="btn-press w-7 h-7 flex items-center justify-center rounded-full text-text-secondary hover:text-text-primary hover:bg-bg-surface-3 transition-colors duration-150 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7">
+              {WEEKDAY_LABELS.map((d) => (
+                <div key={d} className="text-[10px] font-semibold uppercase tracking-wider text-text-muted text-center py-1">
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-0.5">
+              {cells.map((cell) => {
+                const selectedCell = draftDateISO === cell.iso;
+                const blocked = minISO ? cell.iso < minISO : cell.isPast;
+                const isShaking = shakeISO === cell.iso;
+                return (
+                  <button
+                    key={cell.iso}
+                    type="button"
+                    onClick={() => {
+                      if (blocked) {
+                        triggerShake(cell.iso);
+                        return;
+                      }
+                      setDraftDateISO(cell.iso);
+                    }}
+                    aria-label={
+                      fromISO(cell.iso).toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      }) + (blocked ? " (unavailable)" : "")
+                    }
+                    aria-pressed={selectedCell}
+                    className="relative h-8 flex items-center justify-center cursor-pointer"
+                  >
+                    {cell.isToday && !selectedCell && (
+                      <span className="absolute inset-1 rounded-full border border-accent-info/50" aria-hidden="true" />
+                    )}
+                    <span
+                      className={cn(
+                        "relative z-10 w-7 h-7 flex items-center justify-center rounded-full text-[length:var(--text-xs)] tnum transition-[background-color,color,transform] duration-100",
+                        blocked ? "text-text-muted/50" : !cell.inCurrentMonth && "text-text-secondary",
+                        cell.inCurrentMonth && !blocked && !selectedCell && "text-text-primary hover:bg-bg-surface-3",
+                        selectedCell && "bg-accent-info text-white font-semibold",
+                        isShaking && "!bg-accent-critical/20 !text-accent-critical"
+                      )}
+                    >
+                      {cell.day}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-border flex items-center justify-center gap-2">
+              <ClockIcon className="w-4 h-4 text-text-muted shrink-0" />
+              <TimeUnitStepper label="Hour" value={draftHour} max={23} onChange={setDraftHour} />
+              <span className="text-text-muted font-semibold pb-4">:</span>
+              <TimeUnitStepper label="Min" value={draftMinute} max={59} onChange={setDraftMinute} />
+            </div>
+
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
+              <button
+                type="button"
+                onClick={handleClear}
+                className="btn-press text-[length:var(--text-xs)] font-medium text-text-muted hover:text-accent-critical transition-colors duration-150 cursor-pointer px-1"
+              >
+                Clear
+              </button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                  className="h-8 text-[length:var(--text-xs)] border-border text-text-secondary hover:bg-bg-surface-3"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleApply}
+                  disabled={!draftDateISO}
+                  className="h-8 text-[length:var(--text-xs)] bg-accent-info hover:bg-accent-info/90 text-white transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97]"
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

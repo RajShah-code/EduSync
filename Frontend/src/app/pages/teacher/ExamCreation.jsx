@@ -1,12 +1,13 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { useOutletContext, useNavigate } from "react-router";
+import { useOutletContext, useNavigate, useLocation } from "react-router";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
+import { DateTimePicker } from "../../components/ui/date-range-picker";
 import { cn } from "../../components/ui/utils";
 import {
   Dialog,
@@ -27,7 +28,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "../../components/ui/alert-dialog";
-import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3, IconPencilQuestion as PencilQuestion, IconCircleDashedCheck as CircleDashedCheck, IconArrowsSort as ArrowsSort, IconCalendarClock as CalendarClock } from "@tabler/icons-react";
+import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconMenu2 as Menu2, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3, IconPencilQuestion as PencilQuestion, IconCircleDashedCheck as CircleDashedCheck, IconArrowsSort as ArrowsSort, IconCalendarClock as CalendarClock } from "@tabler/icons-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 
@@ -461,13 +462,17 @@ export function ExamCreation() {
   const context = useOutletContext();
   const sessionInfo = context?.sessionInfo ?? null;
   const navigate = useNavigate();
+  const location = useLocation();
   const prefersReducedMotion = useReducedMotion();
 
-  // The page is the Manage Exams list; the creation/edit wizard lives in a
-  // right-side Sheet ("drawer") opened from the header or a row action.
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // The page: a Create/Manage tab strip, same pattern as Task Manager's
+  // Assign/Active toggle. "Create" renders the wizard inline (not a modal);
+  // "Manage" renders the exams list.
+  const [activeTab, setActiveTab] = useState(
+    location.state?.tab === "manage" ? "manage" : "create"
+  ); // "create" | "manage"
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
-  const [drawerIsCreate, setDrawerIsCreate] = useState(true); // header label only
+  const [isNewExamFlow, setIsNewExamFlow] = useState(true); // header label only: "Create Exam" vs "Manage Exam #id"
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -576,11 +581,12 @@ export function ExamCreation() {
     }
   };
 
-  // The list is the page now — load it on mount, and refresh it whenever the
-  // wizard drawer closes (a new draft may have been created / edited).
+  // Load the list whenever the Manage tab becomes active.
   useEffect(() => {
-    fetchMyExams();
-  }, []);
+    if (activeTab === "manage") {
+      fetchMyExams();
+    }
+  }, [activeTab]);
 
   // Any narrowing of the list (status filter, search, sort, page size) drops
   // back to page 1 so the user never lands on a now-empty page.
@@ -588,7 +594,7 @@ export function ExamCreation() {
     setManagePage(1);
   }, [manageFilter, manageSearch, manageSort, managePageSize]);
 
-  // ── Wizard drawer open/close ──────────────────────────────────────────────
+  // ── Create/Manage tab switching ─────────────────────────────────────────
   const resetWizard = () => {
     setStep(1);
     setSettings({ title: "", question_type: "mcq", num_sets: 2, time_limit_minutes: 30, violation_limit: 3 });
@@ -604,40 +610,40 @@ export function ExamCreation() {
     setClassSearch("");
   };
 
-  const openCreateDrawer = () => {
-    resetWizard();
-    setDrawerIsCreate(true);
-    setDrawerOpen(true);
-  };
-
-  // "Unsaved work" that a silent close would lose: a half-typed question, or a
-  // brand-new exam (step 1, not yet POSTed) with a title/classes entered.
-  // Once the draft exam exists on the server (step 2+), questions are persisted
-  // on add and closing just exits — same as the existing "Save as Draft".
+  // "Unsaved work" that switching tabs would silently lose: a half-typed
+  // question, or a brand-new exam (step 1, not yet POSTed) with a
+  // title/classes entered. Once the draft exam exists on the server
+  // (step 2+), questions are persisted on add and leaving just navigates —
+  // same as the existing "Save as Draft".
   const wizardIsDirty = () => {
     if (draft) return true;
     if (step === 1 && !examId && (settings.title.trim() || selectedClassIds.length > 0)) return true;
     return false;
   };
 
-  const closeDrawer = () => {
-    setConfirmCloseOpen(false);
-    setDrawerOpen(false);
-    fetchMyExams();
+  // The "Create Exam" tab always starts a fresh blank exam — clicking it
+  // again while already there is a no-op so it can never wipe progress.
+  const openCreateTab = () => {
+    if (activeTab === "create") return;
+    resetWizard();
+    setIsNewExamFlow(true);
+    setActiveTab("create");
   };
 
-  // Radix calls this with `false` on X / overlay / Escape. Block the close and
-  // raise the confirm dialog if there's unsaved work; otherwise close cleanly.
-  const handleDrawerOpenChange = (open) => {
-    if (open) {
-      setDrawerOpen(true);
-      return;
-    }
+  // The "Manage Exams" tab raises the confirm dialog instead of silently
+  // discarding unsaved wizard work; otherwise it switches straight over.
+  const requestManageTab = () => {
+    if (activeTab === "manage") return;
     if (wizardIsDirty()) {
       setConfirmCloseOpen(true);
       return;
     }
-    closeDrawer();
+    setActiveTab("manage");
+  };
+
+  const confirmDiscardToManage = () => {
+    setConfirmCloseOpen(false);
+    setActiveTab("manage");
   };
 
   const handleManageExam = async (exam) => {
@@ -675,10 +681,10 @@ export function ExamCreation() {
         setSetQuestions(questionsMap);
         setActiveSet(1);
 
-        // Land on Step 3 (Review & Start) inside the drawer
+        // Land on Step 3 (Review & Start) on the Create tab
         setStep(3);
-        setDrawerIsCreate(false);
-        setDrawerOpen(true);
+        setIsNewExamFlow(false);
+        setActiveTab("create");
       } else {
         toast.error("Failed to load exam details");
       }
@@ -922,8 +928,7 @@ export function ExamCreation() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
       toast.success(`Scheduled — the waiting room opens automatically at ${when.toLocaleString()}`);
-      setDrawerOpen(false);
-      fetchMyExams();
+      setActiveTab("manage");
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -932,10 +937,9 @@ export function ExamCreation() {
   };
 
   // Step 2 "Save as Draft" — questions are already persisted on add, so this
-  // just exits the drawer (no unsaved-changes prompt).
+  // just returns to the list (no unsaved-changes prompt).
   const handleSaveDraftAndClose = () => {
-    setDrawerOpen(false);
-    fetchMyExams();
+    setActiveTab("manage");
   };
 
   const totalQuestions = Object.values(setQuestions).reduce(
@@ -1008,43 +1012,59 @@ export function ExamCreation() {
 
   return (
     <PageShell>
-      {/* Header — the page is the Manage Exams list; "Create Exam" opens the
-          wizard in a right-side drawer. */}
+      {/* Header + page-mode tab strip — same segmented pattern as Task
+          Manager's Assign/Active Tasks toggle. "Create" and "Manage" are two
+          fixed, parallel views of this page. */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-4">
         <div>
           <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">Exam Manager</h1>
-          <p className="text-sm text-text-muted mt-0.5 tnum">
-            {myExams.length} exam{myExams.length === 1 ? "" : "s"}
-          </p>
         </div>
 
-        <Button onClick={openCreateDrawer} className="flex-shrink-0 bg-accent-600 hover:bg-accent-600/90 text-white">
-          <SquarePlus className="w-4 h-4" strokeWidth={1.75} />
-          Create Exam
-        </Button>
+        <div className="flex bg-bg-surface p-1 rounded-[var(--radius-md)] border border-border flex-shrink-0">
+          <button
+            type="button"
+            onClick={openCreateTab}
+            aria-pressed={activeTab === "create"}
+            className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
+              activeTab === "create"
+                ? "bg-accent-600 text-white"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            <SquarePlus className="w-4 h-4" strokeWidth={1.75} />
+            Create Exam
+          </button>
+          <button
+            type="button"
+            onClick={requestManageTab}
+            aria-pressed={activeTab === "manage"}
+            className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
+              activeTab === "manage"
+                ? "bg-accent-600 text-white"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            <Menu2 className="w-4 h-4" strokeWidth={1.75} />
+            Manage Exams ({myExams.length})
+          </button>
+        </div>
       </div>
 
-      {/* ── Wizard modal — same Step 1 → 2 → 3 flow, now in a centered Dialog
-          styled after LiveBroadcast's Session Setup Modal (rounded-[27px],
-          bg-bg-surface, notched inputs, pill buttons). data-role="teacher"
-          keeps the accent tokens violet inside the portal. ── */}
-      <Dialog open={drawerOpen} onOpenChange={handleDrawerOpenChange}>
-        <DialogContent
-          data-role="teacher"
-          className="bg-bg-surface border-border text-text-primary sm:max-w-[900px] rounded-[27px] p-0 gap-0 max-h-[88vh] flex flex-col overflow-hidden"
-        >
-          <DialogHeader className="px-6 pt-6 pb-5 border-b border-border shrink-0 text-left gap-0">
-            <DialogTitle className="text-text-primary flex items-center gap-2">
-              <PencilQuestion className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
-              {drawerIsCreate ? "Create Exam" : `Manage Exam #${examId}`}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Three-step exam creation wizard: settings, questions, review.
-            </DialogDescription>
-            <WizardStepper step={step} />
-          </DialogHeader>
+      {activeTab === "create" ? (
+      /* ── Wizard panel — same Step 1 → 2 → 3 flow, styled after
+          LiveBroadcast's Session Setup Modal (rounded-[27px], bg-bg-surface,
+          notched inputs, pill buttons) but inline on the page now, not a
+          floating Dialog. ── */
+      <div className="bg-bg-surface border border-border rounded-[27px] max-w-[960px] overflow-hidden">
+        <div className="px-6 pt-6 pb-5 border-b border-border">
+          <h2 className="text-text-primary flex items-center gap-2 text-base font-semibold">
+            <PencilQuestion className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+            {isNewExamFlow ? "Create Exam" : `Manage Exam #${examId}`}
+          </h2>
+          <WizardStepper step={step} />
+        </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+          <div className="px-6 py-5">
             <motion.div
               key={step}
               initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
@@ -1314,20 +1334,41 @@ export function ExamCreation() {
                       )}
                     </div>
 
-                    <div className="flex gap-2">
-                      {(settings.question_type === "mcq" || settings.question_type === "both") && (
-                        <Button variant="outline" size="sm" onClick={() => openNewDraft("mcq")}>
-                          <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                          Add MCQ
-                        </Button>
-                      )}
-                      {(settings.question_type === "code" || settings.question_type === "both") && (
-                        <Button variant="outline" size="sm" onClick={() => openNewDraft("code")}>
-                          <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                          Add Code
-                        </Button>
-                      )}
-                    </div>
+                    {/* Add question — a single "+" continuation of the list
+                        above (not a separate button bar). One type only ->
+                        one control; "Both" -> two small icon choices so it's
+                        still one click to the right editor. */}
+                    {settings.question_type === "both" ? (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openNewDraft("mcq")}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-3 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-secondary hover:text-accent-500 hover:border-accent-500/40 transition-colors duration-150 text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" strokeWidth={1.75} />
+                          <Checkbox className="w-4 h-4" strokeWidth={1.75} />
+                          MCQ
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openNewDraft("code")}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-3 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-secondary hover:text-accent-500 hover:border-accent-500/40 transition-colors duration-150 text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" strokeWidth={1.75} />
+                          <Code2 className="w-4 h-4" strokeWidth={1.75} />
+                          Code
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => openNewDraft(settings.question_type)}
+                        className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-secondary hover:text-accent-500 hover:border-accent-500/40 transition-colors duration-150 text-sm font-medium"
+                      >
+                        <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                        Add question
+                      </button>
+                    )}
                   </div>
 
                   <aside className="space-y-2 text-sm lg:border-l lg:border-border lg:pl-6">
@@ -1396,16 +1437,17 @@ export function ExamCreation() {
 
                         {scheduleMode && (
                           <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-3">
-                            <NotchedField icon={CalendarClock} hint="opens automatically at">
-                              <input
-                                id="exam-schedule-at"
-                                type="datetime-local"
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-medium text-text-muted uppercase tracking-[0.08em] ml-1">
+                                Opens automatically at
+                              </span>
+                              <DateTimePicker
                                 value={scheduledAtLocal}
+                                onChange={setScheduledAtLocal}
                                 min={toLocalInputValue(new Date(Date.now() + 60000))}
-                                onChange={(e) => setScheduledAtLocal(e.target.value)}
-                                className={cn(notchedInputClass, "tnum pr-3 [color-scheme:dark]")}
+                                placeholder="Pick a date & time"
                               />
-                            </NotchedField>
+                            </div>
                             <div className="flex flex-col gap-2">
                               <PillButton
                                 icon={Check}
@@ -1497,10 +1539,9 @@ export function ExamCreation() {
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Manage Exams list — the page itself ── */}
+        </div>
+      ) : (
+      /* ── Manage Exams list ── */
       <div className="space-y-4">
           {/* Status filter — the same pill/count chip pattern used for the
               live exam roster filter (ActiveExam.jsx), not the reference's
@@ -1654,6 +1695,7 @@ export function ExamCreation() {
             </div>
           )}
       </div>
+      )}
 
       {/* ── Question Editor Dialog — type-aware modal shell, mirroring the
           pattern built for Task Assignment: one shared dialog whose body
@@ -1693,35 +1735,62 @@ export function ExamCreation() {
 
               {isDraftMcq && (
                 <div className="space-y-2">
-                  <Label>Options (select correct answer)</Label>
-                  {draft.options.map((opt, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setDraft({ ...draft, correct_option: i })}
-                        aria-label={`Mark option ${["A", "B", "C", "D"][i]} as correct`}
-                        aria-pressed={draft.correct_option === i}
-                        className={`w-5 h-5 rounded-full border-2 flex-shrink-0 transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95 ${
-                          draft.correct_option === i
-                            ? "border-accent-success bg-accent-success"
-                            : "border-border hover:border-accent-success/50"
-                        }`}
-                      />
-                      <Input
-                        value={opt}
-                        onChange={(e) => {
-                          const next = [...draft.options];
-                          next[i] = e.target.value;
-                          setDraft({ ...draft, options: next });
-                        }}
-                        placeholder={`Option ${["A", "B", "C", "D"][i]}`}
-                        className="bg-bg-base border-border"
-                      />
-                    </div>
-                  ))}
+                  <Label>Options — click a card to mark it the correct answer</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {draft.options.map((opt, i) => {
+                      const isCorrect = draft.correct_option === i;
+                      return (
+                        <div
+                          key={i}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setDraft({ ...draft, correct_option: i })}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setDraft({ ...draft, correct_option: i });
+                            }
+                          }}
+                          aria-pressed={isCorrect}
+                          aria-label={`Option ${["A", "B", "C", "D"][i]}${isCorrect ? " — correct answer" : ""}`}
+                          className={cn(
+                            "relative p-3 pr-8 rounded-[var(--radius-md)] border cursor-pointer transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98]",
+                            isCorrect
+                              ? "border-accent-success/60 bg-accent-success/10"
+                              : "border-border bg-bg-base hover:border-border-hover"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
+                              isCorrect ? "border-accent-success bg-accent-success" : "border-border"
+                            )}
+                            aria-hidden="true"
+                          >
+                            {isCorrect && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                          </span>
+                          <span className={cn("block text-[10px] font-bold uppercase tracking-wide mb-1", isCorrect ? "text-accent-success" : "text-text-muted")}>
+                            {["A", "B", "C", "D"][i]}
+                          </span>
+                          <input
+                            type="text"
+                            value={opt}
+                            onChange={(e) => {
+                              const next = [...draft.options];
+                              next[i] = e.target.value;
+                              setDraft({ ...draft, options: next });
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder={`Option ${["A", "B", "C", "D"][i]}`}
+                            className="w-full bg-transparent border-0 outline-none text-sm text-text-primary placeholder:text-text-muted"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                   <div className="flex items-center justify-between pt-1">
                     <p className="text-xs text-text-muted">
-                      Circle = correct answer (index {draft.correct_option})
+                      {["A", "B", "C", "D"][draft.correct_option]} is the correct answer
                     </p>
                     <span className="tnum text-xs px-2 py-0.5 bg-bg-base border border-border rounded-[var(--radius-sm)] text-text-secondary">
                       1 mark (auto)
@@ -1800,7 +1869,7 @@ export function ExamCreation() {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction
-              onClick={closeDrawer}
+              onClick={confirmDiscardToManage}
               className="bg-accent-critical hover:bg-accent-critical/90 text-white"
             >
               Discard &amp; close
