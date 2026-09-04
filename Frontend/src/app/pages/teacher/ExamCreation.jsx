@@ -9,14 +9,6 @@ import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { DateTimePicker } from "../../components/ui/date-range-picker";
 import { cn } from "../../components/ui/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../../components/ui/dialog";
 import { motion, useReducedMotion } from "motion/react";
 import {
   AlertDialog,
@@ -457,6 +449,166 @@ const emptyCode = () => ({
   language: "python",
   max_score: 10,
 });
+
+// A dashed divider with a circled "+" riding on it — the trailing control
+// that starts the next question. Same "notch" trick as NotchedField (paint
+// the badge's own background over the dashed line to break it), so it reads
+// as a continuation of the page's own vocabulary rather than a button bar.
+function DashedAddRow({ label, icon: Icon, onClick, className }) {
+  return (
+    <button type="button" onClick={onClick} className={cn("group relative flex items-center justify-center py-3", className)}>
+      <span
+        className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t-2 border-dashed border-border group-hover:border-accent-500/40 transition-colors duration-150"
+        aria-hidden="true"
+      />
+      <span className="relative z-10 flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full bg-bg-surface">
+        <span className="w-6 h-6 rounded-full border-2 border-dashed border-border bg-bg-surface flex items-center justify-center text-text-muted group-hover:text-accent-500 group-hover:border-accent-500/50 transition-colors duration-150">
+          <Plus className="w-3.5 h-3.5" strokeWidth={2.25} />
+        </span>
+        {label && (
+          <span className="flex items-center gap-1 text-xs font-medium text-text-muted group-hover:text-accent-500 transition-colors duration-150">
+            {Icon && <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />}
+            {label}
+          </span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+// Inline, in-page question composer. Renders in the exact spot the
+// question will live once saved — as just another (taller) row sharing the
+// list's own border/radius/background — instead of a separate modal, so
+// authoring a question never reads as a popup dropped onto the page.
+function QuestionComposer({ draft, setDraft, activeSet, onSave, onCancel, saving }) {
+  const isCode = draft.type === "code";
+  const isEdit = !!draft.id;
+
+  return (
+    <div className="p-4 bg-bg-base border border-accent-500/50 rounded-[var(--radius-md)] space-y-4">
+      <NotchedField icon={isCode ? Code2 : PencilQuestion}>
+        <input
+          type="text"
+          autoFocus
+          value={draft.question_text}
+          onChange={(e) => setDraft({ ...draft, question_text: e.target.value })}
+          placeholder={isCode ? "Question Title — e.g. Reverse a linked list" : "Enter Question"}
+          className={notchedInputClass}
+        />
+      </NotchedField>
+
+      {isCode && (
+        <NotchedField icon={Notes}>
+          <textarea
+            value={draft.description}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            placeholder="Description — the problem, constraints, expected input/output"
+            className="w-full bg-transparent border-0 outline-none px-4 py-3 text-sm text-text-primary placeholder:text-text-muted min-h-24 resize-y leading-relaxed"
+          />
+        </NotchedField>
+      )}
+
+      {!isCode && (
+        <div className="grid grid-cols-2 gap-2.5">
+          {draft.options.map((opt, i) => {
+            const letter = ["A", "B", "C", "D"][i];
+            const isCorrect = draft.correct_option === i;
+            return (
+              <div
+                key={i}
+                role="button"
+                tabIndex={0}
+                onClick={() => setDraft({ ...draft, correct_option: i })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDraft({ ...draft, correct_option: i });
+                  }
+                }}
+                aria-pressed={isCorrect}
+                aria-label={`Option ${letter}${isCorrect ? " — correct answer" : ""}`}
+                className={cn(
+                  "flex items-center gap-2 h-11 pl-4 pr-3 rounded-full border cursor-text transition-[background-color,border-color] duration-150 ease-[var(--ease-out-strong)]",
+                  isCorrect ? "border-accent-success/60 bg-accent-success/10" : "border-border bg-bg-surface hover:border-border-hover"
+                )}
+              >
+                <span className={cn("text-xs font-bold tnum shrink-0", isCorrect ? "text-accent-success" : "text-text-muted")}>
+                  {letter}.
+                </span>
+                <input
+                  type="text"
+                  value={opt}
+                  onChange={(e) => {
+                    const next = [...draft.options];
+                    next[i] = e.target.value;
+                    setDraft({ ...draft, options: next });
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  placeholder={`Option ${letter}`}
+                  className="flex-1 min-w-0 bg-transparent border-0 outline-none text-sm text-text-primary placeholder:text-text-muted"
+                />
+                {isCorrect && <Check className="w-4 h-4 text-accent-success shrink-0" strokeWidth={2.5} />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {isCode && (
+        <div className="flex items-center gap-5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setDraft({ ...draft, language: lang })}
+                className={cn(
+                  "px-3 py-1 rounded-[var(--radius-sm)] text-xs tnum border transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95]",
+                  draft.language === lang
+                    ? "border-accent-500/60 bg-accent-500/10 text-accent-500"
+                    : "border-border text-text-muted hover:border-border-hover"
+                )}
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 text-xs text-text-muted ml-auto">
+            Marks
+            <Input
+              type="number"
+              min={1}
+              max={100}
+              value={draft.max_score ?? 10}
+              onChange={(e) => setDraft({ ...draft, max_score: parseInt(e.target.value) || 1 })}
+              className="h-8 w-16 bg-bg-surface border-border tnum text-sm"
+            />
+          </label>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between pt-0.5">
+        <p className="text-xs text-text-muted">
+          {isCode
+            ? `${draft.max_score ?? 10} mark${(draft.max_score ?? 10) === 1 ? "" : "s"} · manual grading`
+            : `${["A", "B", "C", "D"][draft.correct_option]} is the correct answer`}
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-xs font-medium text-text-muted hover:text-text-primary transition-colors duration-150"
+          >
+            Cancel
+          </button>
+          <PillButton icon={isEdit ? Check : Plus} onClick={onSave} disabled={saving} loading={saving} className="h-8 px-3.5 text-xs">
+            {isEdit ? "Save changes" : `Add to Set ${activeSet}`}
+          </PillButton>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ExamCreation() {
   const context = useOutletContext();
@@ -947,9 +1099,6 @@ export function ExamCreation() {
     0
   );
 
-  const isDraftMcq = draft?.type === "mcq";
-  const isDraftCode = draft?.type === "code";
-
   const manageFilterCounts = {
     all: myExams.length,
     draft: myExams.filter((e) => manageFilterKeyOf(e.status) === "draft").length,
@@ -1286,6 +1435,22 @@ export function ExamCreation() {
 
                     <div className="space-y-2">
                       {(setQuestions[activeSet] || []).map((q, idx) => {
+                        // A question being edited swaps its own row for the
+                        // full composer, in place — editing never leaves
+                        // the page or pops a dialog over it.
+                        if (draft?.id === q.id) {
+                          return (
+                            <QuestionComposer
+                              key={q.id}
+                              draft={draft}
+                              setDraft={setDraft}
+                              activeSet={activeSet}
+                              onSave={handleUpdateQuestion}
+                              onCancel={() => setDraft(null)}
+                              saving={saving}
+                            />
+                          );
+                        }
                         const QIcon = q.type === "code" ? Code2 : CheckSquare;
                         return (
                           <div
@@ -1327,47 +1492,42 @@ export function ExamCreation() {
                         );
                       })}
 
-                      {(setQuestions[activeSet] || []).length === 0 && (
+                      {/* A new question in progress lives at the end of the
+                          list, in the exact spot it'll occupy once saved. */}
+                      {draft && !draft.id && (
+                        <QuestionComposer
+                          draft={draft}
+                          setDraft={setDraft}
+                          activeSet={activeSet}
+                          onSave={handleSaveQuestion}
+                          onCancel={() => setDraft(null)}
+                          saving={saving}
+                        />
+                      )}
+
+                      {!draft && (setQuestions[activeSet] || []).length === 0 && (
                         <div className="text-center py-10 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-muted text-sm">
                           No questions yet for Set {activeSet}
                         </div>
                       )}
                     </div>
 
-                    {/* Add question — a single "+" continuation of the list
-                        above (not a separate button bar). One type only ->
-                        one control; "Both" -> two small icon choices so it's
-                        still one click to the right editor. */}
-                    {settings.question_type === "both" ? (
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openNewDraft("mcq")}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-3 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-secondary hover:text-accent-500 hover:border-accent-500/40 transition-colors duration-150 text-sm font-medium"
-                        >
-                          <Plus className="w-4 h-4" strokeWidth={1.75} />
-                          <Checkbox className="w-4 h-4" strokeWidth={1.75} />
-                          MCQ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openNewDraft("code")}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-3 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-secondary hover:text-accent-500 hover:border-accent-500/40 transition-colors duration-150 text-sm font-medium"
-                        >
-                          <Plus className="w-4 h-4" strokeWidth={1.75} />
-                          <Code2 className="w-4 h-4" strokeWidth={1.75} />
-                          Code
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => openNewDraft(settings.question_type)}
-                        className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-secondary hover:text-accent-500 hover:border-accent-500/40 transition-colors duration-150 text-sm font-medium"
-                      >
-                        <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                        Add question
-                      </button>
+                    {/* Trailing "start the next question" control — a dashed
+                        line continuing the list with a circled "+" riding on
+                        it, not a separate button bar. Hidden while a
+                        question is already being composed. One type only ->
+                        one control; "Both" -> two, split by a divider, so
+                        it's still one click to the right kind of question. */}
+                    {!draft && (
+                      settings.question_type === "both" ? (
+                        <div className="flex items-center">
+                          <DashedAddRow icon={Checkbox} label="MCQ" onClick={() => openNewDraft("mcq")} className="flex-1" />
+                          <span className="text-text-muted/50 text-sm px-1 select-none" aria-hidden="true">|</span>
+                          <DashedAddRow icon={Code2} label="Code" onClick={() => openNewDraft("code")} className="flex-1" />
+                        </div>
+                      ) : (
+                        <DashedAddRow onClick={() => openNewDraft(settings.question_type)} className="w-full" />
+                      )
                     )}
                   </div>
 
@@ -1696,165 +1856,6 @@ export function ExamCreation() {
           )}
       </div>
       )}
-
-      {/* ── Question Editor Dialog — type-aware modal shell, mirroring the
-          pattern built for Task Assignment: one shared dialog whose body
-          switches by question type rather than two separate one-off forms. ── */}
-      <Dialog open={!!draft} onOpenChange={(open) => !open && setDraft(null)}>
-        <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-lg rounded-[27px] z-[60]">
-          <DialogHeader>
-            <DialogTitle className="text-text-primary flex items-center gap-2">
-              {isDraftCode ? <Code2 className="w-[18px] h-[18px] text-accent-500" /> : <CheckSquare className="w-[18px] h-[18px] text-accent-500" />}
-              {draft?.id ? "Edit" : "New"} {isDraftCode ? "Code" : "MCQ"} Question — Set {activeSet}
-            </DialogTitle>
-          </DialogHeader>
-
-          {draft && (
-            <div className="space-y-4 py-1">
-              <NotchedField icon={isDraftCode ? Code2 : PencilQuestion}>
-                <input
-                  type="text"
-                  value={draft.question_text}
-                  onChange={(e) => setDraft({ ...draft, question_text: e.target.value })}
-                  placeholder={isDraftCode ? "Question Title — e.g. Reverse a linked list" : "Question Text"}
-                  className={notchedInputClass}
-                />
-              </NotchedField>
-
-              {isDraftCode && (
-                <NotchedField icon={Notes}>
-                  <textarea
-                    id="code-description"
-                    value={draft.description}
-                    onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                    placeholder="Description — the problem, constraints, expected input/output"
-                    className="w-full bg-transparent border-0 outline-none px-4 py-3 text-sm text-text-primary placeholder:text-text-muted min-h-24 resize-y leading-relaxed"
-                  />
-                </NotchedField>
-              )}
-
-              {isDraftMcq && (
-                <div className="space-y-2">
-                  <Label>Options — click a card to mark it the correct answer</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {draft.options.map((opt, i) => {
-                      const isCorrect = draft.correct_option === i;
-                      return (
-                        <div
-                          key={i}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => setDraft({ ...draft, correct_option: i })}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setDraft({ ...draft, correct_option: i });
-                            }
-                          }}
-                          aria-pressed={isCorrect}
-                          aria-label={`Option ${["A", "B", "C", "D"][i]}${isCorrect ? " — correct answer" : ""}`}
-                          className={cn(
-                            "relative p-3 pr-8 rounded-[var(--radius-md)] border cursor-pointer transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98]",
-                            isCorrect
-                              ? "border-accent-success/60 bg-accent-success/10"
-                              : "border-border bg-bg-base hover:border-border-hover"
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "absolute top-2.5 right-2.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150",
-                              isCorrect ? "border-accent-success bg-accent-success" : "border-border"
-                            )}
-                            aria-hidden="true"
-                          >
-                            {isCorrect && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
-                          </span>
-                          <span className={cn("block text-[10px] font-bold uppercase tracking-wide mb-1", isCorrect ? "text-accent-success" : "text-text-muted")}>
-                            {["A", "B", "C", "D"][i]}
-                          </span>
-                          <input
-                            type="text"
-                            value={opt}
-                            onChange={(e) => {
-                              const next = [...draft.options];
-                              next[i] = e.target.value;
-                              setDraft({ ...draft, options: next });
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            placeholder={`Option ${["A", "B", "C", "D"][i]}`}
-                            className="w-full bg-transparent border-0 outline-none text-sm text-text-primary placeholder:text-text-muted"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <p className="text-xs text-text-muted">
-                      {["A", "B", "C", "D"][draft.correct_option]} is the correct answer
-                    </p>
-                    <span className="tnum text-xs px-2 py-0.5 bg-bg-base border border-border rounded-[var(--radius-sm)] text-text-secondary">
-                      1 mark (auto)
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {isDraftCode && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Language</Label>
-                    <div className="flex gap-2 mt-1 flex-wrap">
-                      {LANGUAGES.map((lang) => (
-                        <button
-                          key={lang}
-                          type="button"
-                          onClick={() => setDraft({ ...draft, language: lang })}
-                          className={`px-3 py-1 rounded-[var(--radius-sm)] text-xs tnum border transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.95] ${
-                            draft.language === lang
-                              ? "border-accent-500/60 bg-accent-500/10 text-accent-500"
-                              : "border-border text-text-muted hover:border-border-hover"
-                          }`}
-                        >
-                          {lang}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="code-max-score">Max Score (Marks)</Label>
-                    <Input
-                      id="code-max-score"
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={draft.max_score ?? 10}
-                      onChange={(e) =>
-                        setDraft({ ...draft, max_score: parseInt(e.target.value) || 1 })
-                      }
-                      className="mt-1 bg-bg-base border-border tnum w-32 text-sm"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          <DialogFooter>
-            <PillButton tone="ghost" onClick={() => setDraft(null)}>
-              Cancel
-            </PillButton>
-            <PillButton
-              icon={draft?.id ? Check : Plus}
-              onClick={draft?.id ? handleUpdateQuestion : handleSaveQuestion}
-              disabled={saving}
-              loading={saving}
-            >
-              {draft?.id ? "Save changes" : `Add to Set ${activeSet}`}
-            </PillButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Confirm before discarding unsaved wizard work (app-wide AlertDialog
           pattern — see TimetableSetup). Only raised when wizardIsDirty(). */}
