@@ -42,6 +42,8 @@ const MANAGE_FILTERS = [
   { key: "ended", label: "Ended", icon: FileCheck },
 ];
 
+const MANAGE_PAGE_SIZES = [5, 10, 20, "All"];
+
 // Groups the two pre-launch exam statuses (draft, waiting_room) under one
 // "Draft" filter bucket — StatusBadge still tells them apart on the card
 // itself, this is just the coarser filter grain the wizard needs.
@@ -156,6 +158,83 @@ function ExamManageRow({ exam, onOpen }) {
   );
 }
 
+// Pagination footer bound to the Manage Exams table. A rows-per-page
+// segmented control (default 5) plus a compact prev/next pager. Reuses the
+// app's segment/chip idiom and the global .btn-press micro-interaction so
+// controls respond on pointer-down; .btn-press is reduced-motion-safe in
+// theme.css. The pager cluster hides itself when there's only one page.
+function ManagePaginationBar({
+  total,
+  rangeStart,
+  rangeEnd,
+  page,
+  pageCount,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+}) {
+  const multiPage = pageCount > 1;
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] font-medium text-text-muted uppercase tracking-[0.08em]">Rows</span>
+        <div className="inline-flex items-center rounded-[var(--radius-md)] border border-border bg-bg-base p-0.5">
+          {MANAGE_PAGE_SIZES.map((size) => {
+            const selected = pageSize === size;
+            return (
+              <button
+                key={String(size)}
+                type="button"
+                onClick={() => onPageSizeChange(size)}
+                aria-pressed={selected}
+                className={cn(
+                  "btn-press tnum px-2.5 py-1 text-xs font-semibold rounded-[var(--radius-sm)] transition-colors duration-150",
+                  selected
+                    ? "bg-bg-surface-3 text-text-primary"
+                    : "text-text-muted hover:text-text-primary"
+                )}
+              >
+                {size}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <span className="tnum text-xs text-text-secondary">
+          {total === 0 ? "0 of 0" : `${rangeStart}–${rangeEnd} of ${total}`}
+        </span>
+        {multiPage && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onPageChange(page - 1)}
+              disabled={page <= 1}
+              aria-label="Previous page"
+              className="btn-press inline-flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] border border-border text-text-secondary transition-colors duration-150 hover:text-text-primary hover:bg-bg-surface-3 disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <ChevronLeft className="w-4 h-4" strokeWidth={2} />
+            </button>
+            <span className="tnum text-xs text-text-secondary min-w-[4.5rem] text-center">
+              Page {page} / {pageCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => onPageChange(page + 1)}
+              disabled={page >= pageCount}
+              aria-label="Next page"
+              className="btn-press inline-flex items-center justify-center w-7 h-7 rounded-[var(--radius-sm)] border border-border text-text-secondary transition-colors duration-150 hover:text-text-primary hover:bg-bg-surface-3 disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <ChevronRight className="w-4 h-4" strokeWidth={2} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const emptyMcq = () => ({
   type: "mcq",
   question_text: "",
@@ -263,6 +342,8 @@ export function ExamCreation() {
   const [manageFilter, setManageFilter] = useState("all");
   const [manageSearch, setManageSearch] = useState("");
   const [manageSort, setManageSort] = useState("newest"); // "newest" | "oldest" — by created_at
+  const [managePageSize, setManagePageSize] = useState(5); // 5 | 10 | 20 | "All"
+  const [managePage, setManagePage] = useState(1); // 1-indexed
 
   const fetchMyExams = async () => {
     setLoadingExams(true);
@@ -287,6 +368,12 @@ export function ExamCreation() {
       fetchMyExams();
     }
   }, [activeTab]);
+
+  // Any narrowing of the list (status filter, search, sort, page size) drops
+  // back to page 1 so the user never lands on a now-empty page.
+  useEffect(() => {
+    setManagePage(1);
+  }, [manageFilter, manageSearch, manageSort, managePageSize, activeTab]);
 
   const handleManageExam = async (exam) => {
     try {
@@ -507,6 +594,28 @@ export function ExamCreation() {
       const diff = new Date(b.created_at) - new Date(a.created_at);
       return manageSort === "newest" ? diff : -diff;
     });
+
+  // Pagination — slice the searched/sorted list. "All" collapses to a single
+  // page; managePageSafe re-clamps in the frame before the reset effect runs
+  // (e.g. right after a filter shrinks the result set).
+  const managePageCount =
+    managePageSize === "All"
+      ? 1
+      : Math.max(1, Math.ceil(displayedExams.length / managePageSize));
+  const managePageSafe = Math.min(Math.max(1, managePage), managePageCount);
+  const managePerPage = managePageSize === "All" ? displayedExams.length : managePageSize;
+  const pagedExams =
+    managePageSize === "All"
+      ? displayedExams
+      : displayedExams.slice(
+          (managePageSafe - 1) * managePageSize,
+          managePageSafe * managePageSize
+        );
+  const manageRangeStart = displayedExams.length === 0 ? 0 : (managePageSafe - 1) * managePerPage + 1;
+  const manageRangeEnd =
+    managePageSize === "All"
+      ? displayedExams.length
+      : Math.min(managePageSafe * managePageSize, displayedExams.length);
 
   const filteredClasses = classes.filter((c) =>
     c.name.toLowerCase().includes(classSearch.trim().toLowerCase())
@@ -1193,7 +1302,7 @@ export function ExamCreation() {
 
           {loadingExams ? (
             <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
-              <div className="overflow-x-auto">
+              <div className="min-h-[8rem] max-h-[calc(100dvh-31rem)] sm:max-h-[calc(100dvh-22rem)] overflow-x-auto overflow-y-auto">
                 <table className="w-full">
                   <tbody className="divide-y divide-border">
                     {[0, 1, 2, 3, 4].map((i) => (
@@ -1222,9 +1331,16 @@ export function ExamCreation() {
             </div>
           ) : (
             <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* Row area scrolls inside the card (sticky header) once it
+                  gets tall — with page size 10/20/All the list would
+                  otherwise push the whole page into a scroll and carry the
+                  pagination controls off-screen. The cap leaves room for the
+                  header stack above (taller when it wraps on narrow) plus
+                  the pagination bar, so the card itself never forces a
+                  page scroll. min-h keeps ~2 rows visible on short screens. */}
+              <div className="min-h-[8rem] max-h-[calc(100dvh-31rem)] sm:max-h-[calc(100dvh-22rem)] overflow-x-auto overflow-y-auto">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-bg-elevated">
                     <tr className="border-b border-border bg-bg-elevated">
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Type</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Title</th>
@@ -1237,12 +1353,22 @@ export function ExamCreation() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {displayedExams.map((exam) => (
+                    {pagedExams.map((exam) => (
                       <ExamManageRow key={exam.id} exam={exam} onOpen={handleExamClick} />
                     ))}
                   </tbody>
                 </table>
               </div>
+              <ManagePaginationBar
+                total={displayedExams.length}
+                rangeStart={manageRangeStart}
+                rangeEnd={manageRangeEnd}
+                page={managePageSafe}
+                pageCount={managePageCount}
+                pageSize={managePageSize}
+                onPageChange={setManagePage}
+                onPageSizeChange={setManagePageSize}
+              />
             </div>
           )}
         </div>
