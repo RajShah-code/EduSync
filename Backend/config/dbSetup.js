@@ -226,6 +226,14 @@ const setup = async () => {
     `;
     console.log("Database Setup: exams table checked.");
 
+    // Phase 26: scheduled auto-open. TIMESTAMPTZ (not a bare TIMESTAMP + manual
+    // IST offset) so `scheduled_at <= NOW()` is timezone-correct by construction
+    // — deliberately avoiding the UTC/IST drift this project hit in Phase 21/25.
+    await sql`
+      ALTER TABLE exams ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ NULL;
+    `;
+    console.log("Database Setup: exams.scheduled_at column checked.");
+
     await sql`
       CREATE TABLE IF NOT EXISTS exam_classes (
         exam_id INTEGER REFERENCES exams(id) ON DELETE CASCADE,

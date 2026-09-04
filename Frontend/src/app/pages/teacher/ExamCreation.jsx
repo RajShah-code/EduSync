@@ -1,11 +1,10 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { useOutletContext, useNavigate, useLocation } from "react-router";
+import { useOutletContext, useNavigate } from "react-router";
 import { getSocket } from "../../store/socket";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
-import { Badge } from "../../components/ui/badge";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Textarea } from "../../components/ui/textarea";
@@ -17,7 +16,24 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../components/ui/dialog";
-import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconMenu2 as Menu2, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3, IconPencilQuestion as PencilQuestion, IconCircleDashedCheck as CircleDashedCheck, IconArrowsSort as ArrowsSort } from "@tabler/icons-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "../../components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "../../components/ui/alert-dialog";
+import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3, IconPencilQuestion as PencilQuestion, IconCircleDashedCheck as CircleDashedCheck, IconArrowsSort as ArrowsSort, IconCalendarClock as CalendarClock } from "@tabler/icons-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 
@@ -38,6 +54,7 @@ const SETUP_STEPS = [
 const MANAGE_FILTERS = [
   { key: "all", label: "All", icon: LayoutGrid },
   { key: "draft", label: "Draft", icon: Notes },
+  { key: "scheduled", label: "Scheduled", icon: Alarm },
   { key: "active", label: "Active", icon: FileCode },
   { key: "ended", label: "Ended", icon: FileCheck },
 ];
@@ -50,6 +67,24 @@ const MANAGE_PAGE_SIZES = [5, 10, 20, "All"];
 function manageFilterKeyOf(status) {
   if (status === "draft" || status === "waiting_room") return "draft";
   return status;
+}
+
+// "Scheduled" isn't a status — it's a draft with a future auto-open time.
+// Once the cron flips it to waiting_room this returns false again and the row
+// falls back into normal status-based filtering.
+function isScheduledExam(exam) {
+  return (
+    exam.status === "draft" &&
+    !!exam.scheduled_at &&
+    new Date(exam.scheduled_at).getTime() > Date.now()
+  );
+}
+
+// Local wall-clock -> the value shape <input type="datetime-local"> expects
+// ("YYYY-MM-DDTHH:mm"). Used for the picker's `min` and nothing else.
+function toLocalInputValue(date) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}`;
 }
 
 // Small-caps breadcrumb + display heading used at the top of each wizard
@@ -85,6 +120,7 @@ function ExamManageRow({ exam, onOpen }) {
 
   const classNames = Array.isArray(exam.class_names) ? exam.class_names.filter(Boolean) : [];
   const classLabel = classNames.join(", ");
+  const scheduled = isScheduledExam(exam);
 
   const open = () => onOpen(exam);
 
@@ -105,10 +141,9 @@ function ExamManageRow({ exam, onOpen }) {
         isActive && "bg-accent-live/5"
       )}
     >
+      {/* Status first — the most decision-relevant field */}
       <td className="px-4 py-2.5">
-        <span className="inline-block text-[10px] tnum font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-[var(--radius-sm)] border border-border bg-bg-base text-text-muted whitespace-nowrap">
-          {exam.question_type}
-        </span>
+        <StatusBadge status={exam.status} />
       </td>
       <td className="px-4 py-2.5 max-w-[220px]">
         <span className="block truncate text-sm font-medium text-text-primary" title={exam.title}>
@@ -125,7 +160,9 @@ function ExamManageRow({ exam, onOpen }) {
         )}
       </td>
       <td className="px-4 py-2.5">
-        <StatusBadge status={exam.status} />
+        <span className="inline-block text-[10px] tnum font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-[var(--radius-sm)] border border-border bg-bg-base text-text-muted whitespace-nowrap">
+          {exam.question_type}
+        </span>
       </td>
       <td className="px-4 py-2.5 text-sm tnum text-text-secondary whitespace-nowrap">
         {exam.time_limit_minutes}m
@@ -133,8 +170,24 @@ function ExamManageRow({ exam, onOpen }) {
       <td className="px-4 py-2.5 text-sm tnum text-text-secondary whitespace-nowrap">
         {exam.num_sets} set{exam.num_sets === 1 ? "" : "s"}
       </td>
-      <td className="px-4 py-2.5 text-sm tnum text-text-secondary whitespace-nowrap">
-        {new Date(exam.created_at).toLocaleDateString()}
+      {/* Created — or, for a scheduled draft, the auto-open time with the
+          created date kept underneath so nothing is hidden. */}
+      <td className="px-4 py-2.5 whitespace-nowrap">
+        {scheduled ? (
+          <div className="flex flex-col">
+            <span className="inline-flex items-center gap-1 text-xs tnum font-medium text-accent-warning">
+              <Alarm className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+              {new Date(exam.scheduled_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
+            </span>
+            <span className="text-[11px] tnum text-text-muted">
+              created {new Date(exam.created_at).toLocaleDateString()}
+            </span>
+          </div>
+        ) : (
+          <span className="text-sm tnum text-text-secondary">
+            {new Date(exam.created_at).toLocaleDateString()}
+          </span>
+        )}
       </td>
       <td className="px-4 py-2.5 text-right">
         <Button
@@ -235,6 +288,22 @@ function ManagePaginationBar({
   );
 }
 
+// The add/update question endpoints can return `options` as a JSON string
+// (JSONB round-trip), while getExamById returns it already parsed. Normalise
+// on the way into state so every consumer (the Step 2 row, openEditDraft) can
+// treat options as an array.
+function withParsedOptions(q) {
+  if (!q || q.options == null || Array.isArray(q.options)) return q;
+  if (typeof q.options === "string") {
+    try {
+      return { ...q, options: JSON.parse(q.options) };
+    } catch {
+      return { ...q, options: [] };
+    }
+  }
+  return q;
+}
+
 const emptyMcq = () => ({
   type: "mcq",
   question_text: "",
@@ -255,10 +324,19 @@ export function ExamCreation() {
   const context = useOutletContext();
   const sessionInfo = context?.sessionInfo ?? null;
   const navigate = useNavigate();
-  const location = useLocation();
+
+  // The page is the Manage Exams list; the creation/edit wizard lives in a
+  // right-side Sheet ("drawer") opened from the header or a row action.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [drawerIsCreate, setDrawerIsCreate] = useState(true); // header label only
 
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+
+  // Step 3 — "Schedule for Later" sub-panel
+  const [scheduleMode, setScheduleMode] = useState(false);
+  const [scheduledAtLocal, setScheduledAtLocal] = useState("");
 
   // Step 1 — Exam settings
   const [settings, setSettings] = useState({
@@ -334,9 +412,6 @@ export function ExamCreation() {
     fetchClasses();
   }, []);
 
-  const [activeTab, setActiveTab] = useState(
-    location.state?.tab === "manage" ? "manage" : "create"
-  ); // "create" | "manage"
   const [myExams, setMyExams] = useState([]);
   const [loadingExams, setLoadingExams] = useState(false);
   const [manageFilter, setManageFilter] = useState("all");
@@ -363,17 +438,69 @@ export function ExamCreation() {
     }
   };
 
+  // The list is the page now — load it on mount, and refresh it whenever the
+  // wizard drawer closes (a new draft may have been created / edited).
   useEffect(() => {
-    if (activeTab === "manage") {
-      fetchMyExams();
-    }
-  }, [activeTab]);
+    fetchMyExams();
+  }, []);
 
   // Any narrowing of the list (status filter, search, sort, page size) drops
   // back to page 1 so the user never lands on a now-empty page.
   useEffect(() => {
     setManagePage(1);
-  }, [manageFilter, manageSearch, manageSort, managePageSize, activeTab]);
+  }, [manageFilter, manageSearch, manageSort, managePageSize]);
+
+  // ── Wizard drawer open/close ──────────────────────────────────────────────
+  const resetWizard = () => {
+    setStep(1);
+    setSettings({ title: "", question_type: "mcq", num_sets: 2, time_limit_minutes: 30, violation_limit: 3 });
+    setExamId(null);
+    setSelectedClassIds([]);
+    setExamOpened(false);
+    setWaitingCount(0);
+    setSetQuestions({});
+    setActiveSet(1);
+    setDraft(null);
+    setScheduleMode(false);
+    setScheduledAtLocal("");
+    setClassSearch("");
+  };
+
+  const openCreateDrawer = () => {
+    resetWizard();
+    setDrawerIsCreate(true);
+    setDrawerOpen(true);
+  };
+
+  // "Unsaved work" that a silent close would lose: a half-typed question, or a
+  // brand-new exam (step 1, not yet POSTed) with a title/classes entered.
+  // Once the draft exam exists on the server (step 2+), questions are persisted
+  // on add and closing just exits — same as the existing "Save as Draft".
+  const wizardIsDirty = () => {
+    if (draft) return true;
+    if (step === 1 && !examId && (settings.title.trim() || selectedClassIds.length > 0)) return true;
+    return false;
+  };
+
+  const closeDrawer = () => {
+    setConfirmCloseOpen(false);
+    setDrawerOpen(false);
+    fetchMyExams();
+  };
+
+  // Radix calls this with `false` on X / overlay / Escape. Block the close and
+  // raise the confirm dialog if there's unsaved work; otherwise close cleanly.
+  const handleDrawerOpenChange = (open) => {
+    if (open) {
+      setDrawerOpen(true);
+      return;
+    }
+    if (wizardIsDirty()) {
+      setConfirmCloseOpen(true);
+      return;
+    }
+    closeDrawer();
+  };
 
   const handleManageExam = async (exam) => {
     try {
@@ -395,6 +522,9 @@ export function ExamCreation() {
         setSelectedClassIds(data.exam.class_ids || []);
         setExamOpened(data.exam.status === "waiting_room");
         setWaitingCount(0);
+        setDraft(null);
+        setScheduleMode(false);
+        setScheduledAtLocal("");
 
         // Reconstruct setQuestions: { [setNumber]: questions[] }
         const questionsMap = {};
@@ -402,13 +532,15 @@ export function ExamCreation() {
           questionsMap[i] = [];
         }
         for (const s of data.sets) {
-          questionsMap[s.set_number] = s.questions || [];
+          questionsMap[s.set_number] = (s.questions || []).map(withParsedOptions);
         }
         setSetQuestions(questionsMap);
+        setActiveSet(1);
 
-        // Go to Step 3 (Review & Start)
+        // Land on Step 3 (Review & Start) inside the drawer
         setStep(3);
-        setActiveTab("create"); // Switch back to the create tab to show this exam's detail view!
+        setDrawerIsCreate(false);
+        setDrawerOpen(true);
       } else {
         toast.error("Failed to load exam details");
       }
@@ -523,10 +655,62 @@ export function ExamCreation() {
 
       setSetQuestions((prev) => ({
         ...prev,
-        [activeSet]: [...(prev[activeSet] || []), data.question],
+        [activeSet]: [...(prev[activeSet] || []), withParsedOptions(data.question)],
       }));
       setDraft(null);
       toast.success("Question added");
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Reopen the Question Editor Dialog pre-filled for an existing question.
+  // `draft.id` present == edit mode (see handleUpdateQuestion / the dialog).
+  const openEditDraft = (q) => {
+    setDraft({
+      id: q.id,
+      type: q.type,
+      question_text: q.question_text || "",
+      description: q.description || "",
+      language: q.language || "python",
+      max_score: q.max_score ?? (q.type === "code" ? 10 : 1),
+      options: Array.isArray(q.options)
+        ? [...q.options, "", "", "", ""].slice(0, 4)
+        : ["", "", "", ""],
+      correct_option: q.correct_option ?? 0,
+    });
+  };
+
+  const handleUpdateQuestion = async () => {
+    if (!draft || !draft.id) return;
+    if (!draft.question_text.trim()) return toast.error("Question text is required");
+    if (draft.type === "mcq" && draft.options.some((o) => !o.trim())) {
+      return toast.error("All 4 options are required");
+    }
+    if (draft.type === "code") {
+      if (!draft.description?.trim()) return toast.error("Description is required");
+      if (!draft.language) return toast.error("Select a language");
+    }
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/questions/${draft.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(draft),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
+      setSetQuestions((prev) => ({
+        ...prev,
+        [activeSet]: (prev[activeSet] || []).map((q) => (q.id === draft.id ? withParsedOptions(data.question) : q)),
+      }));
+      setDraft(null);
+      toast.success("Question updated");
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -539,6 +723,24 @@ export function ExamCreation() {
       ...prev,
       [setNum]: prev[setNum].filter((q) => q.id !== qId),
     }));
+  };
+
+  // Delete goes to the server first so the client list can't silently desync
+  // from the DB; local state is only trimmed on a 2xx.
+  const handleDeleteQuestion = async (setNum, q) => {
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/questions/${q.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Failed to delete question");
+      deleteQuestionLocally(setNum, q.id);
+      toast.success("Question deleted");
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   // ── Step 3: Start Exam ─────────────────────────────────────────────────────
@@ -561,6 +763,43 @@ export function ExamCreation() {
     }
   };
 
+  // ── Step 3: Schedule for Later (Option A) ─────────────────────────────────
+  // Sets a future scheduled_at; the exam stays a draft. examScheduleCron opens
+  // the waiting room automatically at that time; the teacher still clicks
+  // "Start Exam Now" themselves. Client rejects past times before the call,
+  // mirroring the server's own future-only check.
+  const handleScheduleExam = async () => {
+    const when = new Date(scheduledAtLocal);
+    if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) {
+      return toast.error("Pick a date and time in the future");
+    }
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("edusync_token");
+      const res = await fetch(`${API_BASE_URL}/exams/${examId}/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ scheduled_at: when.toISOString() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      toast.success(`Scheduled — the waiting room opens automatically at ${when.toLocaleString()}`);
+      setDrawerOpen(false);
+      fetchMyExams();
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Step 2 "Save as Draft" — questions are already persisted on add, so this
+  // just exits the drawer (no unsaved-changes prompt).
+  const handleSaveDraftAndClose = () => {
+    setDrawerOpen(false);
+    fetchMyExams();
+  };
+
   const totalQuestions = Object.values(setQuestions).reduce(
     (sum, arr) => sum + arr.length,
     0
@@ -572,11 +811,16 @@ export function ExamCreation() {
   const manageFilterCounts = {
     all: myExams.length,
     draft: myExams.filter((e) => manageFilterKeyOf(e.status) === "draft").length,
+    scheduled: myExams.filter(isScheduledExam).length,
     active: myExams.filter((e) => e.status === "active").length,
     ended: myExams.filter((e) => e.status === "ended").length,
   };
   const filteredMyExams =
-    manageFilter === "all" ? myExams : myExams.filter((e) => manageFilterKeyOf(e.status) === manageFilter);
+    manageFilter === "all"
+      ? myExams
+      : manageFilter === "scheduled"
+      ? myExams.filter(isScheduledExam)
+      : myExams.filter((e) => manageFilterKeyOf(e.status) === manageFilter);
 
   // Search (title + class name) and sort (created_at) layer on top of the
   // status-filtered list — client-side over ~30 rows, so no debounce.
@@ -623,51 +867,49 @@ export function ExamCreation() {
 
   return (
     <PageShell>
-      {/* Header + page-mode tab strip — the same browser-tab pattern used for
-          switching between a fixed set of views elsewhere in the app (Student
-          Task Progress strip, the Exam question-navigator tabs). "Create" and
-          "Manage" are two fixed, parallel views of this page, so the pattern
-          fits directly rather than needing adaptation. */}
+      {/* Header — the page is the Manage Exams list; "Create Exam" opens the
+          wizard in a right-side drawer. */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-4">
         <div>
           <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">Exam Manager</h1>
+          <p className="text-sm text-text-muted mt-0.5 tnum">
+            {myExams.length} exam{myExams.length === 1 ? "" : "s"}
+          </p>
         </div>
 
-        {/* Segmented tab control — same pattern as Task Manager's Assign/Active
-            Tasks toggle (TaskAssignment.jsx), not the browser-tab strip used
-            for the session-tabs elsewhere on this page. */}
-        <div className="flex bg-bg-surface p-1 rounded-[var(--radius-md)] border border-border flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab("create")}
-            aria-pressed={activeTab === "create"}
-            className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
-              activeTab === "create"
-                ? "bg-accent-600 text-white"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            <SquarePlus className="w-4 h-4" strokeWidth={1.75} />
-            Create Exam
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("manage")}
-            aria-pressed={activeTab === "manage"}
-            className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
-              activeTab === "manage"
-                ? "bg-accent-600 text-white"
-                : "text-text-secondary hover:text-text-primary"
-            }`}
-          >
-            <Menu2 className="w-4 h-4" strokeWidth={1.75} />
-            Manage Exams ({myExams.length})
-          </button>
-        </div>
+        <Button onClick={openCreateDrawer} className="flex-shrink-0 bg-accent-600 hover:bg-accent-600/90 text-white">
+          <SquarePlus className="w-4 h-4" strokeWidth={1.75} />
+          Create Exam
+        </Button>
       </div>
 
-      {activeTab === "create" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      {/* ── Wizard drawer — reuses the existing Step 1 → 2 → 3 flow; the
+          two-column grid below collapses to one column at this width because
+          the drawer never reaches the `lg` breakpoint. ── */}
+      <Sheet open={drawerOpen} onOpenChange={handleDrawerOpenChange}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-[680px] p-0 gap-0 bg-bg-base border-border flex flex-col"
+        >
+          <SheetHeader className="border-b border-border p-4 shrink-0">
+            <SheetTitle className="text-text-primary">
+              {drawerIsCreate ? "Create Exam" : `Manage Exam #${examId}`}
+            </SheetTitle>
+            <SheetDescription className="text-text-muted">
+              {step === 1
+                ? "Configure the core settings, then add questions."
+                : step === 2
+                ? "Add MCQ or code questions to each set."
+                : "Review, then open the waiting room or schedule it."}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto p-4">
+        {/* Single column inside the drawer — the step content, then the
+            Parameters/Summary + Setup Progress sidebar stacked below it
+            (the old two-column grid was viewport-width-driven and does not
+            fit a drawer). */}
+        <div className="flex flex-col gap-6">
           {/* Left: step content */}
           <div className="relative bg-bg-surface border border-border rounded-[var(--radius-lg)] p-6 pb-0 flex flex-col">
             {/* ── STEP 1: Settings ── */}
@@ -876,44 +1118,53 @@ export function ExamCreation() {
                   ))}
                 </div>
 
-                {/* Question list for active set */}
+                {/* Question list for active set — the real, persisted
+                    questions, each editable (reopens the dialog pre-filled)
+                    and deletable (server DELETE, then local trim). */}
                 <div className="space-y-2">
-                  {(setQuestions[activeSet] || []).map((q, idx) => (
-                    <div
-                      key={q.id}
-                      className="flex items-start gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)]"
-                    >
-                      <Badge variant={q.type === "mcq" ? "info" : "success"} className="mt-0.5 flex-shrink-0 uppercase">
-                        {q.type}
-                      </Badge>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-text-primary truncate">
-                          {idx + 1}. {q.question_text}
-                        </p>
-                        {q.type === "code" && (
-                          <p className="text-xs text-text-muted mt-0.5 tnum capitalize">
-                            {q.language} · {q.max_score} mark{q.max_score === 1 ? "" : "s"}
-                          </p>
-                        )}
-                        {q.type === "mcq" && (
-                          <p className="text-xs text-text-muted mt-0.5">
-                            {q.options?.length ?? 0} options · correct: {
-                              q.options?.[q.correct_option] ?? "—"
-                            }
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteQuestionLocally(activeSet, q.id)}
-                        className="text-text-muted hover:text-accent-critical transition-colors flex-shrink-0"
-                        title="Remove from list"
-                        aria-label={`Remove question ${idx + 1} from list: ${q.question_text}`}
+                  {(setQuestions[activeSet] || []).map((q, idx) => {
+                    const QIcon = q.type === "code" ? Code2 : CheckSquare;
+                    return (
+                      <div
+                        key={q.id}
+                        className="flex items-start gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)]"
                       >
-                        <Trash2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                      </button>
-                    </div>
-                  ))}
+                        <span className="mt-0.5 flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-[var(--radius-sm)] border border-border bg-bg-surface text-accent-500">
+                          <QIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-text-primary truncate">
+                            {idx + 1}. {q.question_text}
+                          </p>
+                          <p className="text-xs text-text-muted mt-0.5 tnum capitalize">
+                            {q.type === "code"
+                              ? `${q.language} · ${q.max_score} mark${q.max_score === 1 ? "" : "s"}`
+                              : `${q.options?.length ?? 0} options · ${q.max_score ?? 1} mark · correct: ${q.options?.[q.correct_option] ?? "—"}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => openEditDraft(q)}
+                            className="text-text-muted hover:text-accent-500 transition-colors p-1"
+                            title="Edit question"
+                            aria-label={`Edit question ${idx + 1}: ${q.question_text}`}
+                          >
+                            <Edit3 className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuestion(activeSet, q)}
+                            className="text-text-muted hover:text-accent-critical transition-colors p-1"
+                            title="Delete question"
+                            aria-label={`Delete question ${idx + 1}: ${q.question_text}`}
+                          >
+                            <Trash2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
 
                   {(setQuestions[activeSet] || []).length === 0 && (
                     <div className="text-center py-10 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-muted text-sm">
@@ -948,8 +1199,8 @@ export function ExamCreation() {
                   <Button
                     variant="outline"
                     className="ml-auto"
-                    onClick={() => setActiveTab("manage")}
-                    title="Questions are already saved — this just exits the wizard, leaving the exam in Draft."
+                    onClick={handleSaveDraftAndClose}
+                    title="Questions are already saved — this just closes the wizard, leaving the exam in Draft."
                   >
                     <CircleDashedCheck className="w-[18px] h-[18px]" strokeWidth={1.75} />
                     Save as Draft
@@ -1026,14 +1277,24 @@ export function ExamCreation() {
                     Back to Questions
                   </Button>
                   {!examOpened ? (
-                    <Button
-                      data-tour="teacher-open-exam"
-                      onClick={handleOpenExam}
-                      disabled={saving}
-                    >
-                      {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : <CircleCheck className="w-[18px] h-[18px]" strokeWidth={1.75} />}
-                      Open Exam
-                    </Button>
+                    <>
+                      <Button
+                        data-tour="teacher-open-exam"
+                        onClick={handleOpenExam}
+                        disabled={saving}
+                      >
+                        {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : <CircleCheck className="w-[18px] h-[18px]" strokeWidth={1.75} />}
+                        Open Exam
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setScheduleMode((m) => !m)}
+                        aria-pressed={scheduleMode}
+                      >
+                        <CalendarClock className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                        Schedule for Later
+                      </Button>
+                    </>
                   ) : (
                     <div className="flex items-center gap-2">
                       <StatusBadge status="waiting_room" />
@@ -1057,6 +1318,43 @@ export function ExamCreation() {
                     Start Exam Now
                   </Button>
                 </div>
+
+                {/* Schedule for Later (Option A) — sets a future auto-open
+                    time; the exam stays a draft and the teacher still starts
+                    it manually. Past times are rejected here and on the
+                    server. */}
+                {!examOpened && scheduleMode && (
+                  <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-2">
+                    <Label htmlFor="exam-schedule-at" className="text-xs flex items-center gap-1.5">
+                      <CalendarClock className="w-3.5 h-3.5 shrink-0 text-accent-500" strokeWidth={1.75} />
+                      Waiting room opens automatically at
+                    </Label>
+                    <Input
+                      id="exam-schedule-at"
+                      type="datetime-local"
+                      value={scheduledAtLocal}
+                      min={toLocalInputValue(new Date(Date.now() + 60000))}
+                      onChange={(e) => setScheduledAtLocal(e.target.value)}
+                      className="bg-bg-surface border-border tnum"
+                    />
+                    <div className="flex gap-2 pt-0.5">
+                      <Button size="sm" onClick={handleScheduleExam} disabled={saving || !scheduledAtLocal}>
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} /> : <Check className="w-4 h-4" strokeWidth={2} />}
+                        Confirm Schedule
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setScheduleMode(false); setScheduledAtLocal(""); }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                    <p className="text-[11px] text-text-muted">
+                      You still click "Start Exam Now" yourself once students have joined.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1217,9 +1515,12 @@ export function ExamCreation() {
             </div>
           </div>
         </div>
-      ) : (
-        /* Manage Exams List Tab */
-        <div className="space-y-4">
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Manage Exams list — the page itself ── */}
+      <div className="space-y-4">
           {/* Status filter — the same pill/count chip pattern used for the
               live exam roster filter (ActiveExam.jsx), not the reference's
               nav-bar tab styling. */}
@@ -1307,10 +1608,10 @@ export function ExamCreation() {
                   <tbody className="divide-y divide-border">
                     {[0, 1, 2, 3, 4].map((i) => (
                       <tr key={i}>
-                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-12 rounded-[var(--radius-sm)]" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-5 w-20 rounded-full" /></td>
                         <td className="px-4 py-2.5"><Skeleton className="h-4 w-40" /></td>
                         <td className="px-4 py-2.5"><Skeleton className="h-4 w-24" /></td>
-                        <td className="px-4 py-2.5"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-12 rounded-[var(--radius-sm)]" /></td>
                         <td className="px-4 py-2.5"><Skeleton className="h-4 w-8" /></td>
                         <td className="px-4 py-2.5"><Skeleton className="h-4 w-10" /></td>
                         <td className="px-4 py-2.5"><Skeleton className="h-4 w-16" /></td>
@@ -1342,10 +1643,10 @@ export function ExamCreation() {
                 <table className="w-full">
                   <thead className="sticky top-0 z-10 bg-bg-elevated">
                     <tr className="border-b border-border bg-bg-elevated">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Title</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Class</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Type</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Duration</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Sets</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Created</th>
@@ -1371,18 +1672,17 @@ export function ExamCreation() {
               />
             </div>
           )}
-        </div>
-      )}
+      </div>
 
       {/* ── Question Editor Dialog — type-aware modal shell, mirroring the
           pattern built for Task Assignment: one shared dialog whose body
           switches by question type rather than two separate one-off forms. ── */}
       <Dialog open={!!draft} onOpenChange={(open) => !open && setDraft(null)}>
-        <DialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-lg">
+        <DialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-lg z-[60]">
           <DialogHeader>
             <DialogTitle className="text-text-primary flex items-center gap-2">
               {isDraftCode ? <Code2 className="w-[18px] h-[18px] text-accent-500" /> : <CheckSquare className="w-[18px] h-[18px] text-accent-500" />}
-              New {isDraftCode ? "Code" : "MCQ"} Question — Set {activeSet}
+              {draft?.id ? "Edit" : "New"} {isDraftCode ? "Code" : "MCQ"} Question — Set {activeSet}
             </DialogTitle>
           </DialogHeader>
 
@@ -1495,13 +1795,38 @@ export function ExamCreation() {
             <Button variant="outline" onClick={() => setDraft(null)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveQuestion} disabled={saving}>
+            <Button
+              onClick={draft?.id ? handleUpdateQuestion : handleSaveQuestion}
+              disabled={saving}
+            >
               {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}
-              Add to Set {activeSet}
+              {draft?.id ? "Save changes" : `Add to Set ${activeSet}`}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm before discarding unsaved wizard work (app-wide AlertDialog
+          pattern — see TimetableSetup). Only raised when wizardIsDirty(). */}
+      <AlertDialog open={confirmCloseOpen} onOpenChange={(open) => !open && setConfirmCloseOpen(false)}>
+        <AlertDialogContent className="bg-bg-elevated border-border text-text-primary">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-text-primary">Discard this exam setup?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes in the exam wizard. Closing now will lose them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={closeDrawer}
+              className="bg-accent-critical hover:bg-accent-critical/90 text-white"
+            >
+              Discard &amp; close
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }

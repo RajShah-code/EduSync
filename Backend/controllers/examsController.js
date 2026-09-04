@@ -870,7 +870,7 @@ const getMyExams = async (req, res) => {
     // ARRAY_AGG's NULL (the no-matching-rows case) into an empty text[].
     const exams = await sql`
       SELECT e.id, e.title, e.status, e.question_type, e.time_limit_minutes,
-             e.created_at, e.num_sets, e.violation_limit,
+             e.created_at, e.num_sets, e.violation_limit, e.scheduled_at,
              COALESCE(
                ARRAY_AGG(c.name ORDER BY c.name) FILTER (WHERE c.name IS NOT NULL),
                '{}'
@@ -888,6 +888,24 @@ const getMyExams = async (req, res) => {
   }
 };
 
+// Core draft -> waiting_room transition, shared by the manual openExam route
+// and examScheduleCron so the two paths can't drift. Caller is responsible for
+// ownership/status checks; `exam` must carry { id, title, time_limit_minutes }.
+const openExamCore = async (io, exam) => {
+  await sql`UPDATE exams SET status = 'waiting_room' WHERE id = ${exam.id}`;
+
+  const classes = await sql`SELECT class_id FROM exam_classes WHERE exam_id = ${exam.id}`;
+  if (io) {
+    for (const { class_id } of classes) {
+      io.to(`class:${class_id}`).emit('exam:opened', {
+        examId: exam.id,
+        title: exam.title,
+        timeLimitMinutes: exam.time_limit_minutes,
+      });
+    }
+  }
+};
+
 const openExam = async (req, res) => {
   if (req.user.role !== 'teacher') return res.status(403).json({ message: 'Access denied: teacher role required' });
   const examId = parseInt(req.params.id);
@@ -897,20 +915,125 @@ const openExam = async (req, res) => {
     if (!exam) return res.status(403).json({ message: 'Unauthorized or exam not found' });
     if (exam.status !== 'draft') return res.status(400).json({ message: `Exam is already ${exam.status}` });
 
-    await sql`UPDATE exams SET status = 'waiting_room' WHERE id = ${examId}`;
-
-    const classes = await sql`SELECT class_id FROM exam_classes WHERE exam_id = ${examId}`;
-    const io = req.app.get('io');
-    if (io) {
-      for (const { class_id } of classes) {
-        io.to(`class:${class_id}`).emit('exam:opened', {
-          examId,
-          title: exam.title,
-          timeLimitMinutes: exam.time_limit_minutes,
-        });
-      }
-    }
+    await openExamCore(req.app.get('io'), exam);
     res.json({ message: 'Exam opened', examId });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// ── POST /exams/:id/schedule — teacher only ──────────────────────────────────
+// Option A: sets a future scheduled_at; the exam stays 'draft'. examScheduleCron
+// flips it to 'waiting_room' when the time arrives — the teacher still clicks
+// "Start Exam Now" manually. Re-calling this overwrites the previous time
+// (that's the intended cancel/reschedule path — there is no separate edit UI).
+const scheduleExam = async (req, res) => {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Access denied: teacher role required' });
+  }
+  const examId = parseInt(req.params.id);
+  const teacherId = req.user.id;
+  const { scheduled_at } = req.body;
+
+  const when = new Date(scheduled_at);
+  if (!scheduled_at || Number.isNaN(when.getTime())) {
+    return res.status(400).json({ message: 'scheduled_at must be a valid ISO timestamp' });
+  }
+  if (when.getTime() <= Date.now()) {
+    return res.status(400).json({ message: 'scheduled_at must be in the future' });
+  }
+
+  try {
+    const [exam] = await sql`SELECT id, status FROM exams WHERE id = ${examId} AND created_by = ${teacherId}`;
+    if (!exam) return res.status(403).json({ message: 'Unauthorized or exam not found' });
+    if (exam.status !== 'draft') {
+      return res.status(400).json({ message: `Only draft exams can be scheduled (this one is ${exam.status})` });
+    }
+
+    const [updated] = await sql`
+      UPDATE exams SET scheduled_at = ${when.toISOString()} WHERE id = ${examId}
+      RETURNING id, scheduled_at
+    `;
+    res.json({ message: 'Exam scheduled', examId, scheduled_at: updated.scheduled_at });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Shared ownership guard for per-question edit/delete: the question must belong
+// to a set of an exam owned by this teacher, and that exam must still be
+// pre-launch (draft/waiting_room) so we never mutate a running/finished paper.
+const loadOwnedEditableQuestion = async (questionId, examId, teacherId) => {
+  const [row] = await sql`
+    SELECT q.id, q.type, e.status
+    FROM questions q
+    JOIN exam_sets es ON es.id = q.exam_set_id
+    JOIN exams e ON e.id = es.exam_id
+    WHERE q.id = ${questionId} AND es.exam_id = ${examId} AND e.created_by = ${teacherId}
+  `;
+  return row || null;
+};
+
+// ── DELETE /exams/:id/questions/:questionId — teacher only ───────────────────
+const deleteQuestion = async (req, res) => {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Access denied: teacher role required' });
+  }
+  const examId = parseInt(req.params.id);
+  const questionId = parseInt(req.params.questionId);
+  try {
+    const q = await loadOwnedEditableQuestion(questionId, examId, req.user.id);
+    if (!q) return res.status(404).json({ message: 'Question not found for this exam' });
+    if (q.status !== 'draft' && q.status !== 'waiting_room') {
+      return res.status(400).json({ message: `Cannot modify questions after the exam has started (status ${q.status})` });
+    }
+    await sql`DELETE FROM questions WHERE id = ${questionId}`;
+    res.json({ message: 'Question deleted', questionId });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// ── PATCH /exams/:id/questions/:questionId — teacher only ────────────────────
+// Type is immutable (an MCQ stays an MCQ); everything else on the question is
+// replaced. MCQ score stays fixed at 1, matching addQuestion.
+const updateQuestion = async (req, res) => {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Access denied: teacher role required' });
+  }
+  const examId = parseInt(req.params.id);
+  const questionId = parseInt(req.params.questionId);
+  const { question_text, description, options, correct_option, language } = req.body;
+
+  try {
+    const q = await loadOwnedEditableQuestion(questionId, examId, req.user.id);
+    if (!q) return res.status(404).json({ message: 'Question not found for this exam' });
+    if (q.status !== 'draft' && q.status !== 'waiting_room') {
+      return res.status(400).json({ message: `Cannot modify questions after the exam has started (status ${q.status})` });
+    }
+    if (!question_text || !String(question_text).trim()) {
+      return res.status(400).json({ message: 'question_text is required' });
+    }
+
+    let maxScore = 1;
+    if (q.type === 'code') {
+      maxScore = req.body.max_score === undefined || req.body.max_score === null
+        ? 10
+        : parseFloat(req.body.max_score) || 10;
+    }
+
+    const [question] = await sql`
+      UPDATE questions SET
+        question_text = ${question_text},
+        description = ${q.type === 'code' ? (description ?? null) : null},
+        options = ${q.type === 'mcq' ? JSON.stringify(options ?? []) : null},
+        correct_option = ${q.type === 'mcq' ? (correct_option ?? 0) : null},
+        language = ${q.type === 'code' ? (language ?? null) : null},
+        max_score = ${maxScore}
+      WHERE id = ${questionId}
+      RETURNING *
+    `;
+    res.json({ question });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -976,6 +1099,10 @@ module.exports = {
   scoreAnswer,
   getSessionExams,
   openExam,
+  openExamCore,
+  scheduleExam,
+  deleteQuestion,
+  updateQuestion,
   getAvailableExams,
   joinExam,
   getMyExams,
