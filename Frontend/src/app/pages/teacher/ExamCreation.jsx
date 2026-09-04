@@ -7,22 +7,16 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "../../components/ui/skeleton";
-import { Textarea } from "../../components/ui/textarea";
 import { cn } from "../../components/ui/utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "../../components/ui/sheet";
+import { motion, useReducedMotion } from "motion/react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -60,6 +54,110 @@ const MANAGE_FILTERS = [
 ];
 
 const MANAGE_PAGE_SIZES = [5, 10, 20, "All"];
+
+// One spring, shared by every pill's hover label-collapse — same value the
+// Start Lecture modal uses so the two read identically side by side.
+const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.45 };
+
+// ── Session Setup Modal visual language, lifted from LiveBroadcast.jsx ─────────
+
+// Text field with its icon patched onto the top border line (not a label
+// above it). The patch paints the modal's own bg over the border so the line
+// "breaks" under the icon; the whole field turns accent-info on focus.
+function NotchedField({ icon: Icon, hint, className, children }) {
+  return (
+    <div className={cn("relative group", className)}>
+      <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
+        <Icon className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
+        {hint && (
+          <span className="text-[11px] leading-none text-text-muted group-focus-within:text-accent-info transition-colors duration-150">
+            {hint}
+          </span>
+        )}
+      </div>
+      <div
+        style={{ minHeight: "46px", borderRadius: "12px" }}
+        className="relative border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Bare input for use inside NotchedField — no border/bg of its own.
+const notchedInputClass =
+  "w-full h-[44px] bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted";
+
+// rounded-full pill button matching "Start Lecture". `animated` opts into the
+// hover label-collapse micro-interaction — reserved for each step's one hero
+// action so it stays a signal, not noise.
+const PILL_TONES = {
+  primary: "bg-[#611d9f] hover:bg-[#611d9f]/90 text-white",
+  success: "bg-accent-success hover:bg-accent-success/90 text-white",
+  ghost: "bg-transparent border border-border text-text-secondary hover:text-text-primary hover:bg-bg-surface-3",
+};
+
+function PillButton({
+  onClick,
+  disabled = false,
+  loading = false,
+  icon: Icon,
+  tone = "primary",
+  animated = false,
+  className,
+  children,
+  ...rest
+}) {
+  const prefersReducedMotion = useReducedMotion();
+  const [hovered, setHovered] = useState(false);
+  const RenderIcon = loading ? Loader2 : Icon;
+
+  const base = cn(
+    "btn-press relative inline-flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed",
+    PILL_TONES[tone],
+    className
+  );
+
+  if (!animated) {
+    return (
+      <button type="button" onClick={onClick} disabled={disabled} className={base} {...rest}>
+        {RenderIcon && <RenderIcon className={cn("w-[18px] h-[18px] shrink-0", loading && "animate-spin")} strokeWidth={1.75} />}
+        <span className={RenderIcon ? "pl-2" : undefined}>{children}</span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className={base}
+      {...rest}
+    >
+      {/* invisible sizer — always the full expanded content, so hover never
+          changes the button's own width */}
+      <span className="invisible flex items-center" aria-hidden="true">
+        {RenderIcon && <RenderIcon className="w-[18px] h-[18px]" />}
+        <span className="pl-2 whitespace-nowrap">{children}</span>
+      </span>
+      <span className="absolute inset-0 flex items-center justify-center">
+        {RenderIcon && <RenderIcon className={cn("w-[18px] h-[18px] shrink-0", loading && "animate-spin")} strokeWidth={1.75} />}
+        <motion.span
+          className="overflow-hidden whitespace-nowrap"
+          initial={false}
+          animate={hovered && !disabled ? { width: 0, opacity: 0 } : { width: "auto", opacity: 1 }}
+          transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+        >
+          <span className="pl-2">{children}</span>
+        </motion.span>
+      </span>
+    </button>
+  );
+}
 
 // Groups the two pre-launch exam statuses (draft, waiting_room) under one
 // "Draft" filter bucket — StatusBadge still tells them apart on the card
@@ -861,8 +959,11 @@ export function ExamCreation() {
       ? displayedExams.length
       : Math.min(managePageSafe * managePageSize, displayedExams.length);
 
-  const filteredClasses = classes.filter((c) =>
-    c.name.toLowerCase().includes(classSearch.trim().toLowerCase())
+  // Chips shown in Target Classes: always keep the selected ones visible (so
+  // they can be toggled off), plus any that match the search box.
+  const classQuery = classSearch.trim().toLowerCase();
+  const classesForChips = classes.filter(
+    (c) => selectedClassIds.includes(c.id) || !classQuery || c.name.toLowerCase().includes(classQuery)
   );
 
   return (
@@ -883,35 +984,41 @@ export function ExamCreation() {
         </Button>
       </div>
 
-      {/* ── Wizard drawer — reuses the existing Step 1 → 2 → 3 flow; the
-          two-column grid below collapses to one column at this width because
-          the drawer never reaches the `lg` breakpoint. ── */}
-      <Sheet open={drawerOpen} onOpenChange={handleDrawerOpenChange}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-[680px] p-0 gap-0 bg-bg-base border-border flex flex-col"
+      {/* ── Wizard modal — same Step 1 → 2 → 3 flow, now in a centered Dialog
+          styled after LiveBroadcast's Session Setup Modal (rounded-[27px],
+          bg-bg-surface, notched inputs, pill buttons). data-role="teacher"
+          keeps the accent tokens violet inside the portal. ── */}
+      <Dialog open={drawerOpen} onOpenChange={handleDrawerOpenChange}>
+        <DialogContent
+          data-role="teacher"
+          className="bg-bg-surface border-border text-text-primary sm:max-w-[640px] rounded-[27px] p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden"
         >
-          <SheetHeader className="border-b border-border p-4 shrink-0">
-            <SheetTitle className="text-text-primary">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
+            <DialogTitle className="text-text-primary flex items-center gap-2">
+              {step === 1 ? (
+                <PencilQuestion className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+              ) : step === 2 ? (
+                <FileStack className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+              ) : (
+                <FileCheck className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+              )}
               {drawerIsCreate ? "Create Exam" : `Manage Exam #${examId}`}
-            </SheetTitle>
-            <SheetDescription className="text-text-muted">
+            </DialogTitle>
+            <DialogDescription className="text-text-muted">
               {step === 1
                 ? "Configure the core settings, then add questions."
                 : step === 2
                 ? "Add MCQ or code questions to each set."
                 : "Review, then open the waiting room or schedule it."}
-            </SheetDescription>
-          </SheetHeader>
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-4">
-        {/* Single column inside the drawer — the step content, then the
-            Parameters/Summary + Setup Progress sidebar stacked below it
-            (the old two-column grid was viewport-width-driven and does not
-            fit a drawer). */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+        {/* Single column — step content, then the Parameters/Summary +
+            Setup Progress panels stacked below it. */}
         <div className="flex flex-col gap-6">
-          {/* Left: step content */}
-          <div className="relative bg-bg-surface border border-border rounded-[var(--radius-lg)] p-6 pb-0 flex flex-col">
+          {/* Step content — no wrapper card; the modal is the surface. */}
+          <div className="relative flex flex-col">
             {/* ── STEP 1: Settings ── */}
             {step === 1 && (
               <div className="space-y-6 pb-6">
@@ -922,20 +1029,20 @@ export function ExamCreation() {
                   subtitle="Configure the core parameters and structural elements of your new assessment session."
                 />
 
-                <div>
-                  <Label htmlFor="exam-title">Exam Title</Label>
-                  <Input
+                <NotchedField icon={PencilQuestion}>
+                  <input
                     id="exam-title"
+                    type="text"
                     value={settings.title}
                     onChange={(e) => setSettings({ ...settings, title: e.target.value })}
-                    placeholder="e.g., Data Structures Mid-term"
-                    className="mt-1 bg-bg-base border-border"
+                    placeholder="Exam Title — e.g. Data Structures Mid-term"
+                    className={notchedInputClass}
                   />
-                </div>
+                </NotchedField>
 
                 <div>
                   <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-2">
-                    <PencilQuestion className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+                    <Checkbox className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
                     Question Format
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -992,64 +1099,54 @@ export function ExamCreation() {
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 p-3 bg-bg-base border border-border rounded-[var(--radius-md)] min-h-[52px]">
-                    {selectedClassIds.length === 0 && (
-                      <span className="text-xs text-text-muted italic self-center">
-                        No classes selected yet
-                      </span>
-                    )}
-                    {classes
-                      .filter((c) => selectedClassIds.includes(c.id))
-                      .map((cls) => (
-                        <span
-                          key={cls.id}
-                          className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-[var(--radius-pill)] bg-accent-500/15 border border-accent-500/30 text-accent-500 text-xs font-medium"
-                        >
-                          {cls.name}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedClassIds(selectedClassIds.filter((id) => id !== cls.id))
-                            }
-                            aria-label={`Remove ${cls.name}`}
-                            className="hover:text-accent-critical transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" strokeWidth={2.25} />
-                          </button>
-                        </span>
-                      ))}
-                  </div>
-
-                  <div className="relative mt-2">
-                    <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-muted pointer-events-none"
-                      strokeWidth={1.75}
-                    />
-                    <Input
-                      value={classSearch}
-                      onChange={(e) => setClassSearch(e.target.value)}
-                      placeholder="Search for more classes..."
-                      className="pl-9 bg-bg-base border-border"
-                    />
-                  </div>
-
-                  {filteredClasses.filter((c) => !selectedClassIds.includes(c.id)).length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {filteredClasses
-                        .filter((c) => !selectedClassIds.includes(c.id))
-                        .map((cls) => (
-                          <button
-                            key={cls.id}
-                            type="button"
-                            onClick={() => setSelectedClassIds([...selectedClassIds, cls.id])}
-                            className="inline-flex items-center gap-1 pl-2.5 pr-3 py-1 rounded-[var(--radius-pill)] border border-border text-text-secondary text-xs hover:border-accent-500/50 hover:text-accent-500 transition-colors duration-150"
-                          >
-                            <Plus className="w-3.5 h-3.5" strokeWidth={2.25} />
-                            {cls.name}
-                          </button>
-                        ))}
-                    </div>
+                  {classes.length > 6 && (
+                    <NotchedField icon={Search} className="mb-1">
+                      <input
+                        type="text"
+                        value={classSearch}
+                        onChange={(e) => setClassSearch(e.target.value)}
+                        placeholder="Search classes"
+                        className={notchedInputClass}
+                      />
+                    </NotchedField>
                   )}
+
+                  {/* Toggle chips — Start Lecture modal style. Selected state
+                      draws the icon-badge over the chip's top-left corner. */}
+                  <div className="flex flex-wrap gap-2 mt-2 ml-1">
+                    {classesForChips.map((cls) => {
+                      const isSelected = selectedClassIds.includes(cls.id);
+                      return (
+                        <div key={cls.id} className="relative">
+                          {isSelected && (
+                            <div className="absolute left-0 top-0 -translate-x-1/5 -translate-y-[45%] z-10 flex items-center justify-center p-0.5 rounded-full bg-bg-surface">
+                              <Chalkboard className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            aria-pressed={isSelected}
+                            onClick={() =>
+                              setSelectedClassIds(
+                                isSelected
+                                  ? selectedClassIds.filter((id) => id !== cls.id)
+                                  : [...selectedClassIds, cls.id]
+                              )
+                            }
+                            className={cn(
+                              "min-w-[64px] h-7 px-3 rounded-[10px] text-xs font-medium border bg-transparent transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center justify-center",
+                              isSelected ? "border-accent-info text-accent-info" : "border-border text-text-secondary"
+                            )}
+                          >
+                            <span>{cls.name}</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {classes.length > 0 && classesForChips.length === 0 && (
+                      <span className="text-xs text-text-muted italic">No classes match.</span>
+                    )}
+                  </div>
                   {classes.length === 0 && (
                     <p className="text-xs text-text-muted mt-1">No classes found. Please create classes first.</p>
                   )}
@@ -1057,23 +1154,19 @@ export function ExamCreation() {
               </div>
             )}
 
-            {/* Sticky footer CTA — pins to the bottom of the viewport while
-                the step content scrolls above it, matching the reference's
-                always-reachable primary action. */}
+            {/* Sticky footer CTA — pinned to the bottom of the modal's scroll
+                body so "Create & Continue" is always reachable. */}
             {step === 1 && (
-              <div className="sticky bottom-0 -mx-6 px-6 py-4 mt-2 bg-bg-surface border-t border-border rounded-b-[var(--radius-lg)]">
-                <Button
+              <div className="sticky bottom-0 -mx-6 -mb-5 px-6 py-4 mt-2 bg-bg-surface border-t border-border">
+                <PillButton
+                  animated
                   onClick={handleCreateExam}
                   disabled={saving || !settings.title.trim()}
-                  className="w-full sm:w-auto"
+                  loading={saving}
+                  icon={ChevronRight}
                 >
-                  {saving ? (
-                    <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
-                  ) : (
-                    <ChevronRight className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                  )}
-                  Create &amp; Continue to Questions
-                </Button>
+                  Create &amp; Continue
+                </PillButton>
               </div>
             )}
 
@@ -1191,27 +1284,27 @@ export function ExamCreation() {
                 </div>
 
                 {/* Navigation */}
-                <div className="flex gap-2 pt-2 border-t border-border">
-                  <Button variant="outline" onClick={() => setStep(1)}>
-                    <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-border">
+                  <PillButton tone="ghost" icon={ChevronLeft} onClick={() => setStep(1)}>
                     Back
-                  </Button>
-                  <Button
-                    variant="outline"
+                  </PillButton>
+                  <PillButton
+                    tone="ghost"
+                    icon={CircleDashedCheck}
                     className="ml-auto"
                     onClick={handleSaveDraftAndClose}
                     title="Questions are already saved — this just closes the wizard, leaving the exam in Draft."
                   >
-                    <CircleDashedCheck className="w-[18px] h-[18px]" strokeWidth={1.75} />
                     Save as Draft
-                  </Button>
-                  <Button
+                  </PillButton>
+                  <PillButton
+                    animated
+                    icon={ChevronRight}
                     onClick={() => setStep(3)}
                     disabled={totalQuestions === 0}
                   >
                     Review &amp; Start
-                    <ChevronRight className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                  </Button>
+                  </PillButton>
                 </div>
               </div>
             )}
@@ -1272,28 +1365,28 @@ export function ExamCreation() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 items-center">
-                  <Button variant="outline" onClick={() => setStep(2)}>
-                    <ChevronLeft className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                  <PillButton tone="ghost" icon={ChevronLeft} onClick={() => setStep(2)}>
                     Back to Questions
-                  </Button>
+                  </PillButton>
                   {!examOpened ? (
                     <>
-                      <Button
+                      <PillButton
                         data-tour="teacher-open-exam"
+                        icon={CircleCheck}
                         onClick={handleOpenExam}
                         disabled={saving}
+                        loading={saving}
                       >
-                        {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : <CircleCheck className="w-[18px] h-[18px]" strokeWidth={1.75} />}
                         Open Exam
-                      </Button>
-                      <Button
-                        variant="outline"
+                      </PillButton>
+                      <PillButton
+                        tone="ghost"
+                        icon={CalendarClock}
                         onClick={() => setScheduleMode((m) => !m)}
                         aria-pressed={scheduleMode}
                       >
-                        <CalendarClock className="w-[18px] h-[18px]" strokeWidth={1.75} />
                         Schedule for Later
-                      </Button>
+                      </PillButton>
                     </>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -1304,19 +1397,17 @@ export function ExamCreation() {
                       </span>
                     </div>
                   )}
-                  <Button
+                  <PillButton
+                    animated
+                    tone="success"
                     data-tour="teacher-start-exam-now"
+                    icon={Play}
                     onClick={handleStartExam}
                     disabled={saving}
-                    className="bg-accent-success hover:bg-accent-success/90 text-white"
+                    loading={saving}
                   >
-                    {saving ? (
-                      <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} />
-                    ) : (
-                      <Play className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                    )}
                     Start Exam Now
-                  </Button>
+                  </PillButton>
                 </div>
 
                 {/* Schedule for Later (Option A) — sets a future auto-open
@@ -1324,31 +1415,32 @@ export function ExamCreation() {
                     it manually. Past times are rejected here and on the
                     server. */}
                 {!examOpened && scheduleMode && (
-                  <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-2">
-                    <Label htmlFor="exam-schedule-at" className="text-xs flex items-center gap-1.5">
-                      <CalendarClock className="w-3.5 h-3.5 shrink-0 text-accent-500" strokeWidth={1.75} />
-                      Waiting room opens automatically at
-                    </Label>
-                    <Input
-                      id="exam-schedule-at"
-                      type="datetime-local"
-                      value={scheduledAtLocal}
-                      min={toLocalInputValue(new Date(Date.now() + 60000))}
-                      onChange={(e) => setScheduledAtLocal(e.target.value)}
-                      className="bg-bg-surface border-border tnum"
-                    />
-                    <div className="flex gap-2 pt-0.5">
-                      <Button size="sm" onClick={handleScheduleExam} disabled={saving || !scheduledAtLocal}>
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} /> : <Check className="w-4 h-4" strokeWidth={2} />}
+                  <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-3">
+                    <NotchedField icon={CalendarClock} hint="opens automatically at">
+                      <input
+                        id="exam-schedule-at"
+                        type="datetime-local"
+                        value={scheduledAtLocal}
+                        min={toLocalInputValue(new Date(Date.now() + 60000))}
+                        onChange={(e) => setScheduledAtLocal(e.target.value)}
+                        className={cn(notchedInputClass, "tnum pr-3 [color-scheme:dark]")}
+                      />
+                    </NotchedField>
+                    <div className="flex gap-2">
+                      <PillButton
+                        icon={Check}
+                        onClick={handleScheduleExam}
+                        disabled={saving || !scheduledAtLocal}
+                        loading={saving}
+                      >
                         Confirm Schedule
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      </PillButton>
+                      <PillButton
+                        tone="ghost"
                         onClick={() => { setScheduleMode(false); setScheduledAtLocal(""); }}
                       >
                         Cancel
-                      </Button>
+                      </PillButton>
                     </div>
                     <p className="text-[11px] text-text-muted">
                       You still click "Start Exam Now" yourself once students have joined.
@@ -1365,78 +1457,69 @@ export function ExamCreation() {
               than becoming a tab strip. */}
           <div className="space-y-4">
             {step === 1 ? (
-              <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-4">
+              <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-4">
                 <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5">
                   <SlidersHorizontal className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
                   Parameters
                 </h3>
                 <div>
-                  <Label htmlFor="time-limit" className="text-xs flex items-center gap-1.5">
-                    <Alarm className="w-3.5 h-3.5 shrink-0" />
-                    Duration (min)
-                  </Label>
-                  <Input
-                    id="time-limit"
-                    type="number"
-                    min={1}
-                    value={settings.time_limit_minutes}
-                    onChange={(e) =>
-                      setSettings({ ...settings, time_limit_minutes: parseInt(e.target.value) || 30 })
-                    }
-                    className="mt-1 bg-bg-base border-border tnum"
-                  />
+                  <NotchedField icon={Alarm} hint="duration in minutes">
+                    <input
+                      id="time-limit"
+                      type="number"
+                      min={1}
+                      value={settings.time_limit_minutes}
+                      onChange={(e) =>
+                        setSettings({ ...settings, time_limit_minutes: parseInt(e.target.value) || 30 })
+                      }
+                      className={cn(notchedInputClass, "tnum")}
+                    />
+                  </NotchedField>
                 </div>
                 <div>
-                  <Label htmlFor="num-sets" className="text-xs flex items-center gap-1.5">
-                    <FileStack className="w-3.5 h-3.5 shrink-0" />
-                    Question Sets
-                  </Label>
-                  <Input
-                    id="num-sets"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={settings.num_sets}
-                    onChange={(e) =>
-                      setSettings({ ...settings, num_sets: parseInt(e.target.value) || 1 })
-                    }
-                    className="mt-1 bg-bg-base border-border tnum"
-                  />
-                  <p className="text-[11px] text-text-muted mt-1">Different versions of the exam</p>
+                  <NotchedField icon={FileStack} hint="question sets">
+                    <input
+                      id="num-sets"
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={settings.num_sets}
+                      onChange={(e) =>
+                        setSettings({ ...settings, num_sets: parseInt(e.target.value) || 1 })
+                      }
+                      className={cn(notchedInputClass, "tnum")}
+                    />
+                  </NotchedField>
+                  <p className="text-[11px] text-text-muted mt-1 ml-1">Different versions of the exam</p>
                 </div>
                 <div>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="violation-limit" className="text-xs flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                      Violation Limit
-                    </Label>
-                    {settings.violation_limit <= 2 ? (
-                      <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-warning uppercase tracking-wide">
-                        <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2.25} />
-                        High Sensitivity
-                      </span>
-                    ) : settings.violation_limit >= 6 ? (
-                      <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">
-                        Lenient
-                      </span>
-                    ) : null}
-                  </div>
-                  <Input
-                    id="violation-limit"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={settings.violation_limit}
-                    onChange={(e) =>
-                      setSettings({ ...settings, violation_limit: parseInt(e.target.value) || 3 })
+                  <NotchedField
+                    icon={AlertTriangle}
+                    hint={
+                      settings.violation_limit <= 2
+                        ? "violation limit — high sensitivity"
+                        : settings.violation_limit >= 6
+                        ? "violation limit — lenient"
+                        : "violation limit"
                     }
-                    className="mt-1 bg-bg-base border-border tnum"
-                  />
-                  <p className="text-[11px] text-text-muted mt-1">Auto-locks after this many</p>
+                  >
+                    <input
+                      id="violation-limit"
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={settings.violation_limit}
+                      onChange={(e) =>
+                        setSettings({ ...settings, violation_limit: parseInt(e.target.value) || 3 })
+                      }
+                      className={cn(notchedInputClass, "tnum")}
+                    />
+                  </NotchedField>
+                  <p className="text-[11px] text-text-muted mt-1 ml-1">Auto-locks after this many</p>
                 </div>
               </div>
             ) : (
-              <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] text-sm space-y-2">
+              <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)] text-sm space-y-2">
                 <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-2">
                   Summary
                 </h3>
@@ -1465,7 +1548,7 @@ export function ExamCreation() {
               </div>
             )}
 
-            <div className="p-4 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
+            <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)]">
               <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-3">
                 Setup Progress
               </h3>
@@ -1516,8 +1599,8 @@ export function ExamCreation() {
           </div>
         </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Manage Exams list — the page itself ── */}
       <div className="space-y-4">
@@ -1678,7 +1761,7 @@ export function ExamCreation() {
           pattern built for Task Assignment: one shared dialog whose body
           switches by question type rather than two separate one-off forms. ── */}
       <Dialog open={!!draft} onOpenChange={(open) => !open && setDraft(null)}>
-        <DialogContent className="bg-bg-surface border-border text-text-primary sm:max-w-lg z-[60]">
+        <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-lg rounded-[27px] z-[60]">
           <DialogHeader>
             <DialogTitle className="text-text-primary flex items-center gap-2">
               {isDraftCode ? <Code2 className="w-[18px] h-[18px] text-accent-500" /> : <CheckSquare className="w-[18px] h-[18px] text-accent-500" />}
@@ -1688,27 +1771,26 @@ export function ExamCreation() {
 
           {draft && (
             <div className="space-y-4 py-1">
-              <div>
-                <Label>{isDraftCode ? "Question Title" : "Question Text"}</Label>
-                <Input
+              <NotchedField icon={isDraftCode ? Code2 : PencilQuestion}>
+                <input
+                  type="text"
                   value={draft.question_text}
                   onChange={(e) => setDraft({ ...draft, question_text: e.target.value })}
-                  placeholder={isDraftCode ? "e.g. Reverse a linked list" : "Enter your question..."}
-                  className="mt-1 bg-bg-base border-border"
+                  placeholder={isDraftCode ? "Question Title — e.g. Reverse a linked list" : "Question Text"}
+                  className={notchedInputClass}
                 />
-              </div>
+              </NotchedField>
 
               {isDraftCode && (
-                <div>
-                  <Label htmlFor="code-description">Description</Label>
-                  <Textarea
+                <NotchedField icon={Notes}>
+                  <textarea
                     id="code-description"
                     value={draft.description}
                     onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                    placeholder="Explain the problem, constraints, and expected input/output..."
-                    className="mt-1 bg-bg-base border-border min-h-24"
+                    placeholder="Description — the problem, constraints, expected input/output"
+                    className="w-full bg-transparent border-0 outline-none px-4 py-3 text-sm text-text-primary placeholder:text-text-muted min-h-24 resize-y leading-relaxed"
                   />
-                </div>
+                </NotchedField>
               )}
 
               {isDraftMcq && (
@@ -1792,16 +1874,17 @@ export function ExamCreation() {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDraft(null)}>
+            <PillButton tone="ghost" onClick={() => setDraft(null)}>
               Cancel
-            </Button>
-            <Button
+            </PillButton>
+            <PillButton
+              icon={draft?.id ? Check : Plus}
               onClick={draft?.id ? handleUpdateQuestion : handleSaveQuestion}
               disabled={saving}
+              loading={saving}
             >
-              {saving ? <Loader2 className="w-[18px] h-[18px] animate-spin" strokeWidth={1.75} /> : <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}
               {draft?.id ? "Save changes" : `Add to Set ${activeSet}`}
-            </Button>
+            </PillButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
