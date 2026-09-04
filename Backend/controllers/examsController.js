@@ -864,10 +864,23 @@ const getMyExams = async (req, res) => {
     return res.status(403).json({ message: 'Access denied: teacher role required' });
   }
   try {
+    // class_names is aggregated via a LEFT JOIN through exam_classes so an
+    // exam tied to zero classes still returns a row (with an empty array),
+    // rather than being dropped by an inner join. COALESCE(..., '{}') turns
+    // ARRAY_AGG's NULL (the no-matching-rows case) into an empty text[].
     const exams = await sql`
-      SELECT id, title, status, question_type, time_limit_minutes, created_at, num_sets, violation_limit
-      FROM exams WHERE created_by = ${req.user.id}
-      ORDER BY created_at DESC
+      SELECT e.id, e.title, e.status, e.question_type, e.time_limit_minutes,
+             e.created_at, e.num_sets, e.violation_limit,
+             COALESCE(
+               ARRAY_AGG(c.name ORDER BY c.name) FILTER (WHERE c.name IS NOT NULL),
+               '{}'
+             ) AS class_names
+      FROM exams e
+      LEFT JOIN exam_classes ec ON ec.exam_id = e.id
+      LEFT JOIN classes c ON c.id = ec.class_id
+      WHERE e.created_by = ${req.user.id}
+      GROUP BY e.id
+      ORDER BY e.created_at DESC
     `;
     res.json({ exams });
   } catch (err) {

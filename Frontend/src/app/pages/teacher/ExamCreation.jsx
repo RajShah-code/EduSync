@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../../components/ui/dialog";
-import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconMenu2 as Menu2, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3, IconPencilQuestion as PencilQuestion, IconCircleDashedCheck as CircleDashedCheck } from "@tabler/icons-react";
+import { IconPlus as Plus, IconTrash as Trash2, IconChevronRight as ChevronRight, IconChevronLeft as ChevronLeft, IconCode as Code2, IconSquareCheck as CheckSquare, IconCheckbox as Checkbox, IconArrowBarBoth as ArrowBarBoth, IconPlayerPlay as Play, IconLoader2 as Loader2, IconCheck as Check, IconCircleCheck as CircleCheck, IconSearch as Search, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as SlidersHorizontal, IconBroadcast as Radio, IconChartBar as BarChart2, IconPencil as Edit3, IconUsers as Users, IconX as X, IconSquarePlus as SquarePlus, IconMenu2 as Menu2, IconChalkboard as Chalkboard, IconAlarm as Alarm, IconFileStack as FileStack, IconLayoutGrid as LayoutGrid, IconNotes as Notes, IconFileCode as FileCode, IconFileCheck as FileCheck, IconCircleDashedNumber1 as CircleDashedNumber1, IconCircleDashedNumber2 as CircleDashedNumber2, IconCircleDashedNumber3 as CircleDashedNumber3, IconCircleNumber1 as CircleNumber1, IconCircleNumber2 as CircleNumber2, IconCircleNumber3 as CircleNumber3, IconPencilQuestion as PencilQuestion, IconCircleDashedCheck as CircleDashedCheck, IconArrowsSort as ArrowsSort } from "@tabler/icons-react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 
@@ -67,11 +67,13 @@ function StepHeader({ index, total, title, subtitle }) {
   );
 }
 
-// Individual exam card for the Manage Exams grid — identity + status up top,
-// a real-data metric grid (only fields the /my-exams endpoint actually
-// returns — no fabricated candidate/violation counts), one contextual
-// action per status matching handleExamClick's existing routing.
-function ExamManageCard({ exam, onOpen }) {
+// One dense row per exam for the Manage Exams list — the same <table> row
+// idiom used by Attendance.jsx (px-4 py-2.5 cells, divide-y rows, hover
+// tint), laid out horizontally instead of as a card. Fields are limited to
+// what /my-exams actually returns (plus class_names from the Task B join);
+// no fabricated candidate/violation counts. The whole row is the click
+// target — same contextual action per status that handleExamClick routes.
+function ExamManageRow({ exam, onOpen }) {
   const isActive = exam.status === "active";
   const isEnded = exam.status === "ended";
   const isWaiting = exam.status === "waiting_room";
@@ -79,61 +81,78 @@ function ExamManageCard({ exam, onOpen }) {
   const actionLabel = isActive ? "Monitor Live" : isEnded ? "View Results" : isWaiting ? "Manage Exam" : "Edit Draft";
   const ActionIcon = isActive ? Radio : isEnded ? BarChart2 : isWaiting ? Users : Edit3;
 
+  const classNames = Array.isArray(exam.class_names) ? exam.class_names.filter(Boolean) : [];
+  const classLabel = classNames.join(", ");
+
+  const open = () => onOpen(exam);
+
   return (
-    <div
+    <tr
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`${actionLabel}: ${exam.title}`}
       className={cn(
-        "flex flex-col gap-4 p-5 bg-bg-surface border rounded-[var(--radius-lg)] card-hover h-full",
-        isActive ? "border-accent-live/30" : "border-border"
+        "cursor-pointer transition-colors duration-150 hover:bg-bg-elevated focus-visible:outline-none focus-visible:bg-bg-elevated",
+        isActive && "bg-accent-live/5"
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className="text-[10px] tnum font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-[var(--radius-sm)] border border-border bg-bg-base text-text-muted">
+      <td className="px-4 py-2.5">
+        <span className="inline-block text-[10px] tnum font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-[var(--radius-sm)] border border-border bg-bg-base text-text-muted whitespace-nowrap">
           {exam.question_type}
         </span>
-        <StatusBadge status={exam.status} />
-      </div>
-
-      <h4 className="text-base font-semibold text-text-primary leading-snug" title={exam.title}>
-        {exam.title}
-      </h4>
-
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-        <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Duration</div>
-          <div className="text-sm tnum font-medium text-text-primary mt-0.5">{exam.time_limit_minutes}m</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Sets</div>
-          <div className="text-sm tnum font-medium text-text-primary mt-0.5">
-            {exam.num_sets} variant{exam.num_sets === 1 ? "" : "s"}
-          </div>
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Violation Limit</div>
-          <div className="text-sm tnum font-medium text-text-primary mt-0.5">{exam.violation_limit}</div>
-        </div>
-        <div>
-          <div className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Created</div>
-          <div className="text-sm tnum font-medium text-text-primary mt-0.5">
-            {new Date(exam.created_at).toLocaleDateString()}
-          </div>
-        </div>
-      </div>
-
-      <Button
-        onClick={() => onOpen(exam)}
-        size="sm"
-        className={cn(
-          "mt-auto w-full",
-          isActive
-            ? "bg-accent-live hover:bg-accent-live/90 text-white"
-            : "bg-transparent border border-border text-text-primary hover:bg-bg-surface-3"
+      </td>
+      <td className="px-4 py-2.5 max-w-[220px]">
+        <span className="block truncate text-sm font-medium text-text-primary" title={exam.title}>
+          {exam.title}
+        </span>
+      </td>
+      <td className="px-4 py-2.5 max-w-[180px]">
+        {classLabel ? (
+          <span className="block truncate text-sm text-text-secondary" title={classLabel}>
+            {classLabel}
+          </span>
+        ) : (
+          <span className="text-sm text-text-muted">—</span>
         )}
-      >
-        <ActionIcon className="w-4 h-4" strokeWidth={1.75} />
-        {actionLabel}
-      </Button>
-    </div>
+      </td>
+      <td className="px-4 py-2.5">
+        <StatusBadge status={exam.status} />
+      </td>
+      <td className="px-4 py-2.5 text-sm tnum text-text-secondary whitespace-nowrap">
+        {exam.time_limit_minutes}m
+      </td>
+      <td className="px-4 py-2.5 text-sm tnum text-text-secondary whitespace-nowrap">
+        {exam.num_sets} set{exam.num_sets === 1 ? "" : "s"}
+      </td>
+      <td className="px-4 py-2.5 text-sm tnum text-text-secondary whitespace-nowrap">
+        {new Date(exam.created_at).toLocaleDateString()}
+      </td>
+      <td className="px-4 py-2.5 text-right">
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
+            open();
+          }}
+          size="sm"
+          className={cn(
+            "h-7 px-2.5 text-xs whitespace-nowrap",
+            isActive
+              ? "bg-accent-live hover:bg-accent-live/90 text-white"
+              : "bg-transparent border border-border text-text-primary hover:bg-bg-surface-3"
+          )}
+        >
+          <ActionIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+          {actionLabel}
+        </Button>
+      </td>
+    </tr>
   );
 }
 
@@ -242,6 +261,8 @@ export function ExamCreation() {
   const [myExams, setMyExams] = useState([]);
   const [loadingExams, setLoadingExams] = useState(false);
   const [manageFilter, setManageFilter] = useState("all");
+  const [manageSearch, setManageSearch] = useState("");
+  const [manageSort, setManageSort] = useState("newest"); // "newest" | "oldest" — by created_at
 
   const fetchMyExams = async () => {
     setLoadingExams(true);
@@ -469,6 +490,23 @@ export function ExamCreation() {
   };
   const filteredMyExams =
     manageFilter === "all" ? myExams : myExams.filter((e) => manageFilterKeyOf(e.status) === manageFilter);
+
+  // Search (title + class name) and sort (created_at) layer on top of the
+  // status-filtered list — client-side over ~30 rows, so no debounce.
+  const manageSearchQuery = manageSearch.trim().toLowerCase();
+  const displayedExams = filteredMyExams
+    .filter((e) => {
+      if (!manageSearchQuery) return true;
+      const inTitle = (e.title || "").toLowerCase().includes(manageSearchQuery);
+      const inClass =
+        Array.isArray(e.class_names) &&
+        e.class_names.some((n) => (n || "").toLowerCase().includes(manageSearchQuery));
+      return inTitle || inClass;
+    })
+    .sort((a, b) => {
+      const diff = new Date(b.created_at) - new Date(a.created_at);
+      return manageSort === "newest" ? diff : -diff;
+    });
 
   const filteredClasses = classes.filter((c) =>
     c.name.toLowerCase().includes(classSearch.trim().toLowerCase())
@@ -1110,36 +1148,101 @@ export function ExamCreation() {
             </div>
           )}
 
+          {/* Search + sort — free-text search over title/class name and a
+              two-state created_at sort, both client-side on top of the
+              status-filtered list. Sits directly below the status chips as
+              a finer-grained complement to them. */}
+          {!loadingExams && myExams.length > 0 && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-text-muted pointer-events-none"
+                  strokeWidth={1.75}
+                />
+                <Input
+                  value={manageSearch}
+                  onChange={(e) => setManageSearch(e.target.value)}
+                  placeholder="Search exams by title or class..."
+                  aria-label="Search exams by title or class"
+                  className="pl-9 pr-9 bg-bg-base border-border"
+                />
+                {manageSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setManageSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                  >
+                    <X className="w-4 h-4" strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setManageSort((s) => (s === "newest" ? "oldest" : "newest"))}
+                aria-label={`Sort by created date, currently ${
+                  manageSort === "newest" ? "newest first" : "oldest first"
+                }. Click to toggle.`}
+                className="inline-flex items-center justify-center gap-1.5 pl-3 pr-3 h-9 rounded-[var(--radius-pill)] border border-border bg-transparent text-xs font-semibold text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary transition-colors duration-150 whitespace-nowrap flex-shrink-0"
+              >
+                <ArrowsSort className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} />
+                {manageSort === "newest" ? "Newest first" : "Oldest first"}
+              </button>
+            </div>
+          )}
+
           {loadingExams ? (
-            <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="p-5 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Skeleton className="h-4 w-16 rounded-[var(--radius-sm)]" />
-                    <Skeleton className="h-5 w-20 rounded-full" />
-                  </div>
-                  <Skeleton className="h-4 w-3/4" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                  </div>
-                  <Skeleton className="h-8 w-full" />
-                </div>
-              ))}
+            <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <tbody className="divide-y divide-border">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <tr key={i}>
+                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-12 rounded-[var(--radius-sm)]" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-40" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-24" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-5 w-20 rounded-full" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-8" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-10" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-4 w-16" /></td>
+                        <td className="px-4 py-2.5"><Skeleton className="h-7 w-24 ml-auto" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : myExams.length === 0 ? (
             <div className="p-12 text-center text-text-muted italic bg-bg-surface border border-border rounded-[var(--radius-lg)]">
               No exams created yet.
             </div>
-          ) : filteredMyExams.length === 0 ? (
+          ) : displayedExams.length === 0 ? (
             <div className="py-12 text-center text-text-muted italic bg-bg-surface border border-border rounded-[var(--radius-lg)]">
               No exams match this filter.
             </div>
           ) : (
-            <div className="grid gap-4 items-stretch" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
-              {filteredMyExams.map((exam) => (
-                <ExamManageCard key={exam.id} exam={exam} onOpen={handleExamClick} />
-              ))}
+            <div className="bg-bg-surface border border-border rounded-[var(--radius-lg)] overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-bg-elevated">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Title</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Class</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Duration</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Sets</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Created</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {displayedExams.map((exam) => (
+                      <ExamManageRow key={exam.id} exam={exam} onOpen={handleExamClick} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
