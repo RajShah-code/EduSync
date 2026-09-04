@@ -39,11 +39,17 @@ const QUESTION_TYPES = [
 
 const LANGUAGES = ["javascript", "python", "java", "cpp", "c"];
 
-const SETUP_STEPS = [
-  { id: 1, label: "Exam Settings", desc: "Core configuration", dashedIcon: CircleDashedNumber1, activeIcon: CircleNumber1 },
-  { id: 2, label: "Questions", desc: "Add exam content", dashedIcon: CircleDashedNumber2, activeIcon: CircleNumber2 },
-  { id: 3, label: "Review & Start", desc: "Confirm and launch", dashedIcon: CircleDashedNumber3, activeIcon: CircleNumber3 },
+const WIZARD_STEPS = [
+  { id: 1, label: "Settings" },
+  { id: 2, label: "Questions" },
+  { id: 3, label: "Review" },
 ];
+
+const STEP_META = {
+  1: { title: "Exam Settings", subtitle: "Core parameters and structure for this assessment." },
+  2: { title: "Question Builder", subtitle: "Add MCQ or code questions to each set." },
+  3: { title: "Review & Start", subtitle: "Confirm the configuration, then launch or schedule." },
+};
 
 const MANAGE_FILTERS = [
   { key: "all", label: "All", icon: LayoutGrid },
@@ -185,20 +191,53 @@ function toLocalInputValue(date) {
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}`;
 }
 
-// Small-caps breadcrumb + display heading used at the top of each wizard
-// step's content card — the one piece of the reference's visual language
-// that lives inside the step card rather than the page-level header.
-function StepHeader({ index, total, title, subtitle }) {
+// Horizontal 3-node progress rail in the wizard modal's header. Replaces the
+// old vertical "Setup Progress" list + the per-step breadcrumb: one place that
+// answers "where am I / how far to go". Non-current labels hide on the
+// smallest screens so the rail never wraps.
+function WizardStepper({ step }) {
   return (
-    <div>
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-text-muted uppercase tracking-[0.12em]">
-        <span>Exam Creation Wizard</span>
-        <ChevronRight className="w-3.5 h-3.5" strokeWidth={2} aria-hidden="true" />
-        <span className="text-accent-500">Step {index} of {total}</span>
-      </div>
-      <h2 className="text-xl font-bold text-text-primary tracking-[-0.01em] mt-1.5">{title}</h2>
-      {subtitle && <p className="text-sm text-text-secondary mt-1">{subtitle}</p>}
-    </div>
+    <ol className="flex items-center mt-4" aria-label={`Step ${step} of ${WIZARD_STEPS.length}`}>
+      {WIZARD_STEPS.map((s, i) => {
+        const done = step > s.id;
+        const current = step === s.id;
+        return (
+          <li key={s.id} className={cn("flex items-center", i < WIZARD_STEPS.length - 1 ? "flex-1" : "flex-none")}>
+            <div className="flex items-center gap-2 shrink-0">
+              <span
+                aria-current={current ? "step" : undefined}
+                className={cn(
+                  "w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold tnum shrink-0 transition-colors duration-300",
+                  done && "bg-accent-success text-white",
+                  current && "bg-accent-600 text-white ring-4 ring-accent-500/20",
+                  !done && !current && "border border-border text-text-muted"
+                )}
+              >
+                {done ? <Check className="w-3.5 h-3.5" strokeWidth={2.75} /> : s.id}
+              </span>
+              <span
+                className={cn(
+                  "text-xs font-semibold whitespace-nowrap transition-colors duration-300",
+                  current ? "text-text-primary" : done ? "text-accent-success" : "text-text-muted",
+                  current ? "inline" : "hidden sm:inline"
+                )}
+              >
+                {s.label}
+              </span>
+            </div>
+            {i < WIZARD_STEPS.length - 1 && (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "h-px flex-1 mx-3 transition-colors duration-300",
+                  done ? "bg-accent-success" : "bg-border"
+                )}
+              />
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -422,6 +461,7 @@ export function ExamCreation() {
   const context = useOutletContext();
   const sessionInfo = context?.sessionInfo ?? null;
   const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
 
   // The page is the Manage Exams list; the creation/edit wizard lives in a
   // right-side Sheet ("drawer") opened from the header or a row action.
@@ -991,613 +1031,471 @@ export function ExamCreation() {
       <Dialog open={drawerOpen} onOpenChange={handleDrawerOpenChange}>
         <DialogContent
           data-role="teacher"
-          className="bg-bg-surface border-border text-text-primary sm:max-w-[640px] rounded-[27px] p-0 gap-0 max-h-[85vh] flex flex-col overflow-hidden"
+          className="bg-bg-surface border-border text-text-primary sm:max-w-[900px] rounded-[27px] p-0 gap-0 max-h-[88vh] flex flex-col overflow-hidden"
         >
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
+          <DialogHeader className="px-6 pt-6 pb-5 border-b border-border shrink-0 text-left gap-0">
             <DialogTitle className="text-text-primary flex items-center gap-2">
-              {step === 1 ? (
-                <PencilQuestion className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
-              ) : step === 2 ? (
-                <FileStack className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
-              ) : (
-                <FileCheck className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
-              )}
+              <PencilQuestion className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
               {drawerIsCreate ? "Create Exam" : `Manage Exam #${examId}`}
             </DialogTitle>
-            <DialogDescription className="text-text-muted">
-              {step === 1
-                ? "Configure the core settings, then add questions."
-                : step === 2
-                ? "Add MCQ or code questions to each set."
-                : "Review, then open the waiting room or schedule it."}
+            <DialogDescription className="sr-only">
+              Three-step exam creation wizard: settings, questions, review.
             </DialogDescription>
+            <WizardStepper step={step} />
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
-        {/* Single column — step content, then the Parameters/Summary +
-            Setup Progress panels stacked below it. */}
-        <div className="flex flex-col gap-6">
-          {/* Step content — no wrapper card; the modal is the surface. */}
-          <div className="relative flex flex-col">
-            {/* ── STEP 1: Settings ── */}
-            {step === 1 && (
-              <div className="space-y-6 pb-6">
-                <StepHeader
-                  index={1}
-                  total={3}
-                  title="Exam Settings"
-                  subtitle="Configure the core parameters and structural elements of your new assessment session."
-                />
+            <motion.div
+              key={step}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            >
+              <div className="mb-5">
+                <h2 className="text-lg font-bold text-text-primary tracking-[-0.01em]">{STEP_META[step].title}</h2>
+                <p className="text-sm text-text-secondary mt-0.5">{STEP_META[step].subtitle}</p>
+              </div>
 
-                <NotchedField icon={PencilQuestion}>
-                  <input
-                    id="exam-title"
-                    type="text"
-                    value={settings.title}
-                    onChange={(e) => setSettings({ ...settings, title: e.target.value })}
-                    placeholder="Exam Title — e.g. Data Structures Mid-term"
-                    className={notchedInputClass}
-                  />
-                </NotchedField>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-2">
-                    <Checkbox className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
-                    Question Format
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {QUESTION_TYPES.map(({ value, label, icon: Icon, desc }) => {
-                      const isSelected = settings.question_type === value;
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setSettings({ ...settings, question_type: value })}
-                          aria-pressed={isSelected}
-                          className={`relative p-3.5 rounded-[var(--radius-md)] border text-left transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] ${
-                            isSelected
-                              ? "border-accent-500/60 bg-accent-500/10"
-                              : "border-border bg-bg-base hover:border-border-hover"
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150 ${
-                              isSelected ? "border-accent-500" : "border-border"
-                            }`}
-                            aria-hidden="true"
-                          >
-                            {isSelected && <span className="w-2 h-2 rounded-full bg-accent-500" />}
-                          </span>
-                          <Icon
-                            className={`w-5 h-5 mb-1.5 ${
-                              isSelected ? "text-accent-500" : "text-text-muted"
-                            }`}
-                            strokeWidth={1.75}
-                          />
-                          <div
-                            className={`text-sm font-medium pr-4 ${
-                              isSelected ? "text-accent-500" : "text-text-primary"
-                            }`}
-                          >
-                            {label}
-                          </div>
-                          <div className="text-xs text-text-muted mt-0.5 pr-4">{desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-                      <Chalkboard className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
-                      Target Classes
-                    </h3>
-                    <span className="text-[10px] text-text-muted uppercase tracking-[0.08em]">
-                      Select multiple
-                    </span>
-                  </div>
-
-                  {classes.length > 6 && (
-                    <NotchedField icon={Search} className="mb-1">
+              {/* ── STEP 1: Settings — form left, Parameters rail right ── */}
+              {step === 1 && (
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_248px] gap-x-8 gap-y-6">
+                  <div className="space-y-6 min-w-0">
+                    <NotchedField icon={PencilQuestion}>
                       <input
+                        id="exam-title"
                         type="text"
-                        value={classSearch}
-                        onChange={(e) => setClassSearch(e.target.value)}
-                        placeholder="Search classes"
+                        value={settings.title}
+                        onChange={(e) => setSettings({ ...settings, title: e.target.value })}
+                        placeholder="Exam Title — e.g. Data Structures Mid-term"
                         className={notchedInputClass}
                       />
                     </NotchedField>
-                  )}
 
-                  {/* Toggle chips — Start Lecture modal style. Selected state
-                      draws the icon-badge over the chip's top-left corner. */}
-                  <div className="flex flex-wrap gap-2 mt-2 ml-1">
-                    {classesForChips.map((cls) => {
-                      const isSelected = selectedClassIds.includes(cls.id);
-                      return (
-                        <div key={cls.id} className="relative">
-                          {isSelected && (
-                            <div className="absolute left-0 top-0 -translate-x-1/5 -translate-y-[45%] z-10 flex items-center justify-center p-0.5 rounded-full bg-bg-surface">
-                              <Chalkboard className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            aria-pressed={isSelected}
-                            onClick={() =>
-                              setSelectedClassIds(
+                    <div>
+                      <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2 mb-2">
+                        <Checkbox className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+                        Question Format
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {QUESTION_TYPES.map(({ value, label, icon: Icon, desc }) => {
+                          const isSelected = settings.question_type === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => setSettings({ ...settings, question_type: value })}
+                              aria-pressed={isSelected}
+                              className={`relative p-3.5 rounded-[var(--radius-md)] border text-left transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.98] ${
                                 isSelected
-                                  ? selectedClassIds.filter((id) => id !== cls.id)
-                                  : [...selectedClassIds, cls.id]
-                              )
-                            }
-                            className={cn(
-                              "min-w-[64px] h-7 px-3 rounded-[10px] text-xs font-medium border bg-transparent transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center justify-center",
-                              isSelected ? "border-accent-info text-accent-info" : "border-border text-text-secondary"
-                            )}
-                          >
-                            <span>{cls.name}</span>
-                          </button>
-                        </div>
-                      );
-                    })}
-                    {classes.length > 0 && classesForChips.length === 0 && (
-                      <span className="text-xs text-text-muted italic">No classes match.</span>
-                    )}
-                  </div>
-                  {classes.length === 0 && (
-                    <p className="text-xs text-text-muted mt-1">No classes found. Please create classes first.</p>
-                  )}
-                </div>
-              </div>
-            )}
+                                  ? "border-accent-500/60 bg-accent-500/10"
+                                  : "border-border bg-bg-base hover:border-border-hover"
+                              }`}
+                            >
+                              <span
+                                className={`absolute top-3 right-3 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors duration-150 ${
+                                  isSelected ? "border-accent-500" : "border-border"
+                                }`}
+                                aria-hidden="true"
+                              >
+                                {isSelected && <span className="w-2 h-2 rounded-full bg-accent-500" />}
+                              </span>
+                              <Icon
+                                className={`w-5 h-5 mb-1.5 ${isSelected ? "text-accent-500" : "text-text-muted"}`}
+                                strokeWidth={1.75}
+                              />
+                              <div className={`text-sm font-medium pr-4 ${isSelected ? "text-accent-500" : "text-text-primary"}`}>
+                                {label}
+                              </div>
+                              <div className="text-xs text-text-muted mt-0.5 pr-4">{desc}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-            {/* Sticky footer CTA — pinned to the bottom of the modal's scroll
-                body so "Create & Continue" is always reachable. */}
-            {step === 1 && (
-              <div className="sticky bottom-0 -mx-6 -mb-5 px-6 py-4 mt-2 bg-bg-surface border-t border-border">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                          <Chalkboard className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+                          Target Classes
+                        </h3>
+                        <span className="text-[10px] text-text-muted uppercase tracking-[0.08em]">Select multiple</span>
+                      </div>
+
+                      {classes.length > 6 && (
+                        <NotchedField icon={Search} className="mb-1">
+                          <input
+                            type="text"
+                            value={classSearch}
+                            onChange={(e) => setClassSearch(e.target.value)}
+                            placeholder="Search classes"
+                            className={notchedInputClass}
+                          />
+                        </NotchedField>
+                      )}
+
+                      <div className="flex flex-wrap gap-2 mt-2 ml-1">
+                        {classesForChips.map((cls) => {
+                          const isSelected = selectedClassIds.includes(cls.id);
+                          return (
+                            <div key={cls.id} className="relative">
+                              {isSelected && (
+                                <div className="absolute left-0 top-0 -translate-x-1/5 -translate-y-[45%] z-10 flex items-center justify-center p-0.5 rounded-full bg-bg-surface">
+                                  <Chalkboard className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                aria-pressed={isSelected}
+                                onClick={() =>
+                                  setSelectedClassIds(
+                                    isSelected
+                                      ? selectedClassIds.filter((id) => id !== cls.id)
+                                      : [...selectedClassIds, cls.id]
+                                  )
+                                }
+                                className={cn(
+                                  "min-w-[64px] h-7 px-3 rounded-[10px] text-xs font-medium border bg-transparent transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center justify-center",
+                                  isSelected ? "border-accent-info text-accent-info" : "border-border text-text-secondary"
+                                )}
+                              >
+                                <span>{cls.name}</span>
+                              </button>
+                            </div>
+                          );
+                        })}
+                        {classes.length > 0 && classesForChips.length === 0 && (
+                          <span className="text-xs text-text-muted italic">No classes match.</span>
+                        )}
+                      </div>
+                      {classes.length === 0 && (
+                        <p className="text-xs text-text-muted mt-1">No classes found. Please create classes first.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <aside className="space-y-4 lg:border-l lg:border-border lg:pl-6">
+                    <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5">
+                      <SlidersHorizontal className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
+                      Parameters
+                    </h3>
+                    <div>
+                      <NotchedField icon={Alarm} hint="duration in minutes">
+                        <input
+                          id="time-limit"
+                          type="number"
+                          min={1}
+                          value={settings.time_limit_minutes}
+                          onChange={(e) => setSettings({ ...settings, time_limit_minutes: parseInt(e.target.value) || 30 })}
+                          className={cn(notchedInputClass, "tnum")}
+                        />
+                      </NotchedField>
+                    </div>
+                    <div>
+                      <NotchedField icon={FileStack} hint="question sets">
+                        <input
+                          id="num-sets"
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={settings.num_sets}
+                          onChange={(e) => setSettings({ ...settings, num_sets: parseInt(e.target.value) || 1 })}
+                          className={cn(notchedInputClass, "tnum")}
+                        />
+                      </NotchedField>
+                      <p className="text-[11px] text-text-muted mt-1 ml-1">Different versions of the exam</p>
+                    </div>
+                    <div>
+                      <NotchedField
+                        icon={AlertTriangle}
+                        hint={
+                          settings.violation_limit <= 2
+                            ? "violation limit — high sensitivity"
+                            : settings.violation_limit >= 6
+                            ? "violation limit — lenient"
+                            : "violation limit"
+                        }
+                      >
+                        <input
+                          id="violation-limit"
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={settings.violation_limit}
+                          onChange={(e) => setSettings({ ...settings, violation_limit: parseInt(e.target.value) || 3 })}
+                          className={cn(notchedInputClass, "tnum")}
+                        />
+                      </NotchedField>
+                      <p className="text-[11px] text-text-muted mt-1 ml-1">Auto-locks after this many</p>
+                    </div>
+                  </aside>
+                </div>
+              )}
+
+              {/* ── STEP 2: Question Builder — list left, Summary rail right ── */}
+              {step === 2 && (
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-x-8 gap-y-6">
+                  <div className="space-y-5 min-w-0">
+                    <div
+                      className="h-11 px-1 bg-bg-surface-3/40 border-b border-border flex items-end gap-1 overflow-x-auto flex-shrink-0"
+                      role="tablist"
+                      aria-label="Question sets"
+                    >
+                      {Array.from({ length: settings.num_sets }, (_, i) => i + 1).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          role="tab"
+                          aria-selected={activeSet === s}
+                          onClick={() => { setActiveSet(s); setDraft(null); }}
+                          className={`flex items-center gap-1.5 px-3.5 h-9 rounded-t-[var(--radius-md)] text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors duration-150 ${
+                            activeSet === s
+                              ? "bg-bg-surface text-text-primary"
+                              : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
+                          }`}
+                        >
+                          Set {s}
+                          {(setQuestions[s]?.length ?? 0) > 0 && (
+                            <span className="tnum text-[10px] px-1.5 py-0.5 rounded-full bg-accent-500/15 text-accent-500">
+                              {setQuestions[s].length}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      {(setQuestions[activeSet] || []).map((q, idx) => {
+                        const QIcon = q.type === "code" ? Code2 : CheckSquare;
+                        return (
+                          <div
+                            key={q.id}
+                            className="flex items-start gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)]"
+                          >
+                            <span className="mt-0.5 flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-[var(--radius-sm)] border border-border bg-bg-surface text-accent-500">
+                              <QIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-text-primary truncate">{idx + 1}. {q.question_text}</p>
+                              <p className="text-xs text-text-muted mt-0.5 tnum capitalize">
+                                {q.type === "code"
+                                  ? `${q.language} · ${q.max_score} mark${q.max_score === 1 ? "" : "s"}`
+                                  : `${q.options?.length ?? 0} options · ${q.max_score ?? 1} mark · correct: ${q.options?.[q.correct_option] ?? "—"}`}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => openEditDraft(q)}
+                                className="text-text-muted hover:text-accent-500 transition-colors p-1"
+                                title="Edit question"
+                                aria-label={`Edit question ${idx + 1}: ${q.question_text}`}
+                              >
+                                <Edit3 className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteQuestion(activeSet, q)}
+                                className="text-text-muted hover:text-accent-critical transition-colors p-1"
+                                title="Delete question"
+                                aria-label={`Delete question ${idx + 1}: ${q.question_text}`}
+                              >
+                                <Trash2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {(setQuestions[activeSet] || []).length === 0 && (
+                        <div className="text-center py-10 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-muted text-sm">
+                          No questions yet for Set {activeSet}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      {(settings.question_type === "mcq" || settings.question_type === "both") && (
+                        <Button variant="outline" size="sm" onClick={() => openNewDraft("mcq")}>
+                          <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                          Add MCQ
+                        </Button>
+                      )}
+                      {(settings.question_type === "code" || settings.question_type === "both") && (
+                        <Button variant="outline" size="sm" onClick={() => openNewDraft("code")}>
+                          <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                          Add Code
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <aside className="space-y-2 text-sm lg:border-l lg:border-border lg:pl-6">
+                    <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-2">Summary</h3>
+                    <div className="flex justify-between"><span className="text-text-secondary">Type</span><span className="tnum text-text-primary uppercase text-xs">{settings.question_type}</span></div>
+                    <div className="flex justify-between"><span className="text-text-secondary">Sets</span><span className="tnum text-text-primary">{settings.num_sets}</span></div>
+                    <div className="flex justify-between"><span className="text-text-secondary">Duration</span><span className="tnum text-text-primary">{settings.time_limit_minutes}m</span></div>
+                    <div className="flex justify-between"><span className="text-text-secondary">Questions</span><span className="tnum text-text-primary">{totalQuestions}</span></div>
+                  </aside>
+                </div>
+              )}
+
+              {/* ── STEP 3: Review — details left, Launch rail right ── */}
+              {step === 3 && (
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px] gap-x-8 gap-y-6">
+                  <div className="space-y-4 min-w-0">
+                    <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-3 text-sm">
+                      <div className="flex items-center justify-between"><span className="text-text-secondary">Title</span><span className="font-medium text-text-primary">{settings.title}</span></div>
+                      <div className="flex items-center justify-between"><span className="text-text-secondary">Type</span><span className="tnum text-text-primary uppercase text-xs">{settings.question_type}</span></div>
+                      <div className="flex items-center justify-between"><span className="text-text-secondary">Sets</span><span className="tnum text-text-primary">{settings.num_sets}</span></div>
+                      <div className="flex items-center justify-between"><span className="text-text-secondary">Duration</span><span className="tnum text-text-primary">{settings.time_limit_minutes} minutes</span></div>
+                      <div className="flex items-center justify-between"><span className="text-text-secondary">Auto-lock after</span><span className="tnum text-text-primary">{settings.violation_limit} violation(s)</span></div>
+                      <div className="border-t border-border pt-3 space-y-1">
+                        {Array.from({ length: settings.num_sets }, (_, i) => i + 1).map((s) => (
+                          <div key={s} className="flex items-center justify-between">
+                            <span className="text-text-secondary">Set {s}</span>
+                            <span className="tnum text-text-primary">{setQuestions[s]?.length ?? 0} question(s)</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-accent-warning/5 border border-accent-warning/20 rounded-[var(--radius-md)] text-xs text-text-secondary">
+                      <strong className="text-accent-warning">Note:</strong> Once started, sets will be
+                      distributed to students in roll-number order with an adjacency guard (no two
+                      adjacent roll numbers get the same set). The timer starts immediately for all students.
+                    </div>
+                  </div>
+
+                  <aside className="space-y-3 lg:border-l lg:border-border lg:pl-6">
+                    <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5">
+                      <Radio className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
+                      Launch
+                    </h3>
+                    {!examOpened ? (
+                      <>
+                        <PillButton
+                          data-tour="teacher-open-exam"
+                          icon={CircleCheck}
+                          onClick={handleOpenExam}
+                          disabled={saving}
+                          loading={saving}
+                          className="w-full"
+                        >
+                          Open Exam
+                        </PillButton>
+                        <PillButton
+                          tone="ghost"
+                          icon={CalendarClock}
+                          onClick={() => setScheduleMode((m) => !m)}
+                          aria-pressed={scheduleMode}
+                          className="w-full"
+                        >
+                          Schedule for Later
+                        </PillButton>
+
+                        {scheduleMode && (
+                          <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-3">
+                            <NotchedField icon={CalendarClock} hint="opens automatically at">
+                              <input
+                                id="exam-schedule-at"
+                                type="datetime-local"
+                                value={scheduledAtLocal}
+                                min={toLocalInputValue(new Date(Date.now() + 60000))}
+                                onChange={(e) => setScheduledAtLocal(e.target.value)}
+                                className={cn(notchedInputClass, "tnum pr-3 [color-scheme:dark]")}
+                              />
+                            </NotchedField>
+                            <div className="flex flex-col gap-2">
+                              <PillButton
+                                icon={Check}
+                                onClick={handleScheduleExam}
+                                disabled={saving || !scheduledAtLocal}
+                                loading={saving}
+                                className="w-full"
+                              >
+                                Confirm Schedule
+                              </PillButton>
+                              <PillButton
+                                tone="ghost"
+                                onClick={() => { setScheduleMode(false); setScheduledAtLocal(""); }}
+                                className="w-full"
+                              >
+                                Cancel
+                              </PillButton>
+                            </div>
+                            <p className="text-[11px] text-text-muted">
+                              You still click "Start Exam Now" yourself once students have joined.
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex flex-col gap-2 p-3 bg-bg-base border border-border rounded-[var(--radius-md)]">
+                        <StatusBadge status="waiting_room" />
+                        <span className="flex items-center gap-1 text-xs text-text-secondary tnum">
+                          <Users className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
+                          {waitingCount} connected
+                        </span>
+                      </div>
+                    )}
+                  </aside>
+                </div>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Persistent footer nav — Back on the left, the step's primary
+              advance on the right, so the flow controls never move. */}
+          <div className="px-6 py-4 border-t border-border shrink-0 flex items-center justify-between gap-3">
+            {step === 1 ? (
+              <span aria-hidden="true" />
+            ) : (
+              <PillButton tone="ghost" icon={ChevronLeft} onClick={() => setStep(step - 1)}>
+                {step === 3 ? "Back to Questions" : "Back"}
+              </PillButton>
+            )}
+            <div className="flex items-center gap-2">
+              {step === 2 && (
+                <PillButton
+                  tone="ghost"
+                  icon={CircleDashedCheck}
+                  onClick={handleSaveDraftAndClose}
+                  title="Questions are already saved — this just closes the wizard, leaving the exam in Draft."
+                >
+                  Save as Draft
+                </PillButton>
+              )}
+              {step === 1 && (
                 <PillButton
                   animated
+                  icon={ChevronRight}
                   onClick={handleCreateExam}
                   disabled={saving || !settings.title.trim()}
                   loading={saving}
-                  icon={ChevronRight}
                 >
                   Create &amp; Continue
                 </PillButton>
-              </div>
-            )}
-
-            {/* ── STEP 2: Question Builder ── */}
-            {step === 2 && (
-              <div className="space-y-5 pb-6">
-                <StepHeader
-                  index={2}
-                  total={3}
-                  title="Question Builder"
-                  subtitle={`Add MCQ or code questions to each set — Exam #${examId}`}
-                />
-
-                {/* Set switcher — a genuinely fixed, parallel set of items
-                    (Set 1, Set 2, ...), so this is the one place in Step 2
-                    where the browser-tab pattern applies directly. */}
-                <div
-                  className="h-11 px-1 bg-bg-surface-3/40 border-b border-border flex items-end gap-1 overflow-x-auto flex-shrink-0"
-                  role="tablist"
-                  aria-label="Question sets"
+              )}
+              {step === 2 && (
+                <PillButton animated icon={ChevronRight} onClick={() => setStep(3)} disabled={totalQuestions === 0}>
+                  Review &amp; Start
+                </PillButton>
+              )}
+              {step === 3 && (
+                <PillButton
+                  animated
+                  tone="success"
+                  data-tour="teacher-start-exam-now"
+                  icon={Play}
+                  onClick={handleStartExam}
+                  disabled={saving}
+                  loading={saving}
                 >
-                  {Array.from({ length: settings.num_sets }, (_, i) => i + 1).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeSet === s}
-                      onClick={() => { setActiveSet(s); setDraft(null); }}
-                      className={`flex items-center gap-1.5 px-3.5 h-9 rounded-t-[var(--radius-md)] text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors duration-150 ${
-                        activeSet === s
-                          ? "bg-bg-surface text-text-primary"
-                          : "text-text-secondary hover:bg-bg-elevated hover:text-text-primary"
-                      }`}
-                    >
-                      Set {s}
-                      {(setQuestions[s]?.length ?? 0) > 0 && (
-                        <span className="tnum text-[10px] px-1.5 py-0.5 rounded-full bg-accent-500/15 text-accent-500">
-                          {setQuestions[s].length}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Question list for active set — the real, persisted
-                    questions, each editable (reopens the dialog pre-filled)
-                    and deletable (server DELETE, then local trim). */}
-                <div className="space-y-2">
-                  {(setQuestions[activeSet] || []).map((q, idx) => {
-                    const QIcon = q.type === "code" ? Code2 : CheckSquare;
-                    return (
-                      <div
-                        key={q.id}
-                        className="flex items-start gap-3 p-3 bg-bg-base border border-border rounded-[var(--radius-md)]"
-                      >
-                        <span className="mt-0.5 flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-[var(--radius-sm)] border border-border bg-bg-surface text-accent-500">
-                          <QIcon className="w-3.5 h-3.5" strokeWidth={1.75} />
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-text-primary truncate">
-                            {idx + 1}. {q.question_text}
-                          </p>
-                          <p className="text-xs text-text-muted mt-0.5 tnum capitalize">
-                            {q.type === "code"
-                              ? `${q.language} · ${q.max_score} mark${q.max_score === 1 ? "" : "s"}`
-                              : `${q.options?.length ?? 0} options · ${q.max_score ?? 1} mark · correct: ${q.options?.[q.correct_option] ?? "—"}`}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => openEditDraft(q)}
-                            className="text-text-muted hover:text-accent-500 transition-colors p-1"
-                            title="Edit question"
-                            aria-label={`Edit question ${idx + 1}: ${q.question_text}`}
-                          >
-                            <Edit3 className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteQuestion(activeSet, q)}
-                            className="text-text-muted hover:text-accent-critical transition-colors p-1"
-                            title="Delete question"
-                            aria-label={`Delete question ${idx + 1}: ${q.question_text}`}
-                          >
-                            <Trash2 className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {(setQuestions[activeSet] || []).length === 0 && (
-                    <div className="text-center py-10 border-2 border-dashed border-border rounded-[var(--radius-md)] text-text-muted text-sm">
-                      No questions yet for Set {activeSet}
-                    </div>
-                  )}
-                </div>
-
-                {/* Add question — opens the type-aware Question Editor dialog,
-                    same modal-shell pattern used for Task Assignment. */}
-                <div className="flex gap-2">
-                  {(settings.question_type === "mcq" || settings.question_type === "both") && (
-                    <Button variant="outline" size="sm" onClick={() => openNewDraft("mcq")}>
-                      <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                      Add MCQ
-                    </Button>
-                  )}
-                  {(settings.question_type === "code" || settings.question_type === "both") && (
-                    <Button variant="outline" size="sm" onClick={() => openNewDraft("code")}>
-                      <Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                      Add Code
-                    </Button>
-                  )}
-                </div>
-
-                {/* Navigation */}
-                <div className="flex flex-wrap gap-2 items-center pt-2 border-t border-border">
-                  <PillButton tone="ghost" icon={ChevronLeft} onClick={() => setStep(1)}>
-                    Back
-                  </PillButton>
-                  <PillButton
-                    tone="ghost"
-                    icon={CircleDashedCheck}
-                    className="ml-auto"
-                    onClick={handleSaveDraftAndClose}
-                    title="Questions are already saved — this just closes the wizard, leaving the exam in Draft."
-                  >
-                    Save as Draft
-                  </PillButton>
-                  <PillButton
-                    animated
-                    icon={ChevronRight}
-                    onClick={() => setStep(3)}
-                    disabled={totalQuestions === 0}
-                  >
-                    Review &amp; Start
-                  </PillButton>
-                </div>
-              </div>
-            )}
-
-            {/* ── STEP 3: Start ── */}
-            {step === 3 && (
-              <div className="space-y-5 pb-6">
-                <StepHeader
-                  index={3}
-                  total={3}
-                  title="Review & Start"
-                  subtitle="Confirm your exam configuration before launching it to students."
-                />
-
-                <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-3 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Title</span>
-                    <span className="font-medium text-text-primary">{settings.title}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Type</span>
-                    <span className="tnum text-text-primary uppercase text-xs">
-                      {settings.question_type}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Sets</span>
-                    <span className="tnum text-text-primary">{settings.num_sets}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Duration</span>
-                    <span className="tnum text-text-primary">
-                      {settings.time_limit_minutes} minutes
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-secondary">Auto-lock after</span>
-                    <span className="tnum text-text-primary">
-                      {settings.violation_limit} violation(s)
-                    </span>
-                  </div>
-                  <div className="border-t border-border pt-3 space-y-1">
-                    {Array.from({ length: settings.num_sets }, (_, i) => i + 1).map((s) => (
-                      <div key={s} className="flex items-center justify-between">
-                        <span className="text-text-secondary">Set {s}</span>
-                        <span className="tnum text-text-primary">
-                          {setQuestions[s]?.length ?? 0} question(s)
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-3 bg-accent-warning/5 border border-accent-warning/20 rounded-[var(--radius-md)] text-xs text-text-secondary">
-                  <strong className="text-accent-warning">Note:</strong> Once started, sets will be
-                  distributed to students in roll-number order with an adjacency guard (no two
-                  adjacent roll numbers get the same set). The timer starts immediately for all students.
-                </div>
-
-                <div className="flex flex-wrap gap-2 items-center">
-                  <PillButton tone="ghost" icon={ChevronLeft} onClick={() => setStep(2)}>
-                    Back to Questions
-                  </PillButton>
-                  {!examOpened ? (
-                    <>
-                      <PillButton
-                        data-tour="teacher-open-exam"
-                        icon={CircleCheck}
-                        onClick={handleOpenExam}
-                        disabled={saving}
-                        loading={saving}
-                      >
-                        Open Exam
-                      </PillButton>
-                      <PillButton
-                        tone="ghost"
-                        icon={CalendarClock}
-                        onClick={() => setScheduleMode((m) => !m)}
-                        aria-pressed={scheduleMode}
-                      >
-                        Schedule for Later
-                      </PillButton>
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status="waiting_room" />
-                      <span className="flex items-center gap-1 text-xs text-text-secondary tnum">
-                        <Users className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-                        {waitingCount} connected
-                      </span>
-                    </div>
-                  )}
-                  <PillButton
-                    animated
-                    tone="success"
-                    data-tour="teacher-start-exam-now"
-                    icon={Play}
-                    onClick={handleStartExam}
-                    disabled={saving}
-                    loading={saving}
-                  >
-                    Start Exam Now
-                  </PillButton>
-                </div>
-
-                {/* Schedule for Later (Option A) — sets a future auto-open
-                    time; the exam stays a draft and the teacher still starts
-                    it manually. Past times are rejected here and on the
-                    server. */}
-                {!examOpened && scheduleMode && (
-                  <div className="p-3 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-3">
-                    <NotchedField icon={CalendarClock} hint="opens automatically at">
-                      <input
-                        id="exam-schedule-at"
-                        type="datetime-local"
-                        value={scheduledAtLocal}
-                        min={toLocalInputValue(new Date(Date.now() + 60000))}
-                        onChange={(e) => setScheduledAtLocal(e.target.value)}
-                        className={cn(notchedInputClass, "tnum pr-3 [color-scheme:dark]")}
-                      />
-                    </NotchedField>
-                    <div className="flex gap-2">
-                      <PillButton
-                        icon={Check}
-                        onClick={handleScheduleExam}
-                        disabled={saving || !scheduledAtLocal}
-                        loading={saving}
-                      >
-                        Confirm Schedule
-                      </PillButton>
-                      <PillButton
-                        tone="ghost"
-                        onClick={() => { setScheduleMode(false); setScheduledAtLocal(""); }}
-                      >
-                        Cancel
-                      </PillButton>
-                    </div>
-                    <p className="text-[11px] text-text-muted">
-                      You still click "Start Exam Now" yourself once students have joined.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Right: live parameters (step 1, editable) / summary (steps 2–3,
-              read-only) + setup progress — a sequential authoring flow, not
-              a set of parallel items, so progress stays step-based rather
-              than becoming a tab strip. */}
-          <div className="space-y-4">
-            {step === 1 ? (
-              <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)] space-y-4">
-                <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-4 h-4 text-accent-500" strokeWidth={1.75} />
-                  Parameters
-                </h3>
-                <div>
-                  <NotchedField icon={Alarm} hint="duration in minutes">
-                    <input
-                      id="time-limit"
-                      type="number"
-                      min={1}
-                      value={settings.time_limit_minutes}
-                      onChange={(e) =>
-                        setSettings({ ...settings, time_limit_minutes: parseInt(e.target.value) || 30 })
-                      }
-                      className={cn(notchedInputClass, "tnum")}
-                    />
-                  </NotchedField>
-                </div>
-                <div>
-                  <NotchedField icon={FileStack} hint="question sets">
-                    <input
-                      id="num-sets"
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={settings.num_sets}
-                      onChange={(e) =>
-                        setSettings({ ...settings, num_sets: parseInt(e.target.value) || 1 })
-                      }
-                      className={cn(notchedInputClass, "tnum")}
-                    />
-                  </NotchedField>
-                  <p className="text-[11px] text-text-muted mt-1 ml-1">Different versions of the exam</p>
-                </div>
-                <div>
-                  <NotchedField
-                    icon={AlertTriangle}
-                    hint={
-                      settings.violation_limit <= 2
-                        ? "violation limit — high sensitivity"
-                        : settings.violation_limit >= 6
-                        ? "violation limit — lenient"
-                        : "violation limit"
-                    }
-                  >
-                    <input
-                      id="violation-limit"
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={settings.violation_limit}
-                      onChange={(e) =>
-                        setSettings({ ...settings, violation_limit: parseInt(e.target.value) || 3 })
-                      }
-                      className={cn(notchedInputClass, "tnum")}
-                    />
-                  </NotchedField>
-                  <p className="text-[11px] text-text-muted mt-1 ml-1">Auto-locks after this many</p>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)] text-sm space-y-2">
-                <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-2">
-                  Summary
-                </h3>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Type</span>
-                  <span className="tnum text-text-primary uppercase text-xs">
-                    {settings.question_type}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Sets</span>
-                  <span className="tnum text-text-primary">{settings.num_sets}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Duration</span>
-                  <span className="tnum text-text-primary">{settings.time_limit_minutes}m</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Violations</span>
-                  <span className="tnum text-text-primary">{settings.violation_limit}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Questions</span>
-                  <span className="tnum text-text-primary">{totalQuestions}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="p-4 bg-bg-base border border-border rounded-[var(--radius-md)]">
-              <h3 className="text-[11px] font-semibold text-text-muted uppercase tracking-[0.08em] mb-3">
-                Setup Progress
-              </h3>
-              <div className="space-y-1">
-                {SETUP_STEPS.map((s, i) => (
-                  <div key={s.id} className="relative flex items-start gap-3 px-1 py-1.5">
-                    {i < SETUP_STEPS.length - 1 && (
-                      <span
-                        className="absolute left-[9px] top-7 bottom-[-4px] w-px bg-border"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span
-                      className={`relative z-10 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        step > s.id
-                          ? "bg-accent-success text-white"
-                          : step === s.id
-                          ? "text-accent-500"
-                          : "text-text-muted"
-                      }`}
-                    >
-                      {step > s.id ? (
-                        <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
-                      ) : step === s.id ? (
-                        <s.activeIcon className="w-5 h-5" />
-                      ) : (
-                        <s.dashedIcon className="w-5 h-5" />
-                      )}
-                    </span>
-                    <div className="min-w-0">
-                      <div
-                        className={`text-sm font-medium ${
-                          step === s.id
-                            ? "text-text-primary"
-                            : step > s.id
-                            ? "text-accent-success"
-                            : "text-text-muted"
-                        }`}
-                      >
-                        {s.label}
-                      </div>
-                      <div className="text-[11px] text-text-muted mt-0.5">{s.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  Start Exam Now
+                </PillButton>
+              )}
             </div>
-          </div>
-        </div>
           </div>
         </DialogContent>
       </Dialog>
