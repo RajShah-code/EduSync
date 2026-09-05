@@ -3,27 +3,24 @@ import { useState, useEffect, useRef } from "react";
 import { useOutletContext, useSearchParams } from "react-router";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Textarea } from "../../components/ui/textarea";
-import { Switch } from "../../components/ui/switch";
 import { Skeleton } from "../../components/ui/skeleton";
-import { StatusBadge } from "../../components/StatusBadge";
 import { TaskStatusModal } from "../../components/TaskStatusModal";
+import { CreateTaskDialog } from "../../components/CreateTaskDialog";
 import { cn } from "../../components/ui/utils";
-import { IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconClipboardCopy as ClipboardCopy, IconMessageReport as MessageReport, IconCircleDot as CircleDot, IconCircle as CircleIcon, IconHandStop as Hand, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconFileDescription as FileDescription, IconFilePlus as FilePlus, IconBracketsAngle as BracketsAngle, IconBrandJavascript as BrandJavascript, IconBrandPython as BrandPython, IconBrandHtml5 as BrandHtml5, IconBrandCss3 as BrandCss3, IconTypography as Typography, IconAlarm as Alarm } from "@tabler/icons-react";
+import { IconAlertCircle as AlertCircle, IconAlertTriangle as AlertTriangle, IconClipboardList as ClipboardListIcon, IconLayoutGrid as LayoutGrid, IconClipboardCheck as ClipboardCheck, IconClipboardText as ClipboardTextIcon, IconClipboardX as ClipboardX, IconMessageQuestion as MessageQuestion, IconCircleDashed as CircleDashed, IconCircleCheck as CheckCircle2, IconFilePencil as FilePencil, IconClipboardPlus as ClipboardPlus } from "@tabler/icons-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import PageShell from "../../components/PageShell";
 import { getSocket } from "../../store/socket";
 import { deriveConnectionStatus } from "../../utils/statusHelper";
+import "./TaskAssignment.css";
 
-const LANGUAGES = [
-  { name: "JavaScript", dot: "#E8C547", icon: BrandJavascript },
-  { name: "Python", dot: "#4B8BBE", icon: BrandPython },
-  { name: "HTML", dot: "#E0723C", icon: BrandHtml5 },
-  { name: "CSS", dot: "#4D7CE0", icon: BrandCss3 },
-  { name: "Plaintext", dot: "#9A9AA2", icon: Typography },
-];
+const BLANK_TASK_FORM = {
+  title: "",
+  description: "",
+  languages: ["javascript"],
+  timeLimitMinutes: "",
+};
 
 // ── Progress-view pieces — merged in from the old standalone Task Progress
 // page. Carried over as-is: same cards, same statuses, same modal. ──
@@ -50,24 +47,28 @@ function TypingIndicator({ reduceMotion }) {
   );
 }
 
-function DoubtHandIcon({ reduceMotion }) {
+// Corner badge for a raised doubt — a dark chip with a wobbling
+// message-question glyph, matching the reference mockup's card badge.
+function DoubtBadgeIcon({ reduceMotion }) {
   if (reduceMotion) {
-    return <Hand className="w-4 h-4 text-accent-warning" strokeWidth={2.25} />;
+    return <MessageQuestion className="w-[15px] h-[15px]" strokeWidth={2.25} />;
   }
   return (
     <motion.div
-      style={{ transformOrigin: "70% 90%" }}
-      animate={{ rotate: [0, -14, 0, -14, 0] }}
+      style={{ transformOrigin: "50% 50%" }}
+      animate={{ rotate: [0, -10, 0, -10, 0] }}
       transition={{ duration: 1.4, repeat: Infinity, repeatDelay: 2.2, ease: "easeInOut" }}
     >
-      <Hand className="w-4 h-4 text-accent-warning" strokeWidth={2.25} />
+      <MessageQuestion className="w-[15px] h-[15px]" strokeWidth={2.25} />
     </motion.div>
   );
 }
 
-function SubmittedCheck({ reduceMotion }) {
+// Corner badge for a submission — solid accent fill, spring-in checkmark
+// clipboard glyph.
+function SubmittedBadgeIcon({ reduceMotion }) {
   if (reduceMotion) {
-    return <CheckCircle2 className="w-4 h-4 text-accent-success" strokeWidth={2.25} />;
+    return <ClipboardCheck className="w-[15px] h-[15px]" strokeWidth={2.25} />;
   }
   return (
     <motion.div
@@ -75,17 +76,10 @@ function SubmittedCheck({ reduceMotion }) {
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", stiffness: 420, damping: 16 }}
     >
-      <CheckCircle2 className="w-4 h-4 text-accent-success" strokeWidth={2.25} />
+      <ClipboardCheck className="w-[15px] h-[15px]" strokeWidth={2.25} />
     </motion.div>
   );
 }
-
-const CARD_BADGE_STATUS = {
-  not_started: "pending",
-  in_progress: "in-progress",
-  doubt: "doubt",
-  submitted: "submitted",
-};
 
 const PRESENCE_DOT = {
   live: "bg-accent-live",
@@ -96,8 +90,8 @@ const PRESENCE_DOT = {
 };
 
 const CARD_CAPTION = {
-  not_started: "Waiting to begin",
-  in_progress: "Working right now",
+  not_started: "Not Working",
+  in_progress: "Working",
   doubt: "Needs a reply",
 };
 
@@ -109,20 +103,16 @@ const PRESENCE_LABEL = {
   offline: "Offline",
 };
 
+// Doubt is kept out of this array and rendered after a divider — it's an
+// actionable alert, not just another status, so it reads as its own
+// cluster in the filter bar rather than one more chip in the row.
 const FILTERS = [
   { key: "all", label: "All", icon: LayoutGrid },
   { key: "submitted", label: "Submitted", icon: ClipboardCheck },
-  { key: "in_progress", label: "In Progress", icon: ClipboardTextIcon },
-  { key: "not_started", label: "Not Started", icon: ClipboardX },
-  { key: "doubt", label: "Doubt", icon: MessageReport },
+  { key: "in_progress", label: "Working", icon: ClipboardTextIcon },
+  { key: "not_started", label: "Not Working", icon: ClipboardX },
 ];
-
-function initialsOf(name) {
-  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+const DOUBT_FILTER = { key: "doubt", label: "Doubt", icon: MessageQuestion };
 
 // One card, exactly one status, one purposeful micro-interaction — never a
 // separate mock card per status, always driven by the merged roster row.
@@ -137,70 +127,50 @@ function TaskStudentCard({ row, onClick, reduceMotion }) {
         : "Awaiting grade"
       : CARD_CAPTION[row.status];
 
+  const Container = clickable ? "button" : "div";
+
   return (
-    <div
-      role={clickable ? "button" : undefined}
-      tabIndex={clickable ? 0 : undefined}
-      onClick={clickable ? onClick : undefined}
-      onKeyDown={
-        clickable
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onClick();
-              }
-            }
-          : undefined
-      }
-      aria-label={clickable ? `Review ${row.student_name} — ${row.status.replace("_", " ")}` : undefined}
-      className={cn(
-        "flex flex-col gap-4 p-5 bg-bg-surface border rounded-[var(--radius-lg)] card-hover h-full",
-        clickable
-          ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-          : "cursor-default",
-        row.status === "doubt" ? "border-accent-warning/30" : "border-border"
-      )}
+    <Container
+      {...(clickable
+        ? {
+            type: "button",
+            onClick,
+            "aria-label": `Review ${row.student_name} — ${row.status.replace("_", " ")}`,
+          }
+        : {})}
+      className={cn("tc-card", row.status === "doubt" && "tc-card--doubt")}
     >
-      {/* Identity row — avatar with a presence dot pinned to its corner,
-          name and roll number stacked so a long name never touches the badge. */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="relative flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-bg-elevated border border-border flex items-center justify-center text-xs font-semibold text-text-secondary">
-            {initialsOf(row.student_name)}
-          </div>
-          <span
-            className={cn(
-              "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-bg-surface",
-              PRESENCE_DOT[row.presence] || "bg-accent-locked"
-            )}
-            aria-hidden="true"
-            title={PRESENCE_LABEL[row.presence] || "Offline"}
-          />
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-text-primary truncate leading-tight" title={row.student_name}>
-            {row.student_name}
-          </div>
-          <div className="text-[11px] text-text-muted tnum mt-0.5">Roll {row.roll_no}</div>
-        </div>
-      </div>
-
-      {/* Status row — its own line, full width, never squeezed */}
-      <div>
-        <StatusBadge status={CARD_BADGE_STATUS[row.status]} />
-      </div>
-
-      {/* Activity row — caption + the one status-specific micro-interaction */}
-      <div className="flex items-center justify-between gap-2 mt-auto pt-3 border-t border-border/60">
-        <span className="text-[11px] text-text-secondary truncate">{caption}</span>
-        <span className="flex-shrink-0">
-          {row.status === "not_started" && <CircleIcon className="w-4 h-4 text-text-muted" strokeWidth={1.75} />}
-          {row.status === "in_progress" && <TypingIndicator reduceMotion={reduceMotion} />}
-          {row.status === "doubt" && <DoubtHandIcon reduceMotion={reduceMotion} />}
-          {row.status === "submitted" && <SubmittedCheck reduceMotion={reduceMotion} />}
+      {/* Corner badge — the doubt/submitted alert, straddling the top-right
+          corner, matching the Monitor reference's card badge. */}
+      {row.status === "doubt" && (
+        <span className="tc-badge tc-badge--doubt" aria-hidden="true" title="Doubt raised">
+          <DoubtBadgeIcon reduceMotion={reduceMotion} />
         </span>
+      )}
+      {row.status === "submitted" && (
+        <span className="tc-badge tc-badge--submitted" aria-hidden="true" title="Submitted">
+          <SubmittedBadgeIcon reduceMotion={reduceMotion} />
+        </span>
+      )}
+
+      {/* Identity row — name | roll, presence dot pinned to the end */}
+      <div className="tc-identity">
+        <span className="tc-name" title={row.student_name}>{row.student_name}</span>
+        <span className="tc-sep" aria-hidden="true" />
+        <span className="tc-roll">{row.roll_no}</span>
+        <span
+          className={cn("tc-presence", PRESENCE_DOT[row.presence] || "bg-accent-locked")}
+          aria-hidden="true"
+          title={PRESENCE_LABEL[row.presence] || "Offline"}
+        />
       </div>
-    </div>
+
+      {/* Caption — plain status text, with the one in-progress micro-interaction */}
+      <div className="tc-caption">
+        <span className="truncate">{caption}</span>
+        {row.status === "in_progress" && <TypingIndicator reduceMotion={reduceMotion} />}
+      </div>
+    </Container>
   );
 }
 
@@ -208,20 +178,27 @@ export function TaskAssignment() {
   const { sessionInfo } = useOutletContext();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState("assign"); // "assign" | "list"
   const [tasks, setTasks] = useState([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [tasksError, setTasksError] = useState(false);
+  // Flips true after the first /tasks fetch settles (ok or error). The landing
+  // effect must not decide "no ongoing task → open the pop-up" off the empty
+  // initial state before that fetch has returned.
+  const [tasksFetched, setTasksFetched] = useState(false);
 
   // Form State
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    languages: ["javascript"], // default
-    hasTimeLimit: false,
-    timeLimitMinutes: 15,
-  });
+  const [formData, setFormData] = useState(BLANK_TASK_FORM);
   const [isPushing, setIsPushing] = useState(false);
+
+  // ── Create-task pop-up + provisional "New Task" tab ─────────────────────
+  // The create form is a modal now, not an inline tab. Opening it drops a
+  // provisional tab into the strip: Cancel removes it and restores whichever
+  // task tab was open before; Submit turns it into the real task's tab.
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [hasDraftTab, setHasDraftTab] = useState(false);
+  const [autoPromptDismissed, setAutoPromptDismissed] = useState(false);
+  const prevTaskIdRef = useRef(null);
+  const createdRef = useRef(false);
 
   // ── Active Tasks — the browser-tab task selector + filter bar + roster
   // IS the Active Tasks pane now (no separate plain list). Which task's tab
@@ -230,21 +207,13 @@ export function TaskAssignment() {
   // old dedicated route used to be. ──
   const progressTaskIdParam = searchParams.get("task");
   const progressTaskId = progressTaskIdParam ? parseInt(progressTaskIdParam, 10) : null;
-  // The `task` param, when present, always wins over the clicked segmented
-  // tab — this is what makes a deep link like ?task=5 land on Active Tasks
-  // even if "Assign Task" was the last tab clicked.
-  const effectiveTab = progressTaskId ? "list" : activeTab;
   const progressTaskIdRef = useRef(null);
   useEffect(() => {
     progressTaskIdRef.current = progressTaskId;
   }, [progressTaskId]);
 
   const openProgress = (taskId) => {
-    setActiveTab("list");
     setSearchParams({ task: String(taskId) });
-  };
-  const closeProgress = () => {
-    setSearchParams({});
   };
 
   const [roster, setRoster] = useState([]);
@@ -282,23 +251,50 @@ export function TaskAssignment() {
       setTasksError(true);
     } finally {
       setLoadingTasks(false);
+      setTasksFetched(true);
     }
   };
 
   useEffect(() => {
-    if (sessionInfo && effectiveTab === "list") {
+    if (sessionInfo) {
       fetchTasks();
     }
-  }, [sessionInfo, effectiveTab]);
+  }, [sessionInfo]);
 
-  // Auto-select a task's tab the moment Active Tasks is opened without one
-  // chosen yet — mirrors the old standalone page's "default to latest" rule,
-  // since the tab bar now *is* the Active Tasks pane, not a separate list.
+  // Landing on the page with no tab chosen: prefer the first task that hasn't
+  // ended yet ("ongoing" = status "active"); if nothing is running, surface
+  // the create pop-up once (like the Live Lecture setup modal); only after
+  // that's dismissed do we fall back to the most recent ended task. A tab
+  // that's already chosen, or a provisional "New Task" tab in play, is left
+  // untouched.
   useEffect(() => {
-    if (effectiveTab === "list" && !progressTaskId && tasks.length > 0) {
+    if (hasDraftTab || showCreateDialog || progressTaskId) return;
+    if (!sessionInfo || !tasksFetched || loadingTasks || tasksError) return;
+
+    const firstOngoing = tasks.find((t) => t.status === "active");
+    if (firstOngoing) {
+      setSearchParams({ task: String(firstOngoing.id) });
+      return;
+    }
+    if (!autoPromptDismissed) {
+      openCreateDialog();
+      return;
+    }
+    if (tasks.length > 0) {
       setSearchParams({ task: String(tasks[tasks.length - 1].id) });
     }
-  }, [effectiveTab, progressTaskId, tasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    tasks,
+    progressTaskId,
+    hasDraftTab,
+    showCreateDialog,
+    sessionInfo,
+    tasksFetched,
+    loadingTasks,
+    tasksError,
+    autoPromptDismissed,
+  ]);
 
   // Fetch student roster (connected students) — only needed once a progress view is open
   const fetchRoster = async () => {
@@ -361,13 +357,12 @@ export function TaskAssignment() {
     }
   };
 
-  // Roster + doubts are only relevant on the Active Tasks pane
   useEffect(() => {
-    if (sessionInfo && effectiveTab === "list") {
+    if (sessionInfo) {
       fetchRoster();
       fetchDoubts();
     }
-  }, [sessionInfo, effectiveTab]);
+  }, [sessionInfo]);
 
   // Load progress when the open task changes; reset the filter so a status
   // selected on one task doesn't silently hide everyone on the next.
@@ -583,6 +578,44 @@ export function TaskAssignment() {
     }));
   };
 
+  const patchForm = (patch) => setFormData((prev) => ({ ...prev, ...patch }));
+
+  // Open the create-task pop-up and drop a provisional tab into the strip.
+  const openCreateDialog = () => {
+    prevTaskIdRef.current = progressTaskId;
+    setFormData(BLANK_TASK_FORM);
+    setHasDraftTab(true);
+    setSearchParams({}); // deselect real tabs so the draft tab reads as active
+    setShowCreateDialog(true);
+  };
+
+  // Fired on Cancel / Esc / overlay / X. A successful create closes the
+  // dialog directly (Radix doesn't call this for a controlled close), so the
+  // createdRef guard is only belt-and-suspenders — the genuine-cancel path
+  // is what removes the draft tab and restores the previously open task.
+  const handleCreateDialogOpenChange = (open) => {
+    if (open) {
+      setShowCreateDialog(true);
+      return;
+    }
+    setShowCreateDialog(false);
+    if (createdRef.current) {
+      createdRef.current = false;
+      setHasDraftTab(false);
+      return;
+    }
+    setHasDraftTab(false);
+    const prev = prevTaskIdRef.current;
+    if (prev && tasks.some((t) => t.id === prev)) {
+      setSearchParams({ task: String(prev) });
+    } else {
+      // Nothing running to fall back to — don't re-prompt; the landing
+      // effect will pick the latest ended task (or show the empty state).
+      setAutoPromptDismissed(true);
+      setSearchParams({});
+    }
+  };
+
   const handlePushTask = async (e) => {
     e.preventDefault();
     if (!sessionInfo) {
@@ -593,8 +626,8 @@ export function TaskAssignment() {
     setIsPushing(true);
     try {
       const token = localStorage.getItem("edusync_token");
-      const timeLimitSeconds = formData.hasTimeLimit
-        ? formData.timeLimitMinutes * 60
+      const timeLimitSeconds = formData.timeLimitMinutes
+        ? Number(formData.timeLimitMinutes) * 60
         : null;
 
       const res = await fetch(`${API_BASE_URL}/tasks/create`, {
@@ -619,7 +652,13 @@ export function TaskAssignment() {
       }
 
       toast.success("Task assigned and broadcasted successfully!");
-      // Jump straight into that task's progress view instead of navigating away
+      // Close the pop-up without running the cancel-cleanup, refresh the tab
+      // strip, then land on the brand-new task's tab.
+      createdRef.current = true;
+      setShowCreateDialog(false);
+      setHasDraftTab(false);
+      setAutoPromptDismissed(false);
+      await fetchTasks();
       openProgress(data.task.id);
     } catch (err) {
       toast.error("Network error creating task.");
@@ -632,7 +671,9 @@ export function TaskAssignment() {
     (formData?.title || "").trim() &&
     (formData?.description || "").trim() &&
     (formData?.languages || []).length > 0 &&
-    (!formData?.hasTimeLimit || formData?.timeLimitMinutes > 0);
+    (formData?.timeLimitMinutes === "" ||
+      formData?.timeLimitMinutes === undefined ||
+      Number(formData?.timeLimitMinutes) > 0);
 
   if (!sessionInfo) {
     return (
@@ -698,7 +739,7 @@ export function TaskAssignment() {
 
   return (
     <PageShell>
-        {/* Header and Tabs */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border pb-4 gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-text-primary">Task Manager</h1>
@@ -706,41 +747,10 @@ export function TaskAssignment() {
               Create coding tasks and track student submissions in real-time
             </p>
           </div>
-
-          {/* Segmented tab control */}
-          <div className="flex bg-bg-surface p-1 rounded-[var(--radius-md)] border border-border">
-            <button
-              onClick={() => {
-                setActiveTab("assign");
-                closeProgress();
-              }}
-              aria-pressed={effectiveTab === "assign"}
-              className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
-                effectiveTab === "assign"
-                  ? "bg-accent-info text-white"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              <FilePlus className="w-4 h-4" />
-              Create Task
-            </button>
-            <button
-              onClick={() => setActiveTab("list")}
-              aria-pressed={effectiveTab === "list"}
-              className={`btn-press flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-[var(--radius-sm)] transition-[transform,background-color,color] duration-150 ease-[var(--ease-out-strong)] ${
-                effectiveTab === "list"
-                  ? "bg-accent-info text-white"
-                  : "text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              <ClipboardCopy className="w-4 h-4" />
-              Active Tasks ({tasks.length})
-            </button>
-          </div>
         </div>
 
         {/* Expired Task Alerts — session-wide, shown above the Active Tasks pane. */}
-        {effectiveTab === "list" && expiredAlerts.length > 0 && (
+        {expiredAlerts.length > 0 && (
           <div className="space-y-3">
             {expiredAlerts.map(alert => (
               <div
@@ -795,145 +805,8 @@ export function TaskAssignment() {
           </div>
         )}
 
-        {/* Tab Contents */}
-        {effectiveTab === "assign" ? (
-          <div className="max-w-2xl mx-auto">
-
-            {/* Form */}
-            <form onSubmit={handlePushTask} className="space-y-6">
-              <div className="p-6 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-5">
-                <div>
-                  <Label htmlFor="title" className="text-text-secondary text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <FilePencil className="w-3.5 h-3.5 shrink-0" />
-                    Task Title
-                  </Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="mt-1 bg-bg-base border-border text-text-primary focus-visible:ring-accent-info"
-                    placeholder="e.g., Implement Binary Search"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="description" className="text-text-secondary text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <FileDescription className="w-3.5 h-3.5 shrink-0" />
-                    Description / Instructions
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="mt-1 bg-bg-base border-border text-text-primary min-h-[140px] focus-visible:ring-accent-info"
-                    placeholder="Write details, requirements, example input/output, etc."
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-text-secondary text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <BracketsAngle className="w-3.5 h-3.5 shrink-0" />
-                    Allowed Programming Languages
-                  </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {LANGUAGES.map((lang) => {
-                      const isSelected = formData.languages.includes(lang.name.toLowerCase());
-                      return (
-                        <button
-                          type="button"
-                          key={lang.name}
-                          onClick={() => toggleLanguage(lang.name)}
-                          className={`btn-press flex items-center gap-1.5 px-3 py-1.5 text-xs tracking-wide border rounded-[var(--radius-sm)] transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] ${
-                            isSelected
-                              ? "bg-accent-info/10 border-accent-info/40 text-accent-info"
-                              : "border-border text-text-secondary hover:border-border-hover"
-                          }`}
-                        >
-                          <lang.icon className="w-3.5 h-3.5 shrink-0" style={{ color: lang.dot }} />
-                          {lang.name.toUpperCase()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Time Limit Setting */}
-                <div className="space-y-3 pt-2 border-t border-border">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="hasTimeLimit" className="text-text-primary text-sm font-medium cursor-pointer flex items-center gap-1.5">
-                        <Alarm className="w-3.5 h-3.5 shrink-0" />
-                        Enable Time Limit
-                      </Label>
-                      <p className="text-xs text-text-muted mt-0.5">
-                        Students see a countdown; submissions lock automatically at zero.
-                      </p>
-                    </div>
-                    <Switch
-                      id="hasTimeLimit"
-                      checked={formData.hasTimeLimit}
-                      onCheckedChange={(checked) => setFormData({ ...formData, hasTimeLimit: checked })}
-                    />
-                  </div>
-
-                  {formData.hasTimeLimit && (
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="timeLimitMinutes" className="text-text-secondary text-xs font-semibold whitespace-nowrap flex items-center gap-1">
-                        <Alarm className="w-3.5 h-3.5 shrink-0" />
-                        Duration:
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="timeLimitMinutes"
-                          type="number"
-                          min="1"
-                          max="180"
-                          value={formData.timeLimitMinutes}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              timeLimitMinutes: parseInt(e.target.value) || 15,
-                            })
-                          }
-                          className="w-24 bg-bg-base border-border text-text-primary tnum text-sm pr-10 focus-visible:ring-accent-info"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-text-muted pointer-events-none">
-                          min
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Push Button */}
-              <Button
-                type="submit"
-                disabled={!isFormValid || isPushing}
-                className="btn-press w-full bg-accent-info hover:bg-accent-info/90 text-white font-semibold py-3 text-sm h-11 transition-colors duration-150"
-              >
-                {isPushing ? (
-                  <>Assigning Task...</>
-                ) : (
-                  <>
-                    <ClipboardListIcon className="w-[18px] h-[18px] mr-2" />
-                    Assign Task
-                  </>
-                )}
-              </Button>
-            </form>
-
-          </div>
-        ) : (
-          /* ── Active Tasks — the browser-tab task selector + filter bar +
-              roster IS this pane now (the old plain list is gone; a task's
-              tab is auto-selected the moment this pane opens). ── */
+        {/* Active Tasks — the only view; the create form is a pop-up now. */}
+        {(
           tasksError ? (
             <div className="p-12 text-center flex flex-col items-center gap-3 bg-bg-surface border border-border rounded-[var(--radius-lg)]">
               <p className="text-sm text-text-secondary">Couldn't load this session's tasks.</p>
@@ -951,25 +824,31 @@ export function TaskAssignment() {
               Loading tasks…
             </div>
           ) : tasks.length === 0 ? (
-            <div className="py-16 text-center text-text-muted flex flex-col items-center justify-center gap-2">
+            <div className="py-16 text-center text-text-muted flex flex-col items-center justify-center gap-3">
               <ClipboardListIcon className="w-14 h-14 text-text-muted" />
-              <h2 className="text-base font-semibold text-text-primary">No Session Tasks</h2>
-              <p className="text-xs text-text-secondary">Assign a coding task to monitor student progress.</p>
+              <div>
+                <h2 className="text-base font-semibold text-text-primary">No tasks yet</h2>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Assign a coding task to start tracking student progress.
+                </p>
+              </div>
+              <Button
+                onClick={openCreateDialog}
+                size="sm"
+                className="btn-press bg-accent-info hover:bg-accent-info/90 text-white text-xs font-semibold"
+              >
+                <ClipboardPlus className="w-3.5 h-3.5" />
+                Create Task
+              </Button>
             </div>
           ) : (
           <div>
-            {/* Browser-tab task selector — a full-width bar so inactive tabs
-                sit on a proper surface (not raw page black), rounded top
-                corners only; the active tab shares the panel's bg and has
-                no bottom padding under it, so it reads as physically
-                attached to the panel rather than floating above it.
-                overflow-x-auto only shows a scrollbar once tabs overflow the
-                available width; it stays invisible while everything fits. */}
-            <div
-              className="flex items-end gap-1 overflow-x-auto bg-bg-surface border border-b-0 border-border rounded-t-[var(--radius-lg)] px-2 pt-2"
-              role="tablist"
-              aria-label="Session tasks"
-            >
+            {/* Task tab strip — floats freely above the panel (not attached
+                to it) as a row of pill tabs: dashed-ring/number/title,
+                mirroring the reference "Task Manager" frame. overflow-x-auto
+                only shows a scrollbar once tabs overflow the available
+                width; it stays invisible while everything fits. */}
+            <div className="ta-tabs overflow-x-auto" role="tablist" aria-label="Session tasks">
               {tasks.map(t => {
                 const isSelected = t.id === progressTaskId;
                 const isLive = t.status === "active";
@@ -979,33 +858,51 @@ export function TaskAssignment() {
                     role="tab"
                     aria-selected={isSelected}
                     onClick={() => setSearchParams({ task: String(t.id) })}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 rounded-t-[var(--radius-md)] text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-colors duration-150",
-                      isSelected
-                        ? "bg-bg-elevated text-text-primary"
-                        : "text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary"
-                    )}
+                    className={cn("ta-tab", isSelected && "is-active")}
                   >
                     {t.status === "closed" ? (
-                      <CheckCircle2
-                        className="w-3.5 h-3.5 flex-shrink-0 text-text-muted"
-                        strokeWidth={2.5}
-                      />
+                      <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-text-muted" strokeWidth={2.5} />
                     ) : (
-                      <CircleDot
-                        className={cn("w-3.5 h-3.5 flex-shrink-0", isLive ? "text-accent-500" : "text-text-muted")}
+                      <CircleDashed
+                        className="w-3.5 h-3.5 flex-shrink-0"
+                        style={{ color: isLive ? "var(--accent-500)" : "var(--text-muted)" }}
                         strokeWidth={2.5}
                       />
                     )}
-                    <span className="max-w-[180px] truncate">#{t.sequence_order}: {t.title}</span>
+                    <span className="ta-tab-num">{String(t.sequence_order).padStart(2, "0")}</span>
+                    <span className="ta-tab-sep">|</span>
+                    <span className="ta-tab-title">{t.title}</span>
                   </button>
                 );
               })}
+
+              {/* Provisional tab — present only while the create pop-up is
+                  open; dashed + italic so it never reads as a saved task. */}
+              {hasDraftTab && (
+                <span role="tab" aria-selected={!progressTaskId} className="ta-tab-draft">
+                  <FilePencil className="w-3.5 h-3.5 flex-shrink-0 text-accent-500" strokeWidth={2.5} />
+                  New Task
+                </span>
+              )}
+
+              {/* Trailing "new tab" affordance. Hidden while a draft tab is
+                  already in play so drafts can't stack. */}
+              {!hasDraftTab && (
+                <button
+                  type="button"
+                  onClick={openCreateDialog}
+                  aria-label="Create a new task"
+                  className="btn-press ta-tab-new"
+                >
+                  <ClipboardPlus className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2.5} />
+                  Create Task
+                </button>
+              )}
             </div>
 
-            {/* Panel — connected to the tab bar above (shares its background
-                exactly, no top border, so the two read as one piece) */}
-            <div className="bg-bg-elevated border border-t-0 border-border rounded-b-[var(--radius-lg)] p-5">
+            {/* Panel — a full four-corner-rounded surface below the floating
+                tab strip. */}
+            <div className="bg-bg-elevated border border-border rounded-[var(--radius-lg)] p-5 mt-3">
               <AnimatePresence mode="wait">
                 {activeTask ? (
                   <motion.div
@@ -1020,35 +917,37 @@ export function TaskAssignment() {
                         the task's own status + End Task action share this row on the
                         right instead of wasting a separate row above the tabs. */}
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Filter students by status">
-                        {FILTERS.map(f => {
-                          const isActiveFilter = statusFilter === f.key;
-                          return (
-                            <button
-                              key={f.key}
-                              role="tab"
-                              aria-selected={isActiveFilter}
-                              onClick={() => setStatusFilter(f.key)}
-                              className={cn(
-                                "inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-[var(--radius-pill)] border text-xs font-semibold transition-colors duration-150",
-                                isActiveFilter
-                                  ? "bg-accent-500/15 border-accent-500/30 text-accent-500"
-                                  : "bg-transparent border-border text-text-secondary hover:bg-bg-surface-3 hover:text-text-primary"
-                              )}
-                            >
-                              <f.icon className="w-3.5 h-3.5 shrink-0" />
-                              {f.label}
-                              <span
-                                className={cn(
-                                  "tnum text-[10px] font-bold min-w-[18px] text-center px-1.5 py-0.5 rounded-[var(--radius-sm)]",
-                                  isActiveFilter ? "bg-accent-500/20" : "bg-bg-surface-3 text-text-muted"
-                                )}
-                              >
-                                {filterCounts[f.key]}
-                              </span>
-                            </button>
-                          );
-                        })}
+                      <div className="ta-filters" role="tablist" aria-label="Filter students by status">
+                        {FILTERS.map(f => (
+                          <button
+                            key={f.key}
+                            role="tab"
+                            aria-selected={statusFilter === f.key}
+                            onClick={() => setStatusFilter(f.key)}
+                            className={cn("ta-filter", statusFilter === f.key && "is-active")}
+                          >
+                            <f.icon />
+                            {f.label}
+                            <span className="ta-filter__div">|</span>
+                            <span className="ta-filter__count">{filterCounts[f.key]}</span>
+                          </button>
+                        ))}
+
+                        {/* Doubt sits behind a divider — an actionable alert,
+                            not just another status filter. */}
+                        <span className="ta-filter-sep" aria-hidden="true" />
+                        <button
+                          key={DOUBT_FILTER.key}
+                          role="tab"
+                          aria-selected={statusFilter === DOUBT_FILTER.key}
+                          onClick={() => setStatusFilter(DOUBT_FILTER.key)}
+                          className={cn("ta-filter", statusFilter === DOUBT_FILTER.key && "is-active")}
+                        >
+                          <DOUBT_FILTER.icon />
+                          {DOUBT_FILTER.label}
+                          <span className="ta-filter__div">|</span>
+                          <span className="ta-filter__count">{filterCounts[DOUBT_FILTER.key]}</span>
+                        </button>
                       </div>
 
                       <div className="flex items-center gap-3 flex-shrink-0">
@@ -1090,16 +989,9 @@ export function TaskAssignment() {
                     {loadingProgress ? (
                       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" }}>
                         {[0, 1, 2, 3, 4, 5].map((i) => (
-                          <div key={i} className="p-5 bg-bg-surface border border-border rounded-[var(--radius-lg)] space-y-4">
-                            <div className="flex items-center gap-3">
-                              <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
-                              <div className="space-y-1.5 flex-1">
-                                <Skeleton className="h-3.5 w-2/3" />
-                                <Skeleton className="h-2.5 w-1/3" />
-                              </div>
-                            </div>
-                            <Skeleton className="h-5 w-24 rounded-full" />
-                            <Skeleton className="h-2.5 w-1/2" />
+                          <div key={i} className="p-5 bg-bg-surface border border-border rounded-[18px] space-y-4">
+                            <Skeleton className="h-4 w-2/3" />
+                            <Skeleton className="h-2.5 w-1/3" />
                           </div>
                         ))}
                       </div>
@@ -1128,6 +1020,10 @@ export function TaskAssignment() {
                       </div>
                     )}
                   </motion.div>
+                ) : hasDraftTab ? (
+                  <div className="py-12 text-center text-text-muted text-xs italic">
+                    Fill in the form to create this task.
+                  </div>
                 ) : (
                   <div className="py-10 text-center text-text-muted text-xs italic">
                     {loadingTasks ? "Loading task…" : "Task not found."}
@@ -1138,6 +1034,17 @@ export function TaskAssignment() {
           </div>
           )
         )}
+
+      <CreateTaskDialog
+        open={showCreateDialog}
+        onOpenChange={handleCreateDialogOpenChange}
+        formData={formData}
+        onFieldChange={patchForm}
+        onToggleLanguage={toggleLanguage}
+        onSubmit={handlePushTask}
+        submitting={isPushing}
+        canSubmit={isFormValid}
+      />
 
       <TaskStatusModal
         open={!!selectedCard}

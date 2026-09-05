@@ -31,7 +31,7 @@ export function WaitingRoomBadge({ pendingRejoins, onApprove, onDeny, align = "l
         aria-expanded={open}
         aria-label={`Waiting room — ${count} student${count !== 1 ? "s" : ""} waiting to rejoin`}
         title="Waiting Room"
-        className="flex items-center gap-1.5 h-[29px] px-2.5 bg-bg-surface rounded-full text-xs text-text-secondary font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+        className="flex items-center gap-1.5 h-[29px] px-2.5 bg-bg-surface border border-border-hover rounded-full text-xs text-text-secondary font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
       >
         <UserExclamation className="w-4 h-4 text-accent-500" />
         <span className="tnum">{String(count).padStart(2, "0")}</span>

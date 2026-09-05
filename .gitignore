@@ -57,3 +57,6 @@ Backend/scripts/test_*.js
 
 # Design reference assets (Illustrator exports — SVGs/CSS, not app source)
 Frontend/assests/
+
+#temporary folder for testing
+frontend_teacher/

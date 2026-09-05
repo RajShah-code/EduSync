@@ -24,7 +24,7 @@
   gap: 16px;
   flex-wrap: wrap;
   padding: 20px 24px;
-  border-bottom: 1px solid #1f1f22;
+  border-bottom: 1px solid #161619;
 }
 
 .sm-title {
@@ -32,15 +32,15 @@
   align-items: center;
   gap: 12px;
   margin: 0;
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 500;
   letter-spacing: -0.01em;
-  color: #f4f4f6;
+  color: #f8f8fa;
 }
 .sm-title svg {
-  width: 22px;
-  height: 22px;
-  color: #af74e5;
+  width: 24px;
+  height: 24px;
+  color: #a374e5;
 }
 
 .sm-controls {
@@ -64,9 +64,10 @@
   min-width: 50px;
   height: 28.7px;
   padding: 0 10px;
+  border: none;
   border-radius: 14px;
   background: #111113;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: #e1e1e2;
   font-variant-numeric: tabular-nums;
@@ -75,7 +76,7 @@
 .sm-waitroom > button svg {
   width: 14px;
   height: 14px;
-  color: #af74e5;
+  color: #a374e5;
 }
 
 /* Filter segments — three standalone pills; the active one is filled */
@@ -87,22 +88,22 @@
 .sm-seg {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   height: 32px;
-  padding: 0 12px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid #282828;
   background: transparent;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
-  color: #919191;
+  color: #9a9a9a;
   cursor: pointer;
   transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }
 .sm-seg svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 .sm-seg:hover {
   color: #c7c9d1;
@@ -117,7 +118,7 @@
 }
 .sm-seg.is-active {
   background: #673fa6;
-  border-color: #8f5ce1;
+  border-color: #673fa6;
   color: #fff;
 }
 .sm-seg.is-active:hover {

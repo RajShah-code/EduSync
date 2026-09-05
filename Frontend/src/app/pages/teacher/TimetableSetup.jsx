@@ -5,7 +5,6 @@ import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import { IconCalendar as Calendar, IconCalendarWeek as CalendarWeek, IconClock as Clock, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconBellRinging as BellRinging, IconPlus as Plus, IconTrash as Trash2, IconPencil as Edit3, IconLoader2 as Loader2, IconFileSpreadsheet as FileSpreadsheet, IconDownload as Download, IconFileTypeXls as FileTypeXls, IconX as X, IconCircleCheck as CheckCircle2, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as Sliders, IconCalendarSmile as CalendarSmile, IconMapPin as MapPin, IconPencilCode as PencilCode, IconDeviceDesktopCode as DeviceDesktopCode } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { Skeleton } from "../../components/ui/skeleton";
 import { DateMultiPicker } from "../../components/ui/date-range-picker";
@@ -25,6 +24,12 @@ import {
 
 // Late-warning delay presets — the "Custom" chip covers everything else.
 const DELAY_PRESETS = [5, 10, 20];
+
+// Shared spring for the Save Entry button's hover label-collapse — same
+// curve as the Live Lecture Setup Modal's Start Lecture button
+// (LiveBroadcast.jsx's PILL_TRANSITION), so the two modals' pill buttons
+// feel identical.
+const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.45 };
 
 // Monday through Saturday (day_of_week 0–5)
 const DAYS = [
@@ -144,6 +149,9 @@ export function TimetableSetup() {
   const [formReminderEnabled, setFormReminderEnabled] = useState(true);
   const [formError, setFormError] = useState("");
   const [formTouched, setFormTouched] = useState(false);
+  // Hover state for the Save Entry button's icon-centers/label-collapses
+  // treatment, mirroring the Setup Modal's Start Lecture button.
+  const [saveButtonHovered, setSaveButtonHovered] = useState(false);
 
   // Excel Import Report Modal State
   const [importReport, setImportReport] = useState(null);
@@ -621,7 +629,7 @@ export function TimetableSetup() {
             onClick={fetchInitialData}
             variant="outline"
             size="sm"
-            className="text-xs font-semibold"
+            className="btn-press rounded-full text-xs font-semibold"
           >
             Try again
           </Button>
@@ -644,7 +652,7 @@ export function TimetableSetup() {
       {/* A. HEADER ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-surface border border-border rounded-[var(--radius-lg)] p-5">
         <div>
-          <h1 className="text-[length:var(--text-xl)] font-bold text-text-primary tracking-tight flex items-center gap-2.5">
+          <h1 className="text-[length:var(--text-xl)] font-medium text-text-primary tracking-tight flex items-center gap-2.5">
             <CalendarWeek className="w-7 h-7 text-accent-info" />
             Weekly Timetable
           </h1>
@@ -656,7 +664,7 @@ export function TimetableSetup() {
         <div className="flex items-center gap-3 shrink-0">
           <Button
             onClick={() => handleOpenAddModal(defaultDay)}
-            className="bg-accent-info hover:bg-accent-info/90 text-white font-medium flex items-center gap-2 cursor-pointer text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+            className="btn-press rounded-full bg-accent-info hover:bg-accent-info/90 text-white font-medium flex items-center gap-2 cursor-pointer text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
           >
             <Plus className="w-[18px] h-[18px]" />
             Add Lecture
@@ -667,7 +675,7 @@ export function TimetableSetup() {
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               disabled={importing}
-              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="btn-press rounded-full border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {importing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -680,7 +688,7 @@ export function TimetableSetup() {
             <Button
               variant="outline"
               onClick={handleDownloadTemplate}
-              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="btn-press rounded-full border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               <Download className="w-4 h-4" />
               Download Template
@@ -707,7 +715,7 @@ export function TimetableSetup() {
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               disabled={importing}
-              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-xs)] h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="btn-press rounded-full border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-xs)] h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {importing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -719,7 +727,7 @@ export function TimetableSetup() {
             <Button
               variant="outline"
               onClick={() => setShowEmptyBanner(false)}
-              className="border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer text-[length:var(--text-xs)] h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="btn-press rounded-full border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer text-[length:var(--text-xs)] h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               Dismiss
             </Button>
@@ -843,7 +851,7 @@ export function TimetableSetup() {
                          as a category marker, not a full-card tint that
                          fights the text for attention. */
                       <div
-                        className="group/card relative h-full min-h-28 rounded-[var(--radius-md)] border border-border bg-bg-surface hover:border-border-hover hover:bg-bg-surface-3 transition-colors duration-150 overflow-hidden"
+                        className="group/card relative h-full min-h-28 rounded-[var(--radius-md)] border border-border bg-bg-surface hover:border-border-hover transition-colors duration-150 overflow-hidden"
                       >
                         <span
                           className="absolute left-0 top-0 bottom-0 w-[3px]"
@@ -990,7 +998,7 @@ export function TimetableSetup() {
               </button>
 
               {customDelayMode && (
-                <div className="flex items-center gap-1 bg-bg-base border border-border rounded-[var(--radius-pill)] pl-3 pr-1.5 py-1 transition-colors duration-200 focus-within:border-accent-info/50 focus-within:ring-1 focus-within:ring-accent-info/20 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center gap-1 bg-bg-base border border-border rounded-[var(--radius-pill)] pl-3 pr-1.5 py-1 transition-colors duration-200 focus-within:border-accent-info animate-in fade-in zoom-in-95 duration-150">
                   <input
                     ref={customDelayInputRef}
                     type="number"
@@ -1033,7 +1041,7 @@ export function TimetableSetup() {
             <Button
               onClick={handleAddException}
               disabled={addingException || selectedExceptionDates.length === 0}
-              className="bg-accent-info hover:bg-accent-info/90 text-white font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
+              className="rounded-full bg-accent-info hover:bg-accent-info/90 text-white font-semibold text-[length:var(--text-xs)] h-9 cursor-pointer flex items-center justify-center gap-1.5 shrink-0 transition-[background-color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
             >
               {addingException ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -1075,14 +1083,14 @@ export function TimetableSetup() {
       {/* ADD / EDIT LECTURE MODAL (BG-ELEVATED, INLINE PER-FIELD ERRORS) */}
       {isModalOpen && (
         <div
-          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto ${
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 overflow-y-auto ${
             isModalClosing
               ? "opacity-0 transition-opacity duration-150 ease-in"
               : "opacity-100 animate-in fade-in duration-200 ease-[var(--ease-out-strong)]"
           }`}
         >
           <div
-            className={`relative max-w-md w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-5 ${
+            className={`relative max-w-md w-full my-8 bg-bg-surface border border-border rounded-[27px] p-6 shadow-[var(--shadow-modal)] space-y-5 ${
               isModalClosing
                 ? "animate-out fade-out zoom-out-95 duration-150 ease-in"
                 : "animate-in fade-in zoom-in-95 duration-200 ease-[var(--ease-out-strong)]"
@@ -1093,41 +1101,57 @@ export function TimetableSetup() {
               <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
                 {editingEntryId ? (
                   <>
-                    <Edit3 className="w-[22px] h-[22px] text-accent-info" /> Edit Lecture
+                    <Edit3 className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} /> Edit Lecture
                   </>
                 ) : (
                   <>
-                    <Plus className="w-[22px] h-[22px] text-accent-info" /> Add New Lecture
+                    <Plus className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} /> Add New Lecture
                   </>
                 )}
               </h2>
               <button
                 onClick={closeModal}
-                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
                 aria-label="Close"
               >
-                <X className="w-[22px] h-[22px]" />
+                <X className="w-[18px] h-[18px]" />
               </button>
             </div>
 
             <div className="space-y-4 text-[length:var(--text-sm)]">
-              {/* Subject */}
-              <div>
-                <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                  <BookOpen className="w-4 h-4 text-accent-info" /> Subject Name *
-                </label>
-                <Input
-                  type="text"
-                  placeholder="e.g. Operating Systems"
-                  value={formSubject}
-                  onChange={(e) => {
-                    setFormSubject(e.target.value);
-                    setFormTouched(true);
-                  }}
-                  className={`bg-bg-base text-text-primary text-[length:var(--text-base)] ${
-                    subjectError ? "border-accent-critical focus:border-accent-critical" : "border-border"
-                  }`}
-                />
+              {/* Subject — icon straddles the top border, painted with the
+                  modal's own background so it "notches" the border line,
+                  exactly like the Live Lecture Setup Modal's fields. The
+                  placeholder carries the label; there's no separate <label>
+                  row, matching that modal's convention. */}
+              <div className="relative group">
+                <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
+                  <BookOpen
+                    className={cn(
+                      "w-4 h-4 transition-colors duration-150",
+                      subjectError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
+                    )}
+                    strokeWidth={1.75}
+                  />
+                </div>
+                <div
+                  style={{ height: "46px", borderRadius: "12px" }}
+                  className={cn(
+                    "border border-solid transition-colors duration-150 flex items-center",
+                    subjectError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
+                  )}
+                >
+                  <input
+                    type="text"
+                    placeholder="Subject Name — e.g. Operating Systems"
+                    value={formSubject}
+                    onChange={(e) => {
+                      setFormSubject(e.target.value);
+                      setFormTouched(true);
+                    }}
+                    className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
+                  />
+                </div>
                 {subjectError && (
                   <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
                     <AlertTriangle className="w-4 h-4 shrink-0" /> {subjectError}
@@ -1137,26 +1161,46 @@ export function TimetableSetup() {
 
               {/* Class & Room */}
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <School className="w-4 h-4 text-accent-info" /> Class *
-                  </label>
-                  <select
-                    value={formClassId}
-                    onChange={(e) => {
-                      setFormClassId(e.target.value);
-                      setFormTouched(true);
-                    }}
-                    className={`w-full h-10 px-3 rounded-md bg-bg-base text-text-primary text-[length:var(--text-sm)] focus:outline-none focus:border-accent-info ${
-                      classError ? "border border-accent-critical" : "border border-border"
-                    }`}
+                <div className="relative group">
+                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
+                    <School
+                      className={cn(
+                        "w-4 h-4 transition-colors duration-150",
+                        classError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
+                      )}
+                      strokeWidth={1.75}
+                    />
+                    <span
+                      className={cn(
+                        "text-[11px] leading-none transition-colors duration-150",
+                        classError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
+                      )}
+                    >
+                      Class
+                    </span>
+                  </div>
+                  <div
+                    style={{ height: "46px", borderRadius: "12px" }}
+                    className={cn(
+                      "border border-solid transition-colors duration-150 flex items-center",
+                      classError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
+                    )}
                   >
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      value={formClassId}
+                      onChange={(e) => {
+                        setFormClassId(e.target.value);
+                        setFormTouched(true);
+                      }}
+                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary appearance-none"
+                    >
+                      {classes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   {classError && (
                     <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
                       <AlertTriangle className="w-4 h-4 shrink-0" /> {classError}
@@ -1164,17 +1208,25 @@ export function TimetableSetup() {
                   )}
                 </div>
 
-                <div>
-                  <label className="font-medium text-text-secondary mb-1 flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-accent-info" /> Room / Lab
-                  </label>
-                  <Input
-                    type="text"
-                    placeholder="e.g. Lab 2 or Room 301"
-                    value={formRoom}
-                    onChange={(e) => setFormRoom(e.target.value)}
-                    className="bg-bg-base border-border text-text-primary text-[length:var(--text-sm)]"
-                  />
+                <div className="relative group">
+                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
+                    <MapPin className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
+                    <span className="text-[11px] leading-none text-text-muted group-focus-within:text-accent-info transition-colors duration-150">
+                      (optional)
+                    </span>
+                  </div>
+                  <div
+                    style={{ height: "46px", borderRadius: "12px" }}
+                    className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center"
+                  >
+                    <input
+                      type="text"
+                      placeholder="Room / Lab — e.g. Lab 2"
+                      value={formRoom}
+                      onChange={(e) => setFormRoom(e.target.value)}
+                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1187,7 +1239,7 @@ export function TimetableSetup() {
                   <button
                     type="button"
                     onClick={() => setFormSessionType("standard")}
-                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
+                    className={`p-2.5 rounded-[10px] border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
                       formSessionType === "standard"
                         ? "bg-accent-info/20 border-accent-info/50 text-accent-info font-semibold"
                         : "bg-bg-base border-border text-text-secondary"
@@ -1203,7 +1255,7 @@ export function TimetableSetup() {
                   <button
                     type="button"
                     onClick={() => setFormSessionType("lab")}
-                    className={`p-2.5 rounded-lg border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated ${
+                    className={`p-2.5 rounded-[10px] border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
                       formSessionType === "lab"
                         ? "bg-accent-live/20 border-accent-live/50 text-accent-live font-semibold"
                         : "bg-bg-base border-border text-text-secondary"
@@ -1218,51 +1270,108 @@ export function TimetableSetup() {
                 </div>
               </div>
 
-              {/* Day & Times */}
+              {/* Day & Times — same icon-on-border notch, with a short note
+                  next to each icon (mirroring the Room field's "(optional)"
+                  treatment) since these three sit side by side with no
+                  placeholder text of their own to tell them apart. */}
               <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="font-medium text-text-secondary mb-1 block">Day</label>
-                  <select
-                    value={formDayOfWeek}
-                    onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
-                    className="w-full h-9 px-2 rounded-md bg-bg-base border border-border text-text-primary text-[length:var(--text-sm)] focus:outline-none focus:border-accent-info"
+                <div className="relative group">
+                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
+                    <Calendar className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
+                    <span className="text-[11px] leading-none text-text-muted group-focus-within:text-accent-info transition-colors duration-150">
+                      Day
+                    </span>
+                  </div>
+                  <div
+                    style={{ height: "46px", borderRadius: "12px" }}
+                    className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center"
                   >
-                    {DAYS.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.fullName}
-                      </option>
-                    ))}
-                  </select>
+                    <select
+                      value={formDayOfWeek}
+                      onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
+                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary appearance-none"
+                    >
+                      {DAYS.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.fullName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="font-medium text-text-secondary mb-1 block">Start Time</label>
-                  <Input
-                    type="time"
-                    value={formStartTime}
-                    onChange={(e) => {
-                      setFormStartTime(e.target.value);
-                      setFormTouched(true);
-                    }}
-                    className={`bg-bg-base text-text-primary text-[length:var(--text-sm)] h-9 ${
-                      timeError ? "border-accent-critical" : "border-border"
-                    }`}
-                  />
+                <div className="relative group">
+                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
+                    <Clock
+                      className={cn(
+                        "w-4 h-4 transition-colors duration-150",
+                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
+                      )}
+                      strokeWidth={1.75}
+                    />
+                    <span
+                      className={cn(
+                        "text-[11px] leading-none transition-colors duration-150",
+                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
+                      )}
+                    >
+                      Start
+                    </span>
+                  </div>
+                  <div
+                    style={{ height: "46px", borderRadius: "12px" }}
+                    className={cn(
+                      "border border-solid transition-colors duration-150 flex items-center",
+                      timeError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
+                    )}
+                  >
+                    <input
+                      type="time"
+                      value={formStartTime}
+                      onChange={(e) => {
+                        setFormStartTime(e.target.value);
+                        setFormTouched(true);
+                      }}
+                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="font-medium text-text-secondary mb-1 block">End Time</label>
-                  <Input
-                    type="time"
-                    value={formEndTime}
-                    onChange={(e) => {
-                      setFormEndTime(e.target.value);
-                      setFormTouched(true);
-                    }}
-                    className={`bg-bg-base text-text-primary text-[length:var(--text-sm)] h-9 ${
-                      timeError ? "border-accent-critical" : "border-border"
-                    }`}
-                  />
+                <div className="relative group">
+                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
+                    <Clock
+                      className={cn(
+                        "w-4 h-4 transition-colors duration-150",
+                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
+                      )}
+                      strokeWidth={1.75}
+                    />
+                    <span
+                      className={cn(
+                        "text-[11px] leading-none transition-colors duration-150",
+                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
+                      )}
+                    >
+                      End
+                    </span>
+                  </div>
+                  <div
+                    style={{ height: "46px", borderRadius: "12px" }}
+                    className={cn(
+                      "border border-solid transition-colors duration-150 flex items-center",
+                      timeError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
+                    )}
+                  >
+                    <input
+                      type="time"
+                      value={formEndTime}
+                      onChange={(e) => {
+                        setFormEndTime(e.target.value);
+                        setFormTouched(true);
+                      }}
+                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1281,7 +1390,7 @@ export function TimetableSetup() {
               )}
 
               {/* Late Warning Email Alert Checkbox Only */}
-              <div className="bg-bg-base border border-border rounded-lg p-3">
+              <div className="bg-bg-base border border-border rounded-[var(--radius-md)] p-3">
                 <label className="flex items-center justify-between cursor-pointer">
                   <span className="font-medium text-text-primary flex items-center gap-1.5">
                     <BellRinging className="w-4 h-4 text-accent-warning" /> Enable Late Warning Email Alert
@@ -1303,25 +1412,55 @@ export function TimetableSetup() {
               <Button
                 variant="outline"
                 onClick={closeModal}
-                className="border-border text-text-secondary text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                className="btn-press rounded-full border-border text-text-secondary text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
               >
                 Cancel
               </Button>
-              <Button
+              {/* Save Entry — icon-centers/label-collapses on hover, exactly
+                  like the Setup Modal's Start Lecture button: an invisible
+                  sizer holds the button's width steady at the full expanded
+                  content, while the visible layer's label collapses to width
+                  0 on hover on the one shared PILL_TRANSITION spring. */}
+              <button
+                type="button"
                 onClick={handleSaveModalEntry}
                 disabled={saving || !isFormValid}
-                className="bg-accent-info hover:bg-accent-info/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[length:var(--text-sm)] h-9 flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" /> Save Entry
-                  </>
+                onMouseEnter={() => setSaveButtonHovered(true)}
+                onMouseLeave={() => setSaveButtonHovered(false)}
+                className={cn(
+                  "btn-press relative inline-flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-white transition-colors duration-150",
+                  "bg-accent-info hover:bg-accent-info/90 disabled:opacity-40 disabled:cursor-not-allowed",
+                  saving ? "cursor-wait" : "cursor-pointer"
                 )}
-              </Button>
+              >
+                <span className="invisible flex items-center" aria-hidden="true">
+                  {saving ? (
+                    <Loader2 className="w-[18px] h-[18px] animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-[18px] h-[18px]" />
+                  )}
+                  <span className="pl-2 whitespace-nowrap">{saving ? "Saving…" : "Save Entry"}</span>
+                </span>
+                <span className="absolute inset-0 flex items-center justify-center">
+                  {saving ? (
+                    <Loader2 className="w-[18px] h-[18px] shrink-0 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-[18px] h-[18px] shrink-0" />
+                  )}
+                  <motion.span
+                    className="overflow-hidden whitespace-nowrap"
+                    initial={false}
+                    animate={
+                      saveButtonHovered
+                        ? { width: 0, opacity: 0 }
+                        : { width: "auto", opacity: 1 }
+                    }
+                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
+                  >
+                    <span className="pl-2">{saving ? "Saving…" : "Save Entry"}</span>
+                  </motion.span>
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -1329,7 +1468,7 @@ export function TimetableSetup() {
 
       {/* Delete Lecture Confirmation */}
       <AlertDialog open={deleteTargetId !== null} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
-        <AlertDialogContent className="bg-bg-elevated border-border text-text-primary">
+        <AlertDialogContent className="bg-bg-surface border-border text-text-primary">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-text-primary">Delete this lecture?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1358,7 +1497,7 @@ export function TimetableSetup() {
           }`}
         >
           <div
-            className={`relative max-w-xl w-full my-8 bg-bg-elevated border border-border rounded-2xl p-6 shadow-2xl space-y-4 ${
+            className={`relative max-w-xl w-full my-8 bg-bg-elevated border border-border rounded-[var(--radius-lg)] p-6 shadow-[var(--shadow-modal)] space-y-4 ${
               importReportClosing
                 ? "animate-out fade-out zoom-out-95 duration-150 ease-in"
                 : "animate-in fade-in zoom-in-95 duration-200 ease-[var(--ease-out-strong)]"
@@ -1366,14 +1505,14 @@ export function TimetableSetup() {
           >
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-                <FileSpreadsheet className="w-[22px] h-[22px] text-accent-info" /> Excel Import Report
+                <FileSpreadsheet className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} /> Excel Import Report
               </h2>
               <button
                 onClick={closeImportReport}
                 className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
                 aria-label="Close"
               >
-                <X className="w-[22px] h-[22px]" />
+                <X className="w-[18px] h-[18px]" />
               </button>
             </div>
 
@@ -1381,7 +1520,7 @@ export function TimetableSetup() {
               {importReport.map((resItem, idx) => (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                  className={`p-3 rounded-[var(--radius-md)] border flex flex-col gap-1 ${
                     resItem.status === "created"
                       ? "bg-accent-live/10 border-accent-live/20 text-accent-live"
                       : "bg-accent-critical/10 border-accent-critical/20 text-accent-critical"
@@ -1396,7 +1535,7 @@ export function TimetableSetup() {
                       )}
                       Row {resItem.row}: {resItem.subject || "Unnamed Entry"}
                     </span>
-                    <span className="tracking-wide text-[length:var(--text-xs)] uppercase font-bold px-2 py-0.5 rounded bg-bg-base/60">
+                    <span className="tracking-wide text-[length:var(--text-xs)] uppercase font-bold px-2 py-0.5 rounded-[var(--radius-pill)] bg-bg-base/60">
                       {resItem.status}
                     </span>
                   </div>
@@ -1419,7 +1558,7 @@ export function TimetableSetup() {
             <div className="flex justify-end pt-3 border-t border-border/60">
               <Button
                 onClick={closeImportReport}
-                className="bg-accent-info hover:bg-accent-info/90 text-white text-[length:var(--text-sm)] font-medium cursor-pointer h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
+                className="btn-press rounded-full bg-accent-info hover:bg-accent-info/90 text-white text-[length:var(--text-sm)] font-medium cursor-pointer h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elevated"
               >
                 Close Report
               </Button>

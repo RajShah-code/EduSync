@@ -1,0 +1,276 @@
+/* Task Manager page — task tab strip, status filter bar, and student roster
+   cards, restyled to match the "Task Manager" / "Monitor" reference frames.
+   The #673fa6 active-filter violet and the filter-pill sizing are shared
+   with StudentMonitor.css's .sm-seg spec so the teacher pages read as one
+   system; the card shares StudentTile.css's name|roll construction. */
+
+/* ── Task tab strip ──────────────────────────────────────────────────── */
+.ta-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ta-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+.ta-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-3);
+}
+.ta-tab.is-active {
+  border-color: var(--border-hover);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+.ta-tab-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.ta-tab-sep {
+  opacity: 0.35;
+  font-weight: 400;
+}
+.ta-tab-title {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ta-tab-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent-700);
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+.ta-tab-new:hover {
+  background: var(--accent-600);
+}
+
+.ta-tab-draft {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--accent-500) 55%, transparent);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  font-style: italic;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Filter bar ───────────────────────────────────────────────────────── */
+.ta-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ta-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+.ta-filter svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.ta-filter:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+.ta-filter__div {
+  opacity: 0.35;
+  font-weight: 400;
+}
+.ta-filter__count {
+  font-variant-numeric: tabular-nums;
+}
+.ta-filter.is-active {
+  background: #673fa6;
+  border-color: #673fa6;
+  color: #fff;
+}
+.ta-filter.is-active:hover {
+  background: #7a4bc0;
+  border-color: #7a4bc0;
+}
+
+/* Groups the status filters apart from the Doubt filter — Doubt is an
+   actionable alert, not just another status, so it reads as its own
+   cluster rather than one more chip in the row. */
+.ta-filter-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border-hover);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ── Student roster card ─────────────────────────────────────────────── */
+.tc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  text-align: left;
+  transition: border-color 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.tc-card--doubt {
+  border-color: color-mix(in srgb, var(--accent-warning) 30%, var(--border));
+}
+button.tc-card {
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+button.tc-card:hover,
+button.tc-card:focus-visible {
+  border-color: var(--accent-500);
+}
+button.tc-card:focus-visible {
+  outline: 2px solid var(--accent-500);
+  outline-offset: 2px;
+}
+button.tc-card:active {
+  transform: scale(0.99);
+}
+
+.tc-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tc-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tc-sep {
+  flex: none;
+  width: 0;
+  height: 12px;
+  border-left: 1px solid var(--border-hover);
+}
+.tc-roll {
+  flex: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.tc-presence {
+  margin-left: auto;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tc-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Straddles the card's top-right corner, matching the Monitor reference's
+   doubt/submitted badge placement. */
+.tc-badge {
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+.tc-badge--doubt {
+  background: var(--bg-surface-3);
+  border: 1px solid var(--border-hover);
+  color: var(--accent-500);
+}
+.tc-badge--submitted {
+  background: var(--accent-700);
+  color: #fff;
+}
+.tc-badge svg {
+  width: 15px;
+  height: 15px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ta-tab,
+  .ta-tab-new,
+  .ta-filter,
+  .tc-card {
+    transition: none;
+  }
+  button.tc-card:active {
+    transform: none;
+  }
+}

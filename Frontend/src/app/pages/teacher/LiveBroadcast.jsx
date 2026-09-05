@@ -2719,7 +2719,7 @@ export function LiveBroadcast() {
                   {/* 1. Status cluster — live dot, timer, info (read-only pill).
                       No border/blur, no hover — matches the reference exactly:
                       solid fill, 14px corner radius (not a full pill). */}
-                  <div className="flex items-center gap-2 bg-bg-surface rounded-[14px] pl-3.5 pr-2 h-[35px] shrink-0">
+                  <div className="flex items-center gap-2 bg-bg-surface border border-border-hover rounded-[14px] pl-3.5 pr-2 h-[35px] shrink-0">
                     <LiveDot />
                     <span className="tnum font-semibold text-sm text-text-primary" title="Session duration">
                       {formatTime(sessionSeconds)}
@@ -2750,7 +2750,7 @@ export function LiveBroadcast() {
                       onClick={() => navigate("/teacher/monitor")}
                       title={`${connectedStudents.length} ${connectedStudents.length === 1 ? "student" : "students"} connected — open Student Monitor`}
                       aria-label="Open Student Monitor"
-                      className="flex items-center gap-1.5 h-[29px] px-2.5 bg-bg-surface rounded-full text-xs text-text-secondary font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
+                      className="flex items-center gap-1.5 h-[29px] px-2.5 bg-bg-surface border border-border-hover rounded-full text-xs text-text-secondary font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base"
                     >
                       <Users className="w-4 h-4 text-accent-500" />
                       <span className="tnum">{String(connectedStudents.length).padStart(2, "0")}</span>
@@ -2780,13 +2780,13 @@ export function LiveBroadcast() {
                     }
                     aria-label={!hasMic ? "Turn on microphone" : micMuted ? "Unmute microphone" : "Mute microphone"}
                     className={cn(
-                      "btn-press relative flex items-center justify-center gap-2 h-[35px] min-w-[81px] px-4 rounded-[13px] text-sm font-medium",
+                      "btn-press relative flex items-center justify-center gap-2 h-[35px] min-w-[81px] px-4 rounded-[13px] text-sm font-medium border border-border-hover",
                       !hasMic
                         ? micWarning
-                          ? "bg-accent-warning/15 text-accent-warning"
+                          ? "bg-accent-warning/15 text-accent-warning border-transparent"
                           : "bg-bg-surface text-text-primary"
                         : micMuted
-                        ? "bg-accent-critical/90 text-white"
+                        ? "bg-accent-critical/90 text-white border-transparent"
                         : "bg-bg-surface text-text-primary"
                     )}
                   >
@@ -2809,9 +2809,9 @@ export function LiveBroadcast() {
                     title={isRecording ? "Stop recording" : "Screen Record"}
                     aria-label={isRecording ? "Stop recording" : "Screen Record"}
                     className={cn(
-                      "btn-press relative flex items-center justify-center gap-2 h-[35px] min-w-[150px] px-4 rounded-[13px] text-sm font-medium",
+                      "btn-press relative flex items-center justify-center gap-2 h-[35px] min-w-[150px] px-4 rounded-[13px] text-sm font-medium border border-border-hover",
                       isRecording
-                        ? "bg-accent-critical/90 text-white"
+                        ? "bg-accent-critical/90 text-white border-transparent"
                         : "bg-bg-surface text-text-primary"
                     )}
                   >
@@ -2834,9 +2834,9 @@ export function LiveBroadcast() {
                     title={isScreenSharing ? "Stop screen sharing (session stays active)" : "Share your screen with students"}
                     aria-label={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
                     className={cn(
-                      "btn-press flex items-center justify-center gap-2 h-[35px] min-w-[132px] px-4 rounded-[13px] text-sm font-medium",
+                      "btn-press flex items-center justify-center gap-2 h-[35px] min-w-[132px] px-4 rounded-[13px] text-sm font-medium border border-border-hover",
                       isScreenSharing
-                        ? "bg-accent-700 text-white"
+                        ? "bg-accent-700 text-white border-transparent"
                         : "bg-bg-surface text-text-primary"
                     )}
                   >
@@ -2855,7 +2855,7 @@ export function LiveBroadcast() {
                       download="session-recording.webm"
                       title="Download Recording"
                       aria-label="Download Recording"
-                      className="flex items-center justify-center gap-2 h-[35px] px-4 rounded-[13px] text-sm font-medium bg-bg-surface text-text-primary"
+                      className="flex items-center justify-center gap-2 h-[35px] px-4 rounded-[13px] text-sm font-medium bg-bg-surface text-text-primary border border-border-hover"
                     >
                       <Download className="w-[18px] h-[18px]" />
                       Download
@@ -3109,7 +3109,7 @@ export function LiveBroadcast() {
             <div className="relative group">
               <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
                 <MapPin className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
-                <span className="text-[11px] leading-none text-text-muted">(optional)</span>
+                <span className="text-[11px] leading-none text-text-muted group-focus-within:text-accent-info transition-colors duration-150">(optional)</span>
               </div>
               <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
                 <input
