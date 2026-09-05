@@ -17,8 +17,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Field } from "../../components/ui/field";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -2321,7 +2324,7 @@ export function LiveBroadcast() {
                       data-tour="broadcast-languages"
                       size="sm"
                       onMouseEnter={openLangMenu}
-                      className="!h-[31px] min-w-[111px] rounded-[11px] border-0 bg-bg-surface hover:bg-bg-surface hover:border-0"
+                      className="!h-[31px] !w-fit min-w-[111px] rounded-[11px] border-0 bg-bg-surface hover:bg-bg-surface hover:border-0 !text-xs !px-2.5"
                     >
                       {/* Explicit children, not the default value-mirroring —
                           the closed trigger always shows the plain language
@@ -2340,7 +2343,7 @@ export function LiveBroadcast() {
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent
-                      className="shadow-[var(--shadow-dropdown)]"
+                      className="shadow-[var(--shadow-dropdown)] [&_[data-slot=select-item]]:h-8 [&_[data-slot=select-item]]:text-xs [&_[data-slot=select-item]]:pl-2 [&_[data-slot=select-item]]:rounded-[var(--radius-sm)]"
                       container={isFullScreen ? fullScreenContainerRef.current : undefined}
                     >
                       {LANGUAGES.map((l) => {
@@ -3025,9 +3028,9 @@ export function LiveBroadcast() {
           }
         }}
       >
-        <DialogContent data-role="teacher" className="bg-bg-surface border-border text-text-primary sm:max-w-md rounded-[27px]">
+        <DialogContent data-role="teacher" className="bg-bg-elevated border-border text-text-primary sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-text-primary flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2">
               {setupModalMode === "scheduled" ? (
                 <CalendarStats className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
               ) : (
@@ -3037,134 +3040,88 @@ export function LiveBroadcast() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 py-2">
-            {/* Icon sits ON the pill's border. Built by hand rather than
-                fieldset/legend's native "notch" (which silently stops
-                working once the fieldset itself is display:flex in some
-                browsers): an icon "patch" is absolutely positioned with its
-                own vertical center pinned exactly to the pill's top border
-                line, painted with the modal's own background color so it
-                visually breaks the border line underneath it, sitting above
-                the pill (z-10) so it's never clipped. */}
-            <div className="relative group">
-              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                <Books className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
-              </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
-                <input
-                  type="text"
-                  placeholder="Lecture Name"
-                  value={formData.lectureName}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, lectureName: e.target.value }))
-                  }
-                  className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col gap-4">
+            <Field label="Lecture name">
+              <Input
+                value={formData.lectureName}
+                onChange={(e) => setFormData((p) => ({ ...p, lectureName: e.target.value }))}
+                placeholder="e.g. Data Structures Lab 4"
+              />
+            </Field>
 
-            <div className="relative group">
-              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                <Book2 className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
-              </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
-                <input
-                  type="text"
-                  placeholder="Subject Name"
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Subject">
+                <Input
                   value={formData.subject}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, subject: e.target.value }))
-                  }
-                  className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
+                  onChange={(e) => setFormData((p) => ({ ...p, subject: e.target.value }))}
                 />
-              </div>
+              </Field>
+              <Field
+                label={
+                  <>
+                    Lab / room <span className="font-normal text-text-muted">(optional)</span>
+                  </>
+                }
+              >
+                <Input
+                  value={formData.labRoom}
+                  onChange={(e) => setFormData((p) => ({ ...p, labRoom: e.target.value }))}
+                  placeholder="LAB 301"
+                />
+              </Field>
             </div>
 
-            <div className="relative group">
-              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                <Lock className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
-              </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="relative border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
-                <input
+            <Field label="Session password" hint="Students enter this to join">
+              <div className="relative">
+                <Input
                   type={showPassword ? "text" : "password"}
-                  placeholder="Lecture Password"
                   value={formData.password}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, password: e.target.value }))
-                  }
-                  className="w-full h-full bg-transparent border-0 outline-none px-4 pr-10 text-sm text-text-primary placeholder:text-text-muted"
+                  onChange={(e) => setFormData((p) => ({ ...p, password: e.target.value }))}
+                  className="pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-[color,transform] duration-150 ease-[var(--ease-out-strong)] active:scale-95"
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted transition-colors hover:text-text-secondary"
                 >
                   {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
                 </button>
               </div>
-            </div>
+            </Field>
 
-            <div className="relative group">
-              <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
-                <MapPin className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
-                <span className="text-[11px] leading-none text-text-muted group-focus-within:text-accent-info transition-colors duration-150">(optional)</span>
-              </div>
-              <div style={{ height: '46px', borderRadius: '12px' }} className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center">
-                <input
-                  type="text"
-                  placeholder="Lab/Room"
-                  value={formData.labRoom}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, labRoom: e.target.value }))
-                  }
-                  className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              {/* ml-1 nudges the chip row right by the selected-chip icon's
-                  left overhang, so the row's optical starting line matches
-                  the input fields above. */}
-              <div className="flex flex-wrap gap-2 mt-1 ml-1">
+            <Field label="Classes">
+              <div className="flex flex-wrap gap-1.5">
                 {classes.map((cls) => {
                   const isSelected = selectedClassIds.includes(cls.id);
                   return (
-                    <div key={cls.id} className="relative">
-                      {isSelected && (
-                        <div className="absolute left-0 top-0 -translate-x-1/5 -translate-y-[45%] z-10 flex items-center justify-center p-0.5 rounded-full bg-bg-surface">
-                          <Chalkboard className="w-4 h-4 text-accent-info" strokeWidth={1.75} />
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedClassIds(selectedClassIds.filter((id) => id !== cls.id));
-                          } else {
-                            setSelectedClassIds([...selectedClassIds, cls.id]);
-                          }
-                        }}
-                        className={`min-w-[64px] h-7 px-3 rounded-[10px] text-xs font-medium border bg-transparent transition-transform duration-150 ease-[var(--ease-out-strong)] active:scale-[0.96] flex items-center justify-center ${
+                    <button
+                      key={cls.id}
+                      type="button"
+                      onClick={() =>
+                        setSelectedClassIds(
                           isSelected
-                            ? "border-accent-info text-accent-info"
-                            : "border-border text-text-secondary"
-                        }`}
-                      >
-                        <span>{cls.name}</span>
-                      </button>
-                    </div>
+                            ? selectedClassIds.filter((id) => id !== cls.id)
+                            : [...selectedClassIds, cls.id],
+                        )
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm transition-colors",
+                        isSelected
+                          ? "border-accent-500 bg-accent-500/12 text-accent-500"
+                          : "border-border-hover text-text-secondary hover:bg-bg-surface-3",
+                      )}
+                    >
+                      {cls.name}
+                    </button>
                   );
                 })}
               </div>
-            </div>
-          </div>
+            </Field>
 
-          {modalError && (
-            <p className="text-sm text-accent-critical mt-1">{modalError}</p>
-          )}
+            {modalError && <p className="text-sm text-accent-critical">{modalError}</p>}
+          </div>
 
           <DialogFooter className="gap-2 sm:gap-2">
             <button
@@ -3176,21 +3133,14 @@ export function LiveBroadcast() {
               onMouseLeave={() => setStartLectureButtonHovered(false)}
               className={cn(
                 "btn-press relative inline-flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150",
-                // Live/running → high-vis broadcast green; not-yet-started → teacher violet
                 isBroadcasting
                   ? "bg-accent-live hover:bg-accent-live/90"
                   : "bg-[#611d9f] hover:bg-[#611d9f]/90",
-                // Required fields incomplete → dimmed + not-allowed cursor on hover
-                // (aria-disabled, not disabled, so the cursor still shows; the
-                //  handler already no-ops via `if (!isFormValid) return`).
                 isFormValid
                   ? "cursor-pointer"
                   : "opacity-40 cursor-not-allowed hover:bg-[#611d9f]"
               )}
             >
-              {/* Invisible sizer — always the full expanded content, so
-                  hovering (which collapses the label below) never changes
-                  this button's own width. */}
               <span className="invisible flex items-center" aria-hidden="true">
                 {startLoading ? (
                   <Loader2 className="w-[18px] h-[18px] animate-spin" />

@@ -5,6 +5,11 @@ import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import { IconCalendar as Calendar, IconCalendarWeek as CalendarWeek, IconClock as Clock, IconBook as BookOpen, IconChalkboard as School, IconBell as Bell, IconBellRinging as BellRinging, IconPlus as Plus, IconTrash as Trash2, IconPencil as Edit3, IconLoader2 as Loader2, IconFileSpreadsheet as FileSpreadsheet, IconDownload as Download, IconFileTypeXls as FileTypeXls, IconX as X, IconCircleCheck as CheckCircle2, IconAlertTriangle as AlertTriangle, IconAdjustmentsHorizontal as Sliders, IconCalendarSmile as CalendarSmile, IconMapPin as MapPin, IconPencilCode as PencilCode, IconDeviceDesktopCode as DeviceDesktopCode } from "@tabler/icons-react";
 import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Field, SimpleSelect } from "../../components/ui/field";
+import { TimePicker } from "../../components/ui/time-picker";
+import { Switch } from "../../components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { Skeleton } from "../../components/ui/skeleton";
 import { DateMultiPicker } from "../../components/ui/date-range-picker";
@@ -662,36 +667,20 @@ export function TimetableSetup() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <Button
-            onClick={() => handleOpenAddModal(defaultDay)}
-            className="btn-press rounded-full bg-accent-info hover:bg-accent-info/90 text-white font-medium flex items-center gap-2 cursor-pointer text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-          >
-            <Plus className="w-[18px] h-[18px]" />
-            Add Lecture
+          <Button size="sm" variant="default" onClick={() => handleOpenAddModal(defaultDay)}>
+            <Plus className="w-4 h-4" />
+            Add lecture
           </Button>
 
-          <div className="flex items-center gap-2 border-l border-border/60 pl-3">
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={importing}
-              className="btn-press rounded-full border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-            >
-              {importing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileTypeXls className="w-4 h-4" />
-              )}
+          <div className="flex items-center gap-2 border-l border-border pl-3">
+            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={importing}>
+              {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileTypeXls className="w-3.5 h-3.5" />}
               Import Excel
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleDownloadTemplate}
-              className="btn-press rounded-full border-border text-text-secondary hover:text-text-primary hover:bg-bg-base cursor-pointer flex items-center gap-2 text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-            >
-              <Download className="w-4 h-4" />
-              Download Template
+            <Button size="sm" variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="w-3.5 h-3.5" />
+              Download template
             </Button>
           </div>
         </div>
@@ -1080,391 +1069,131 @@ export function TimetableSetup() {
         </div>
       </div>
 
-      {/* ADD / EDIT LECTURE MODAL (BG-ELEVATED, INLINE PER-FIELD ERRORS) */}
-      {isModalOpen && (
-        <div
-          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 overflow-y-auto ${
-            isModalClosing
-              ? "opacity-0 transition-opacity duration-150 ease-in"
-              : "opacity-100 animate-in fade-in duration-200 ease-[var(--ease-out-strong)]"
-          }`}
-        >
-          <div
-            className={`relative max-w-md w-full my-8 bg-bg-surface border border-border rounded-[27px] p-6 shadow-[var(--shadow-modal)] space-y-5 ${
-              isModalClosing
-                ? "animate-out fade-out zoom-out-95 duration-150 ease-in"
-                : "animate-in fade-in zoom-in-95 duration-200 ease-[var(--ease-out-strong)]"
-            }`}
-          >
-
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
-              <h2 className="text-[length:var(--text-base)] font-semibold text-text-primary flex items-center gap-2">
-                {editingEntryId ? (
-                  <>
-                    <Edit3 className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} /> Edit Lecture
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} /> Add New Lecture
-                  </>
-                )}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="text-text-secondary hover:text-text-primary p-1.5 rounded transition-[transform,color] duration-100 ease-[var(--ease-out-strong)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-                aria-label="Close"
-              >
-                <X className="w-[18px] h-[18px]" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-[length:var(--text-sm)]">
-              {/* Subject — icon straddles the top border, painted with the
-                  modal's own background so it "notches" the border line,
-                  exactly like the Live Lecture Setup Modal's fields. The
-                  placeholder carries the label; there's no separate <label>
-                  row, matching that modal's convention. */}
-              <div className="relative group">
-                <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center px-1 bg-bg-surface">
-                  <BookOpen
-                    className={cn(
-                      "w-4 h-4 transition-colors duration-150",
-                      subjectError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
-                    )}
-                    strokeWidth={1.75}
-                  />
-                </div>
-                <div
-                  style={{ height: "46px", borderRadius: "12px" }}
-                  className={cn(
-                    "border border-solid transition-colors duration-150 flex items-center",
-                    subjectError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
-                  )}
-                >
-                  <input
-                    type="text"
-                    placeholder="Subject Name — e.g. Operating Systems"
-                    value={formSubject}
-                    onChange={(e) => {
-                      setFormSubject(e.target.value);
-                      setFormTouched(true);
-                    }}
-                    className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
-                  />
-                </div>
-                {subjectError && (
-                  <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4 shrink-0" /> {subjectError}
-                  </p>
-                )}
-              </div>
-
-              {/* Class & Room */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative group">
-                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
-                    <School
-                      className={cn(
-                        "w-4 h-4 transition-colors duration-150",
-                        classError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
-                      )}
-                      strokeWidth={1.75}
-                    />
-                    <span
-                      className={cn(
-                        "text-[11px] leading-none transition-colors duration-150",
-                        classError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
-                      )}
-                    >
-                      Class
-                    </span>
-                  </div>
-                  <div
-                    style={{ height: "46px", borderRadius: "12px" }}
-                    className={cn(
-                      "border border-solid transition-colors duration-150 flex items-center",
-                      classError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
-                    )}
-                  >
-                    <select
-                      value={formClassId}
-                      onChange={(e) => {
-                        setFormClassId(e.target.value);
-                        setFormTouched(true);
-                      }}
-                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary appearance-none"
-                    >
-                      {classes.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {classError && (
-                    <p className="text-[length:var(--text-xs)] text-accent-critical font-medium mt-1 flex items-center gap-1">
-                      <AlertTriangle className="w-4 h-4 shrink-0" /> {classError}
-                    </p>
-                  )}
-                </div>
-
-                <div className="relative group">
-                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
-                    <MapPin className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
-                    <span className="text-[11px] leading-none text-text-muted group-focus-within:text-accent-info transition-colors duration-150">
-                      (optional)
-                    </span>
-                  </div>
-                  <div
-                    style={{ height: "46px", borderRadius: "12px" }}
-                    className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Room / Lab — e.g. Lab 2"
-                      value={formRoom}
-                      onChange={(e) => setFormRoom(e.target.value)}
-                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary placeholder:text-text-muted"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Session Type */}
-              <div>
-                <label className="font-medium text-text-secondary mb-1.5 flex items-center gap-1.5">
-                  Session Type & Visual Card Style
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormSessionType("standard")}
-                    className={`p-2.5 rounded-[10px] border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
-                      formSessionType === "standard"
-                        ? "bg-accent-info/20 border-accent-info/50 text-accent-info font-semibold"
-                        : "bg-bg-base border-border text-text-secondary"
-                    }`}
-                  >
-                    <PencilCode className="w-[18px] h-[18px] text-accent-info shrink-0" />
-                    <div>
-                      <div className="text-[length:var(--text-sm)]">Standard</div>
-                      <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Blue card style</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFormSessionType("lab")}
-                    className={`p-2.5 rounded-[10px] border text-left flex items-center gap-2 cursor-pointer transition-[transform,background-color,border-color,color] duration-150 ease-[var(--ease-out-strong)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface ${
-                      formSessionType === "lab"
-                        ? "bg-accent-live/20 border-accent-live/50 text-accent-live font-semibold"
-                        : "bg-bg-base border-border text-text-secondary"
-                    }`}
-                  >
-                    <DeviceDesktopCode className="w-[18px] h-[18px] text-accent-live shrink-0" />
-                    <div>
-                      <div className="text-[length:var(--text-sm)]">Lab Session</div>
-                      <div className="text-[length:var(--text-xs)] text-text-secondary font-normal">Green card style</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Day & Times — same icon-on-border notch, with a short note
-                  next to each icon (mirroring the Room field's "(optional)"
-                  treatment) since these three sit side by side with no
-                  placeholder text of their own to tell them apart. */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="relative group">
-                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
-                    <Calendar className="w-4 h-4 text-text-muted group-focus-within:text-accent-info transition-colors duration-150" strokeWidth={1.75} />
-                    <span className="text-[11px] leading-none text-text-muted group-focus-within:text-accent-info transition-colors duration-150">
-                      Day
-                    </span>
-                  </div>
-                  <div
-                    style={{ height: "46px", borderRadius: "12px" }}
-                    className="border border-solid border-text-muted focus-within:border-accent-info transition-colors duration-150 flex items-center"
-                  >
-                    <select
-                      value={formDayOfWeek}
-                      onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
-                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary appearance-none"
-                    >
-                      {DAYS.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          {d.fullName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
-                    <Clock
-                      className={cn(
-                        "w-4 h-4 transition-colors duration-150",
-                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
-                      )}
-                      strokeWidth={1.75}
-                    />
-                    <span
-                      className={cn(
-                        "text-[11px] leading-none transition-colors duration-150",
-                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
-                      )}
-                    >
-                      Start
-                    </span>
-                  </div>
-                  <div
-                    style={{ height: "46px", borderRadius: "12px" }}
-                    className={cn(
-                      "border border-solid transition-colors duration-150 flex items-center",
-                      timeError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
-                    )}
-                  >
-                    <input
-                      type="time"
-                      value={formStartTime}
-                      onChange={(e) => {
-                        setFormStartTime(e.target.value);
-                        setFormTouched(true);
-                      }}
-                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary"
-                    />
-                  </div>
-                </div>
-
-                <div className="relative group">
-                  <div className="absolute left-4 top-0 -translate-y-1/2 z-10 flex items-center gap-1.5 px-1 bg-bg-surface">
-                    <Clock
-                      className={cn(
-                        "w-4 h-4 transition-colors duration-150",
-                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
-                      )}
-                      strokeWidth={1.75}
-                    />
-                    <span
-                      className={cn(
-                        "text-[11px] leading-none transition-colors duration-150",
-                        timeError ? "text-accent-critical" : "text-text-muted group-focus-within:text-accent-info"
-                      )}
-                    >
-                      End
-                    </span>
-                  </div>
-                  <div
-                    style={{ height: "46px", borderRadius: "12px" }}
-                    className={cn(
-                      "border border-solid transition-colors duration-150 flex items-center",
-                      timeError ? "border-accent-critical" : "border-text-muted focus-within:border-accent-info"
-                    )}
-                  >
-                    <input
-                      type="time"
-                      value={formEndTime}
-                      onChange={(e) => {
-                        setFormEndTime(e.target.value);
-                        setFormTouched(true);
-                      }}
-                      className="w-full h-full bg-transparent border-0 outline-none px-4 text-sm text-text-primary"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Real-time Inline Time Error Banner */}
-              {timeError && (
-                <p className="text-[length:var(--text-xs)] text-accent-critical font-medium flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4 shrink-0" /> {timeError}
-                </p>
+      {/* ADD / EDIT LECTURE — F2 (frontend-teacher) form */}
+      <Dialog
+        open={isModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open);
+          if (!open) setIsModalClosing(false);
+        }}
+      >
+        <DialogContent data-role="teacher" className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {editingEntryId ? (
+                <Edit3 className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
+              ) : (
+                <Plus className="w-[18px] h-[18px] text-accent-500" strokeWidth={1.75} />
               )}
+              {editingEntryId ? "Edit Lecture" : "Add New Lecture"}
+            </DialogTitle>
+          </DialogHeader>
 
-              {/* Network / General Save Error Banner */}
-              {formError && (
-                <p className="text-[length:var(--text-xs)] text-accent-critical font-medium flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4 shrink-0" /> {formError}
-                </p>
+          <div className="flex flex-col gap-3.5">
+            <Field label="Subject" error={subjectError || undefined}>
+              <Input
+                value={formSubject}
+                onChange={(e) => {
+                  setFormSubject(e.target.value);
+                  setFormTouched(true);
+                }}
+                placeholder="e.g. Operating Systems"
+              />
+            </Field>
+
+            <Field label="Day">
+              <SimpleSelect
+                value={String(formDayOfWeek)}
+                onChange={(e) => setFormDayOfWeek(Number(e.target.value))}
+                options={DAYS.map((d) => ({ value: String(d.id), label: d.fullName }))}
+              />
+            </Field>
+
+            <Field label="Class" error={classError || undefined}>
+              <SimpleSelect
+                value={formClassId}
+                onChange={(e) => {
+                  setFormClassId(e.target.value);
+                  setFormTouched(true);
+                }}
+                placeholder="Select a class"
+                options={classes.map((c) => ({ value: String(c.id), label: c.name }))}
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Start" error={timeError || undefined}>
+                <TimePicker
+                  value={formStartTime}
+                  onChange={(v) => {
+                    setFormStartTime(v);
+                    setFormTouched(true);
+                  }}
+                />
+              </Field>
+              <Field label="End">
+                <TimePicker
+                  value={formEndTime}
+                  onChange={(v) => {
+                    setFormEndTime(v);
+                    setFormTouched(true);
+                  }}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field
+                label={
+                  <>
+                    Room <span className="font-normal text-text-muted">(optional)</span>
+                  </>
+                }
+              >
+                <Input
+                  value={formRoom}
+                  onChange={(e) => setFormRoom(e.target.value)}
+                  placeholder="LAB 301"
+                />
+              </Field>
+              <Field label="Type">
+                <SimpleSelect
+                  value={formSessionType}
+                  onChange={(e) => setFormSessionType(e.target.value)}
+                  options={[
+                    { value: "standard", label: "Standard" },
+                    { value: "lab", label: "Lab" },
+                  ]}
+                />
+              </Field>
+            </div>
+
+            <label className="flex items-center justify-between rounded-[var(--radius-md)] border border-border px-3 py-2.5">
+              <span className="text-sm text-text-secondary">Remind me before it starts</span>
+              <Switch checked={formReminderEnabled} onCheckedChange={setFormReminderEnabled} />
+            </label>
+
+            {formError && <p className="text-sm text-accent-critical">{formError}</p>}
+
+            <Button
+              variant="default"
+              onClick={handleSaveModalEntry}
+              disabled={saving || !isFormValid}
+              className="mt-1"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                </>
+              ) : editingEntryId ? (
+                "Save Changes"
+              ) : (
+                "Add to Timetable"
               )}
-
-              {/* Late Warning Email Alert Checkbox Only */}
-              <div className="bg-bg-base border border-border rounded-[var(--radius-md)] p-3">
-                <label className="flex items-center justify-between cursor-pointer">
-                  <span className="font-medium text-text-primary flex items-center gap-1.5">
-                    <BellRinging className="w-4 h-4 text-accent-warning" /> Enable Late Warning Email Alert
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={formReminderEnabled}
-                    onChange={(e) => setFormReminderEnabled(e.target.checked)}
-                    className="w-4 h-4 accent-accent-warning rounded cursor-pointer"
-                  />
-                </label>
-                <p className="text-[length:var(--text-xs)] text-text-secondary mt-1.5">
-                  Uses your global late warning delay ({defaultDelayMinutes} min) configured in Late Warning Delay options.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border/60">
-              <Button
-                variant="outline"
-                onClick={closeModal}
-                className="btn-press rounded-full border-border text-text-secondary text-[length:var(--text-sm)] h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-info focus-visible:ring-offset-2 focus-visible:ring-offset-bg-surface"
-              >
-                Cancel
-              </Button>
-              {/* Save Entry — icon-centers/label-collapses on hover, exactly
-                  like the Setup Modal's Start Lecture button: an invisible
-                  sizer holds the button's width steady at the full expanded
-                  content, while the visible layer's label collapses to width
-                  0 on hover on the one shared PILL_TRANSITION spring. */}
-              <button
-                type="button"
-                onClick={handleSaveModalEntry}
-                disabled={saving || !isFormValid}
-                onMouseEnter={() => setSaveButtonHovered(true)}
-                onMouseLeave={() => setSaveButtonHovered(false)}
-                className={cn(
-                  "btn-press relative inline-flex items-center justify-center h-9 px-4 rounded-full text-sm font-medium text-white transition-colors duration-150",
-                  "bg-accent-info hover:bg-accent-info/90 disabled:opacity-40 disabled:cursor-not-allowed",
-                  saving ? "cursor-wait" : "cursor-pointer"
-                )}
-              >
-                <span className="invisible flex items-center" aria-hidden="true">
-                  {saving ? (
-                    <Loader2 className="w-[18px] h-[18px] animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-[18px] h-[18px]" />
-                  )}
-                  <span className="pl-2 whitespace-nowrap">{saving ? "Saving…" : "Save Entry"}</span>
-                </span>
-                <span className="absolute inset-0 flex items-center justify-center">
-                  {saving ? (
-                    <Loader2 className="w-[18px] h-[18px] shrink-0 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-[18px] h-[18px] shrink-0" />
-                  )}
-                  <motion.span
-                    className="overflow-hidden whitespace-nowrap"
-                    initial={false}
-                    animate={
-                      saveButtonHovered
-                        ? { width: 0, opacity: 0 }
-                        : { width: "auto", opacity: 1 }
-                    }
-                    transition={prefersReducedMotion ? { duration: 0 } : PILL_TRANSITION}
-                  >
-                    <span className="pl-2">{saving ? "Saving…" : "Save Entry"}</span>
-                  </motion.span>
-                </span>
-              </button>
-            </div>
+            </Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Lecture Confirmation */}
       <AlertDialog open={deleteTargetId !== null} onOpenChange={(open) => !open && setDeleteTargetId(null)}>

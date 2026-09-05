@@ -175,13 +175,41 @@
   --primary: var(--accent-700); --ring: var(--accent-500);
   --chart-1: var(--accent-500); --accent-info: var(--accent-500);
 
-  /* Typeface is Manrope app-wide now (see :root) — Teacher no longer needs
-     its own font-family override; it had one (General Sans) before Manrope
-     became the site-wide typeface. Teacher's weight hierarchy is likewise
-     back to the shared default (600 medium / 700 bold, same as
-     Admin/Student) — it was temporarily flattened to a flat 400 cap while
-     on General Sans, whose letterforms clogged at Semibold/Bold; that was
-     specific to that face and didn't carry over once Manrope replaced it. */
+  /* ── Big UI & UX Upgrade — frontend-teacher (F2) visual language ────────
+     The colour palette is already identical between the two apps; what F2
+     adds is a serif display face, a softer/deeper radius ramp, and a
+     subtle hairline lift on cards + stronger overlay shadows. Scoped to
+     the teacher subtree so Student / Admin / Login are untouched.
+     Layout, spacing and component structure are NOT changed — only the
+     values these tokens resolve to. */
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, 'Times New Roman', serif;
+
+  --radius-sm: 7px;   /* small buttons, chips, select items */
+  --radius-md: 8px;   /* inputs, buttons (unchanged — already matches F2) */
+  --radius-lg: 14px;  /* cards / panels — F2's card radius (was 12) */
+  --radius-2xl: 16px; /* dialogs / large panels */
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 4px 16px -4px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 16px 40px -12px rgba(0, 0, 0, 0.55);
+  --shadow-card: var(--shadow-1);      /* F1 was `none`; F2 gives cards a hairline lift */
+  --shadow-dropdown: var(--shadow-2);
+  --shadow-modal: var(--shadow-3);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--accent-500) 20%, transparent);
+
+  /* Type ramp — F2 runs a finer, tighter scale with smaller section heads.
+     h1 (--text-xl) stays ~F2's page-title size; h2/h3 and stat numbers come
+     down to F2's values. Only sizes change, never structure. */
+  --text-sm: 13px;   /* F2 form-label / dense cell (was 12) */
+  --text-md: 15px;   /* h3 / card titles (was 16) */
+  --text-lg: 17px;   /* h2 / section heads (was 20) */
+  --text-xl: 26px;   /* h1 / page titles (was 28) */
+  --text-2xl: 24px;  /* stat numbers (was 32) */
+}
+
+/* F2 body rhythm is a touch tighter than F1's 1.6. */
+[data-role="teacher"] {
+  line-height: 1.5;
 }
 /* Fallback so nothing renders unstyled outside a role scope */
 :root {
@@ -596,4 +624,79 @@
   .skeleton-shimmer::after {
     animation: none;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Big UI & UX Upgrade — teacher-scoped component polish
+   ------------------------------------------------------------------------
+   CSS only; no component markup is changed and nothing moves. This brings
+   F1's shared shadcn primitives up to frontend-teacher's (F2) radius +
+   shadow + display-type treatment, ONLY inside the teacher app shell
+   (`[data-role="teacher"]`). Overlay primitives (Dialog / Popover / Select
+   / Tooltip / DropdownMenu) render through a portal to <body>, so they are
+   matched both as descendants of the teacher shell and via a `data-role`
+   attribute copied onto the content element by the teacher pages.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Cards — stock shadcn <Card> is rounded-xl with no shadow; F2 uses a 14px
+   radius and a hairline lift. Raw `rounded-[var(--radius-lg)]` card divs on
+   the pages already pick up the 14px from the token above. */
+[data-role="teacher"] [data-slot="card"] {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* Display face on titles that don't inherit an h1–h3 rule. */
+[data-role="teacher"] [data-slot="card-title"],
+[data-role="teacher"] [data-slot="dialog-title"],
+[data-role="teacher"] [data-slot="alert-dialog-title"],
+[data-slot="dialog-title"][data-role="teacher"],
+[data-slot="alert-dialog-title"][data-role="teacher"] {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Dialogs / alert dialogs — F2: 16px radius + a deeper shadow. */
+[data-role="teacher"] [data-slot="dialog-content"],
+[data-role="teacher"] [data-slot="alert-dialog-content"],
+[data-slot="dialog-content"][data-role="teacher"],
+[data-slot="alert-dialog-content"][data-role="teacher"] {
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-3);
+}
+
+/* Poppers — selects, dropdowns, popovers: F2's softer radius + medium lift. */
+[data-role="teacher"] [data-slot="select-content"],
+[data-role="teacher"] [data-slot="dropdown-menu-content"],
+[data-role="teacher"] [data-slot="dropdown-menu-sub-content"],
+[data-role="teacher"] [data-slot="popover-content"],
+[data-slot="select-content"][data-role="teacher"],
+[data-slot="dropdown-menu-content"][data-role="teacher"],
+[data-slot="popover-content"][data-role="teacher"] {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+[data-role="teacher"] [data-slot="tooltip-content"],
+[data-slot="tooltip-content"][data-role="teacher"] {
+  border-radius: var(--radius-sm);
+}
+
+/* Badges — F2 badges are full pills. */
+[data-role="teacher"] [data-slot="badge"] {
+  border-radius: var(--radius-pill);
+}
+
+/* Tabs — F1's shell uses Tailwind's rounded-xl on the list + triggers;
+   F2's segmented control sits on the card radius with softer triggers. */
+[data-role="teacher"] [data-slot="tabs-list"] {
+  border-radius: var(--radius-lg);
+}
+[data-role="teacher"] [data-slot="tabs-trigger"] {
+  border-radius: var(--radius-md);
+}
+
+/* Skeletons — match the new small radius. */
+[data-role="teacher"] [data-slot="skeleton"] {
+  border-radius: var(--radius-sm);
 }

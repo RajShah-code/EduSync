@@ -11,6 +11,12 @@
         ],
         "createdAt": "2026-08-21T17:25:31.025Z",
         "reason": "Functional list-row selection state (submission sidebar), not decorative — same judgment already made this session for AttendanceHistory.jsx and TeacherDashboard.jsx's border-l-2 variant; re-added with path format matching this invocation's cwd"
+      },
+      {
+        "rule": "overused-font",
+        "value": "fraunces",
+        "createdAt": "2026-09-05T16:30:47.220Z",
+        "reason": "user confirmed: asked twice to copy frontend-teacher (F2)'s visual language into F1; F2's display face is Fraunces (Frontend_teacher/frontend-teacher/index.html loads it, src/index.css sets --font-display: 'Fraunces'). User answered 'Yes — bring Fraunces' when asked directly."
       }
     ]
   }

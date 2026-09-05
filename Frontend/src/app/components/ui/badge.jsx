@@ -4,27 +4,22 @@ import { cva } from "class-variance-authority";
 
 import { cn } from "./utils";
 
+// F2's badge: a full pill, uppercase, semibold, tight tracking, tinted-wash
+// tones. Variant names kept identical to F1's.
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden",
+  "inline-flex items-center justify-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.06em] leading-none w-fit whitespace-nowrap shrink-0 " +
+    "[&>svg]:size-3 [&>svg]:pointer-events-none overflow-hidden",
   {
     variants: {
       variant: {
-        default:
-          "border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
-        destructive:
-          "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-        outline:
-          "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        info:
-          "border-accent-info/30 bg-accent-info/15 text-accent-info",
-        success:
-          "border-accent-success/30 bg-accent-success/15 text-accent-success",
-        warning:
-          "border-accent-warning/30 bg-accent-warning/15 text-accent-warning",
-        locked:
-          "border-accent-locked/30 bg-accent-locked/15 text-accent-locked",
+        default: "bg-primary text-primary-foreground",
+        secondary: "bg-bg-surface-3 text-text-secondary",
+        destructive: "bg-accent-critical/15 text-accent-critical",
+        outline: "border border-border-hover text-text-secondary",
+        info: "bg-accent-info/15 text-accent-info",
+        success: "bg-accent-success/15 text-accent-success",
+        warning: "bg-accent-warning/15 text-accent-warning",
+        locked: "bg-accent-locked/15 text-accent-locked",
       },
     },
     defaultVariants: {

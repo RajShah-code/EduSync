@@ -1,6 +1,5 @@
 import { API_BASE_URL } from "../../config/api.js";
 import { useState, useEffect } from "react";
-import { StatusBadge } from "../../components/StatusBadge";
 import {
   Select,
   SelectContent,
@@ -9,7 +8,9 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
-import { IconDownload as Download, IconCalendarCheck as CalendarCheck, IconAlertTriangle as AlertTriangle, IconCheck as Check, IconX as X, IconLoader2 as Loader2 } from "@tabler/icons-react";
+import { Badge } from "../../components/ui/badge";
+import { Card } from "../../components/ui/card";
+import { IconDownload as Download, IconCalendarEvent as CalendarEvent, IconLoader2 as Loader2 } from "@tabler/icons-react";
 import { Skeleton } from "../../components/ui/skeleton";
 import PageShell from "../../components/PageShell";
 import { formatTimeOfDay } from "../../utils/timeFormat";
@@ -197,42 +198,34 @@ export function Attendance() {
   return (
     <PageShell>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border pb-4">
-        <div>
-          <h1 className="text-[length:var(--text-xl)] font-semibold text-text-primary tracking-tight">
-            Attendance Manager
-          </h1>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
+        <h1 className="text-[length:var(--text-xl)] font-medium tracking-tight text-text-primary">
+          Attendance Manager
+        </h1>
         {attendance.length > 0 && (
-          <Button onClick={handleExportCSV} variant="outline">
-            <Download className="w-[18px] h-[18px] mr-2" />
-            Export CSV
+          <Button size="sm" variant="outline" onClick={handleExportCSV}>
+            <Download className="w-3.5 h-3.5" /> Export CSV
           </Button>
         )}
       </div>
 
       {sessions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <CalendarCheck className="w-14 h-14 text-text-muted" />
-          <p className="text-base font-medium text-text-primary">
-            No attendance records yet
-          </p>
-          <p className="text-sm text-text-muted text-center max-w-sm">
-            Records will be generated automatically as soon as a student joins your session and you end the broadcast.
+        <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+          <CalendarEvent className="h-12 w-12 text-text-muted" stroke={1.2} />
+          <p className="text-base font-medium text-text-primary">No attendance records yet</p>
+          <p className="max-w-sm text-sm text-text-muted">
+            Records are generated automatically once a student joins your session and you end the broadcast.
           </p>
         </div>
       ) : (
         <>
-          {/* Session Selector & Stats */}
-          <div className="p-4 bg-bg-surface border border-border rounded-lg">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Session selector + stats */}
+          <Card className="p-5">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div className="flex items-center gap-3">
-                <label className="text-sm text-text-secondary">Session:</label>
-                <Select
-                  value={selectedSessionId}
-                  onValueChange={(val) => setSelectedSessionId(val)}
-                >
-                  <SelectTrigger className="w-64 bg-bg-base border-border text-text-primary">
+                <span className="text-sm text-text-secondary">Session</span>
+                <Select value={selectedSessionId} onValueChange={(val) => setSelectedSessionId(val)}>
+                  <SelectTrigger className="w-full min-w-[16rem] sm:w-[22rem]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -245,118 +238,102 @@ export function Attendance() {
                 </Select>
               </div>
 
-              <div className="flex items-center gap-6 tnum text-sm">
-                <div>
-                  <span className="text-accent-success">PRESENT: </span>
-                  <span className="text-accent-success font-semibold">
-                    {stats.present}
-                  </span>
-                </div>
-                <div className="h-4 w-px bg-border" />
-                <div>
-                  <span className="text-accent-critical">ABSENT: </span>
-                  <span className="text-accent-critical font-semibold">
-                    {stats.absent}
-                  </span>
-                </div>
+              <div className="flex items-center gap-5 text-sm tnum">
+                <span className="font-semibold text-accent-success">Present {stats.present}</span>
+                <span className="h-4 w-px bg-border-hover" />
+                <span className="font-semibold text-accent-critical">Absent {stats.absent}</span>
               </div>
             </div>
-          </div>
+          </Card>
 
-          {/* Attendance Table */}
+          {/* Records */}
           <div className="space-y-3">
-            <h2 className="text-md font-semibold text-text-primary">Attendance Records</h2>
-            <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
+            <h2 className="text-md font-medium text-text-primary">Attendance records</h2>
+            <Card className="overflow-hidden p-0">
               <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-bg-elevated">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Student Name
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Join Time
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Leave Time
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Active Duration
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Exits
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Rate
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {attendance.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="px-4 py-8 text-center text-sm text-text-muted italic">
-                        No students joined this session.
-                      </td>
+                <table className="w-full border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-border bg-bg-surface-3 text-xs uppercase tracking-[0.08em] text-text-muted">
+                      <th className="px-4 py-3 font-semibold">Student</th>
+                      <th className="px-4 py-3 font-semibold">Join time</th>
+                      <th className="px-4 py-3 font-semibold">Leave time</th>
+                      <th className="px-4 py-3 font-semibold">Active duration</th>
+                      <th className="px-4 py-3 font-semibold">Exits</th>
+                      <th className="px-4 py-3 font-semibold">Rate</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold">Actions</th>
                     </tr>
-                  ) : (
-                    attendance.map((record) => (
-                      <tr
-                        key={record.id}
-                        className="hover:bg-bg-elevated transition-colors"
-                      >
-                        <td className="px-4 py-3 text-sm text-text-primary font-medium">
-                          {record.student_name}
-                        </td>
-                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
-                          {formatTime(record.joined_at)}
-                        </td>
-                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
-                          {record.left_at ? formatTime(record.left_at) : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-sm tnum text-text-primary">
-                          {formatDuration(record.total_present_seconds)}
-                        </td>
-                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
-                          {record.fullscreen_exit_count}
-                        </td>
-                        <td className="px-4 py-3 text-sm tnum text-text-secondary">
-                          {(record.presence_percentage * 100).toFixed(0)}%
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={record.status} />
-                        </td>
-                        <td className="px-4 py-3">
-                          {record.status === "absent" ? (
-                            <Button
-                              size="sm"
-                              onClick={() => handleDecide(record.id, "approved")}
-                              disabled={actionLoading === record.id}
-                              className="px-2.5 bg-accent-success/15 hover:bg-accent-success/25 text-accent-success border border-accent-success/30 font-semibold text-xs h-7 flex items-center gap-1"
-                            >
-                              {actionLoading === record.id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Check className="w-4 h-4 mr-1" />
-                              )}
-                              Mark Present
-                            </Button>
-                          ) : (
-                            <span className="text-text-muted text-xs italic">—</span>
-                          )}
+                  </thead>
+                  <tbody>
+                    {attendance.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-10 text-center text-sm italic text-text-muted">
+                          No students joined this session.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      attendance.map((record) => (
+                        <tr
+                          key={record.id}
+                          className="border-b border-border transition-colors last:border-0 hover:bg-bg-elevated/60"
+                        >
+                          <td className="px-4 py-3 text-sm font-medium text-text-primary">{record.student_name}</td>
+                          <td className="px-4 py-3 text-sm tnum text-text-secondary">{formatTime(record.joined_at)}</td>
+                          <td className="px-4 py-3 text-sm tnum text-text-secondary">
+                            {record.left_at ? formatTime(record.left_at) : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-sm tnum text-text-primary">
+                            {formatDuration(record.total_present_seconds)}
+                          </td>
+                          <td className="px-4 py-3 text-sm tnum text-text-secondary">{record.fullscreen_exit_count}</td>
+                          <td className="px-4 py-3 text-sm tnum text-text-secondary">
+                            {(record.presence_percentage * 100).toFixed(0)}%
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant={
+                                record.status === "present"
+                                  ? "success"
+                                  : record.status === "absent"
+                                    ? "destructive"
+                                    : "secondary"
+                              }
+                            >
+                              {record.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            {record.teacher_decision ? (
+                              <span className="text-xs italic capitalize text-text-muted">{record.teacher_decision}</span>
+                            ) : (
+                              <div className="flex gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  disabled={actionLoading === record.id}
+                                  onClick={() => handleDecide(record.id, "approved")}
+                                >
+                                  {actionLoading === record.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                  Mark present
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={actionLoading === record.id}
+                                  onClick={() => handleDecide(record.id, "rejected")}
+                                >
+                                  Absent
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            </Card>
           </div>
         </>
       )}
